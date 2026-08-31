@@ -6,6 +6,8 @@ from sqlalchemy import text
 from backend.config.settings import settings
 from backend.database.connection import get_db, engine, Base
 from backend.routes import auth, channels, stats, work_sessions
+import qualifier.models # Ensures qualification tables are registered with Base
+from qualifier.routes.qualification import router as qualification_router
 import logging
 
 logging.basicConfig(
@@ -39,12 +41,14 @@ app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(channels.router, prefix=settings.API_V1_STR)
 app.include_router(stats.router, prefix=settings.API_V1_STR)
 app.include_router(work_sessions.router, prefix=settings.API_V1_STR)
+app.include_router(qualification_router, prefix=settings.API_V1_STR)
 
 # Also expose without /api prefix for convenience
 app.include_router(auth.router)
 app.include_router(channels.router)
 app.include_router(stats.router)
 app.include_router(work_sessions.router)
+app.include_router(qualification_router)
 
 
 @app.get("/health", tags=["Health"])

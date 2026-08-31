@@ -130,6 +130,20 @@ class ChannelService:
                 created_at=now
             )
             db.add(event)
+
+            # Auto-enqueue for qualification
+            try:
+                from qualifier.models.qualification_job import QualificationJob
+                job = QualificationJob(
+                    channel_id=channel_data.channel_id,
+                    status="PENDING",
+                    created_at=now,
+                    updated_at=now
+                )
+                db.add(job)
+            except Exception:
+                pass
+
             db.commit()
             db.refresh(new_channel)
 
@@ -214,6 +228,19 @@ class ChannelService:
                         created_at=now
                     )
                     db.add(event)
+
+                    try:
+                        from qualifier.models.qualification_job import QualificationJob
+                        job = QualificationJob(
+                            channel_id=item.channel_id,
+                            status="PENDING",
+                            created_at=now,
+                            updated_at=now
+                        )
+                        db.add(job)
+                    except Exception:
+                        pass
+
                     inserted.append(item.channel_id)
             except IntegrityError:
                 already_exists.append(item.channel_id)
