@@ -196,19 +196,25 @@ class ChannelService:
         errors: List[str] = []
 
         for item in bulk_data.channels:
+            cid = item.channel_id.strip() if item.channel_id else ""
+            if not cid:
+                continue
+
             try:
-                # Use subtransaction (savepoint) for each channel
                 with db.begin_nested():
-                    existing = db.query(Channel.id).filter(Channel.channel_id == item.channel_id).first()
+                    existing = db.query(Channel.id).filter(Channel.channel_id == cid).first()
                     if existing:
-                        already_exists.append(item.channel_id)
+                        already_exists.append(cid)
                         continue
 
+                    c_url = item.channel_url or f"https://www.youtube.com/channel/{cid}"
+                    c_name = item.channel_name or item.channel_handle or "Canal YouTube"
+
                     new_channel = Channel(
-                        channel_id=item.channel_id,
-                        channel_name=item.channel_name,
+                        channel_id=cid,
+                        channel_name=c_name,
                         channel_handle=item.channel_handle,
-                        channel_url=item.channel_url,
+                        channel_url=c_url,
                         source=item.source or "youtube_search",
                         search_term=item.search_term,
                         first_collected_by_id=current_user.id,
@@ -218,10 +224,10 @@ class ChannelService:
                     )
                     db.add(new_channel)
                     
-                    active_session_id = WorkSessionService.register_channel_collection(db, current_user.id, item.channel_id)
+                    active_session_id = WorkSessionService.register_channel_collection(db, current_user.id, cid)
 
                     event = CollectionEvent(
-                        channel_id=item.channel_id,
+                        channel_id=cid,
                         user_id=current_user.id,
                         work_session_id=active_session_id,
                         event_type="BULK_COLLECT",
@@ -232,7 +238,7 @@ class ChannelService:
                     try:
                         from qualifier.models.qualification_job import QualificationJob
                         job = QualificationJob(
-                            channel_id=item.channel_id,
+                            channel_id=cid,
                             status="PENDING",
                             created_at=now,
                             updated_at=now
@@ -241,13 +247,12 @@ class ChannelService:
                     except Exception:
                         pass
 
-                    inserted.append(item.channel_id)
+                    inserted.append(cid)
             except IntegrityError:
-                already_exists.append(item.channel_id)
-
+                already_exists.append(cid)
             except Exception as e:
-                logger.error(f"Error inserting channel {item.channel_id}: {str(e)}")
-                errors.append(f"{item.channel_id}: {str(e)}")
+                logger.error(f"Error inserting channel {cid}: {str(e)}")
+                errors.append(f"{cid}: {str(e)}")
 
         db.commit()
         return ChannelBulkResponse(

@@ -12,21 +12,21 @@ class ChannelStatus(BaseModel):
     collected_at: Optional[datetime] = None
 
 class ChannelCheckRequest(BaseModel):
-    channel_ids: List[str] = Field(..., max_length=200)
+    channel_ids: List[str] = Field(..., max_length=500)
 
 class ChannelCheckResponse(BaseModel):
     channels: Dict[str, ChannelStatus]
 
 class ChannelCreate(BaseModel):
-    channel_id: str = Field(..., min_length=3, max_length=64)
-    channel_name: str = Field(..., min_length=1, max_length=255)
+    channel_id: str = Field(..., min_length=2, max_length=100)
+    channel_name: Optional[str] = Field("Canal YouTube", max_length=255)
     channel_handle: Optional[str] = Field(None, max_length=100)
-    channel_url: str = Field(..., max_length=500)
+    channel_url: Optional[str] = Field("", max_length=500)
     source: Optional[str] = Field("youtube_search", max_length=100)
     search_term: Optional[str] = Field(None, max_length=255)
 
 class ChannelBulkCreate(BaseModel):
-    channels: List[ChannelCreate] = Field(..., max_length=100)
+    channels: List[ChannelCreate] = Field(..., max_length=500)
 
 class ChannelResponse(BaseModel):
     id: int

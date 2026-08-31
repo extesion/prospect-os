@@ -1,10 +1,31 @@
 from typing import Dict, List, Any
 from pydantic import BaseModel, Field
 import os
+from pathlib import Path
+
+def get_env_api_key() -> str:
+    key = os.getenv("YOUTUBE_API_KEY", "")
+    if key:
+        return key
+    # Search root and parent folders for .env
+    current = Path(__file__).resolve().parent
+    for p in [current / ".." / ".." / ".env", current / ".." / ".." / "backend" / ".env", Path(".env"), Path("backend/.env")]:
+        if p.exists():
+            try:
+                for line in p.read_text(encoding="utf-8").splitlines():
+                    line = line.strip()
+                    if line.startswith("YOUTUBE_API_KEY="):
+                        val = line.split("=", 1)[1].strip().strip('"').strip("'")
+                        if val:
+                            os.environ["YOUTUBE_API_KEY"] = val
+                            return val
+            except Exception:
+                pass
+    return ""
 
 class QualificationConfig(BaseModel):
     # YouTube API
-    YOUTUBE_API_KEY: str = Field(default_factory=lambda: os.getenv("YOUTUBE_API_KEY", ""))
+    YOUTUBE_API_KEY: str = Field(default_factory=get_env_api_key)
     DAILY_QUOTA_LIMIT: int = Field(default=9500)
     VIDEOS_TO_ANALYZE: int = Field(default=3)
     BATCH_SIZE: int = Field(default=50)

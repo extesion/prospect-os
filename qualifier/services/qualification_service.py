@@ -38,16 +38,15 @@ class QualificationService:
         now = utc_now()
         existing_job = db.query(QualificationJob).filter(QualificationJob.channel_id == channel_id).first()
         if existing_job:
-            if existing_job.status in ("COMPLETED", "FAILED", "CANCELLED"):
-                existing_job.status = "PENDING"
-                existing_job.attempts = 0
-                existing_job.priority = priority
-                existing_job.error_message = None
-                existing_job.started_at = None
-                existing_job.finished_at = None
-                existing_job.updated_at = now
-                db.commit()
-                db.refresh(existing_job)
+            existing_job.status = "PENDING"
+            existing_job.attempts = 0
+            existing_job.priority = priority
+            existing_job.error_message = None
+            existing_job.started_at = None
+            existing_job.finished_at = None
+            existing_job.updated_at = now
+            db.commit()
+            db.refresh(existing_job)
             return existing_job
 
         new_job = QualificationJob(

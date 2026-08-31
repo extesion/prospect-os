@@ -170,10 +170,18 @@ class QualificationWorker:
                 logger.warning(f"[WARNING] Error fetching videos batch: {str(e)}")
 
         # 6. Analyze and store each channel
-        for cid, ch_data in channels_api_data.items():
-            job = job_map[cid]
-            if job.status != "PROCESSING":
+        for cid in channels_to_fetch_api:
+            job = job_map.get(cid)
+            if not job or job.status != "PROCESSING":
                 continue
+
+            ch_data = channels_api_data.get(cid)
+            if not ch_data:
+                continue
+
+            # Ensure channel_data has the expected channel_id for DB matching
+            ch_data_to_store = dict(ch_data)
+            ch_data_to_store["channel_id"] = cid
 
             v_ids = channel_video_ids_map.get(cid, [])
             recent_videos = [videos_api_data[vid] for vid in v_ids if vid in videos_api_data]
@@ -181,7 +189,7 @@ class QualificationWorker:
             try:
                 qual_result = QualificationService.analyze_and_store_qualification(
                     db=db,
-                    channel_data=ch_data,
+                    channel_data=ch_data_to_store,
                     recent_videos=recent_videos
                 )
                 job.status = "COMPLETED"
@@ -193,7 +201,7 @@ class QualificationWorker:
             except Exception as e:
                 logger.error(f"[ERROR] Failed local analysis for channel={cid}: {str(e)}")
                 self._handle_retry(job, f"Analysis error: {str(e)}")
-                retried_count += 1
+                failed_count += 1
 
         db.commit()
         return {
