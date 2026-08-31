@@ -1,0 +1,264 @@
+/* YouTube Prospector - Overlay Styles */
+
+:root {
+  --yp-primary: #3ea6ff;
+  --yp-primary-hover: #65b8ff;
+  --yp-success: #2ba640;
+  --yp-success-bg: rgba(43, 166, 64, 0.15);
+  --yp-success-border: rgba(43, 166, 64, 0.4);
+  --yp-warning: #f1c40f;
+  --yp-danger: #e74c3c;
+  --yp-danger-bg: rgba(231, 76, 60, 0.15);
+  --yp-dark-bg: rgba(18, 18, 20, 0.85);
+  --yp-border: rgba(255, 255, 255, 0.12);
+  --yp-text: #f1f1f1;
+  --yp-text-muted: #aaaaaa;
+}
+
+/* Badge Container injected next to channel names or video cards */
+.yp-badge-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+  vertical-align: middle;
+  font-family: "Roboto", "YouTube Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  z-index: 1000;
+  position: relative;
+}
+
+/* Status Pill */
+.yp-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+/* States */
+.yp-status-pill.yp-verifying {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--yp-text-muted);
+  border: 1px solid var(--yp-border);
+}
+
+.yp-status-pill.yp-available {
+  background: rgba(46, 204, 113, 0.12);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.yp-status-pill.yp-exists {
+  background: rgba(52, 152, 219, 0.12);
+  color: #5dade2;
+  border: 1px solid rgba(52, 152, 219, 0.35);
+  cursor: help;
+  position: relative;
+}
+
+.yp-status-pill.yp-saving {
+  background: rgba(241, 196, 15, 0.15);
+  color: #f1c40f;
+  border: 1px solid rgba(241, 196, 15, 0.4);
+}
+
+.yp-status-pill.yp-error {
+  background: var(--yp-danger-bg);
+  color: #ff6b6b;
+  border: 1px solid var(--yp-danger);
+}
+
+/* Tooltip on Exists Badge */
+.yp-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #18181b;
+  color: #ffffff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 10001;
+}
+
+.yp-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #18181b transparent transparent transparent;
+}
+
+.yp-status-pill.yp-exists:hover .yp-tooltip {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(-50%) translateY(-2px);
+}
+
+/* Action Buttons */
+.yp-btn-collect {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #065fd4, #0b72ff);
+  color: #ffffff;
+  border: none;
+  border-radius: 14px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(6, 95, 212, 0.35);
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.yp-btn-collect:hover {
+  background: linear-gradient(135deg, #0b72ff, #2583ff);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(6, 95, 212, 0.5);
+}
+
+.yp-btn-collect:active {
+  transform: translateY(0);
+}
+
+.yp-btn-collect:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.yp-btn-retry {
+  background: transparent;
+  color: #ff6b6b;
+  border: 1px solid rgba(255, 107, 107, 0.4);
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.yp-btn-retry:hover {
+  background: rgba(255, 107, 107, 0.15);
+}
+
+/* Floating Bottom Toolbar */
+.yp-floating-toolbar {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: rgba(18, 18, 22, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 28px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  z-index: 999999;
+  font-family: "Roboto", sans-serif;
+  color: #f1f1f1;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: ypSlideIn 0.3s ease-out;
+}
+
+@keyframes ypSlideIn {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.yp-toolbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  color: #ff4e45;
+}
+
+.yp-toolbar-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.yp-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--yp-text-muted);
+}
+
+.yp-stat-item strong {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.yp-stat-new strong {
+  color: #2ecc71;
+}
+
+.yp-stat-exists strong {
+  color: #5dade2;
+}
+
+.yp-toolbar-bulk-btn {
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
+  color: #ffffff;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.4);
+  transition: all 0.2s ease;
+}
+
+.yp-toolbar-bulk-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(46, 204, 113, 0.6);
+  background: linear-gradient(135deg, #2ecc71, #3fe085);
+}
+
+.yp-toolbar-bulk-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}

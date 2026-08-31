@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Prospector — Painel de Produtividade & Horas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090a0f;
+      --nav-bg: #10121a;
+      --card-bg: #12141c;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover: rgba(255, 255, 255, 0.15);
+      --primary: #3b82f6;
+      --primary-gradient: linear-gradient(135deg, #2563eb, #3b82f6);
+      --accent: #ff4e45;
+      --accent-gradient: linear-gradient(135deg, #ef4444, #f97316);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --table-header: #181b26;
+      --table-row-alt: #0e1017;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Navigation Bar */
+    header {
+      background: rgba(18, 20, 28, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      background: var(--accent-gradient);
+      color: white;
+      font-size: 18px;
+      font-weight: 800;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+    }
+
+    .brand-title {
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-subtitle {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Nav Tabs */
+    .nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #161822;
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+    }
+
+    .nav-tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .nav-tab-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-tab-btn.active {
+      background: var(--primary-gradient);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--success);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Tab Views */
+    .tab-view {
+      display: none;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .tab-view.active {
+      display: flex;
+    }
+
+    /* KPI Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 22px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .metric-card:hover {
+      border-color: var(--card-hover);
+      transform: translateY(-2px);
+    }
+
+    .metric-card::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--primary-gradient);
+    }
+
+    .metric-card.accent::after {
+      background: var(--accent-gradient);
+    }
+
+    .metric-card.success::after {
+      background: linear-gradient(135deg, #10b981, #34d399);
+    }
+
+    .metric-card.warning::after {
+      background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    }
+
+    .metric-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .metric-value {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -1px;
+    }
+
+    .metric-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Section Title */
+    .section-title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+
+    /* Team Members Live Grid */
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 18px;
+    }
+
+    .member-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transition: all 0.2s;
+    }
+
+    .member-card:hover {
+      border-color: var(--card-hover);
+    }
+
+    .member-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .member-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .member-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: #1c2030;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .member-name {
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .status-tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .status-tag.active {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .status-tag.paused {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .status-tag.idle {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      border: 1px solid var(--card-border);
+    }
+
+    .member-stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      background: #181a24;
+      padding: 10px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .m-stat-val {
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .m-stat-val.highlight {
+      color: var(--primary);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .m-stat-lbl {
+      font-size: 9px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    /* Progress bar */
+    .progress-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .progress-bar-bg {
+      background: #1e2230;
+      height: 6px;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      background: var(--primary-gradient);
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+
+    /* Ranking Section */
+    .ranking-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .filter-pills {
+      display: flex;
+      gap: 8px;
+    }
+
+    .filter-pill {
+      background: #181a24;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-pill.active {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    .ranking-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--card-border);
+      transition: background 0.2s;
+    }
+
+    .ranking-item:last-child {
+      border-bottom: none;
+    }
+
+    .ranking-item:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .rank-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .rank-num {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+      background: #181b26;
+      color: var(--text-muted);
+    }
+
+    .rank-num.top1 {
+      background: linear-gradient(135deg, #f59e0b, #fbbf24);
+      color: #000000;
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+    }
+
+    .rank-num.top2 {
+      background: linear-gradient(135deg, #94a3b8, #cbd5e1);
+      color: #000000;
+    }
+
+    .rank-num.top3 {
+      background: linear-gradient(135deg, #b45309, #d97706);
+      color: #ffffff;
+    }
+
+    .rank-hours {
+      font-size: 18px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--primary);
+    }
+
+    /* Table Styles */
+    .content-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .content-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .table-container {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    th {
+      background: var(--table-header);
+      color: var(--text-muted);
+      font-weight: 700;
+      padding: 14px 20px;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    td {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--card-border);
+      vertical-align: middle;
+    }
+
+    tr:nth-child(even) {
+      background: var(--table-row-alt);
+    }
+
+    tr:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .btn {
+      background: var(--primary-gradient);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      font-family: inherit;
+      text-decoration: none;
+    }
+
+    .btn-secondary {
+      background: #1e2230;
+      border: 1px solid var(--card-border);
+      color: var(--text);
+    }
+
+    .search-input {
+      background: #181a24;
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      outline: none;
+      min-width: 240px;
+    }
+
+    /* Config Tab Form */
+    .config-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .form-group input {
+      background: #181a24;
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand-group">
+      <div class="brand-icon">⚡</div>
+      <div>
+        <div class="brand-title">YouTube Prospector</div>
+        <div class="brand-subtitle">Central Team & Hours Dashboard</div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="nav-tab-btn active" data-tab="overview">📊 Visão Geral</button>
+      <button class="nav-tab-btn" data-tab="ranking">🏆 Ranking de Horas</button>
+      <button class="nav-tab-btn" data-tab="history">📜 Histórico</button>
+      <button class="nav-tab-btn" data-tab="channels">📺 Canais Coletados</button>
+      <button class="nav-tab-btn" data-tab="settings">⚙️ Configurações</button>
+    </nav>
+
+    <div class="header-right">
+      <div class="live-badge">
+        <span class="live-dot"></span>
+        <span>SISTEMA ATIVO</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- TAB 1: VISÃO GERAL -->
+    <div id="tabOverview" class="tab-view active">
+      <div class="metrics-grid">
+        <div class="metric-card accent">
+          <div class="metric-label">Membros Trabalhando Agora</div>
+          <div class="metric-value" id="kpiWorkingNow">0</div>
+          <div class="metric-sub">Prospectores com sessão ativa</div>
+        </div>
+        <div class="metric-card success">
+          <div class="metric-label">Horas Trabalhadas Hoje</div>
+          <div class="metric-value" id="kpiTotalHoursToday">00h 00min</div>
+          <div class="metric-sub">Tempo real acumulado pela equipe</div>
+        </div>
+        <div class="metric-card warning">
+          <div class="metric-label">Canais Coletados Hoje</div>
+          <div class="metric-value" id="kpiChannelsToday">0</div>
+          <div class="metric-sub">Total de canais novos hoje</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Média da Equipe</div>
+          <div class="metric-value" id="kpiTeamRate">0.0</div>
+          <div class="metric-sub">Canais por hora em média</div>
+        </div>
+      </div>
+
+      <div class="section-title-bar">
+        <div class="section-title">Status em Tempo Real dos Prospectores</div>
+        <button class="btn btn-secondary" onclick="loadOverviewData()">🔄 Atualizar</button>
+      </div>
+
+      <div class="team-grid" id="teamMembersGrid">
+        <!-- Live team member cards injected here -->
+      </div>
+    </div>
+
+    <!-- TAB 2: RANKING DE HORAS -->
+    <div id="tabRanking" class="tab-view">
+      <div class="section-title-bar">
+        <div>
+          <div class="section-title">Ranking de Horas Trabalhadas</div>
+          <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+            A classificação é definida <strong>exclusivamente pelo tempo efetivamente trabalhado</strong>.
+          </p>
+        </div>
+        <div class="filter-pills">
+          <button class="filter-pill active" data-period="today">Hoje</button>
+          <button class="filter-pill" data-period="week">Esta Semana</button>
+          <button class="filter-pill" data-period="month">Este Mês</button>
+        </div>
+      </div>
+
+      <div class="ranking-card" id="rankingListContainer">
+        <!-- Ranking items injected here -->
+      </div>
+    </div>
+
+    <!-- TAB 3: HISTÓRICO -->
+    <div id="tabHistory" class="tab-view">
+      <div class="content-card">
+        <div class="content-header">
+          <div class="section-title">Histórico de Sessões de Trabalho</div>
+          <button class="btn btn-secondary" onclick="loadHistoryData()">🔄 Atualizar</button>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Prospector</th>
+                <th>Ciclo / Meta</th>
+                <th>Início / Fim</th>
+                <th>Tempo Ativo</th>
+                <th>Canais Coletados</th>
+                <th>Média Final</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <!-- History rows injected here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: CANAIS COLETADOS -->
+    <div id="tabChannels" class="tab-view">
+      <div class="content-card">
+        <div class="content-header">
+          <div class="section-title">Canais Prospeccionados pela Equipe</div>
+          <div style="display: flex; gap: 10px;">
+            <input type="text" id="channelSearch" class="search-input" placeholder="🔍 Buscar por canal, handle ou termo...">
+            <button id="btnExportCsv" class="btn">📥 Exportar CSV</button>
+          </div>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Canal</th>
+                <th>Channel ID</th>
+                <th>Coletado Por</th>
+                <th>Origem / Termo</th>
+                <th>Data & Hora</th>
+              </tr>
+            </thead>
+            <tbody id="channelsTableBody">
+              <!-- Channels rows injected here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: CONFIGURAÇÕES -->
+    <div id="tabSettings" class="tab-view">
+      <div class="config-card">
+        <div class="section-title">Configurações de Metas & Ciclos</div>
+        <form id="settingsForm" style="display: flex; flex-direction: column; gap: 14px;">
+          <div class="form-group">
+            <label>Meta Diária Padrão (Canais)</label>
+            <input type="number" id="cfgDefaultTarget" min="1" max="5000" value="160" required>
+          </div>
+          <button type="submit" class="btn" style="align-self: flex-start;">Salvar Configurações</button>
+          <div id="cfgFeedback" style="font-size: 12px; color: var(--success); display: none;">Configurações salvas com sucesso!</div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let activeTab = 'overview';
+    let currentPeriod = 'today';
+    let allChannels = [];
+    let liveMembers = [];
+
+    // Tab navigation
+    document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+        btn.classList.add('active');
+        activeTab = btn.dataset.tab;
+        const targetView = document.getElementById('tab' + activeTab.charAt(0).toUpperCase() + activeTab.slice(1));
+        if (targetView) targetView.classList.add('active');
+        refreshCurrentTab();
+      });
+    });
+
+    // Ranking period filters
+    document.querySelectorAll('.filter-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        currentPeriod = pill.dataset.period;
+        loadRankingData();
+      });
+    });
+
+    function formatSeconds(sec) {
+      if (!sec || sec < 0) return "00:00:00";
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = sec % 60;
+      return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    function formatDate(isoString) {
+      if (!isoString) return "-";
+      try {
+        const d = new Date(isoString);
+        return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      } catch {
+        return isoString;
+      }
+    }
+
+    // 1. Overview Tab
+    async function loadOverviewData() {
+      try {
+        const res = await fetch('/api/work-sessions/team/status');
+        const data = await res.json();
+
+        document.getElementById('kpiWorkingNow').textContent = data.users_working_count;
+        document.getElementById('kpiTotalHoursToday').textContent = data.formatted_total_hours_today;
+        document.getElementById('kpiChannelsToday').textContent = data.total_channels_today;
+        document.getElementById('kpiTeamRate').textContent = data.team_average_rate.toFixed(1) + '/h';
+
+        liveMembers = data.members || [];
+        renderTeamGrid(liveMembers);
+      } catch (err) {
+        console.error('Erro overview:', err);
+      }
+    }
+
+    function renderTeamGrid(members) {
+      const grid = document.getElementById('teamMembersGrid');
+      if (!members || members.length === 0) {
+        grid.innerHTML = '<div style="color: var(--text-muted);">Nenhum usuário cadastrado.</div>';
+        return;
+      }
+
+      grid.innerHTML = members.map(m => {
+        const statusClass = m.session_status.toLowerCase();
+        const statusLabel = m.session_status === 'ACTIVE' ? '● ATIVO' : (m.session_status === 'PAUSED' ? '⏸ PAUSADO' : '○ PARADO');
+        const initial = (m.user_name || 'U').charAt(0).toUpperCase();
+
+        return `
+          <div class="member-card">
+            <div class="member-header">
+              <div class="member-info">
+                <div class="member-avatar">${initial}</div>
+                <div>
+                  <div class="member-name">${m.user_name}</div>
+                </div>
+              </div>
+              <span class="status-tag ${statusClass}">${statusLabel}</span>
+            </div>
+
+            <div class="member-stats-row">
+              <div>
+                <div class="m-stat-val highlight" data-user-id="${m.user_id}" data-status="${m.session_status}">${m.formatted_time}</div>
+                <div class="m-stat-lbl">Tempo Ativo</div>
+              </div>
+              <div>
+                <div class="m-stat-val">${m.collected_count} / ${m.daily_target}</div>
+                <div class="m-stat-lbl">Produção</div>
+              </div>
+              <div>
+                <div class="m-stat-val">${m.current_rate.toFixed(1)}/h</div>
+                <div class="m-stat-lbl">Ritmo Atual</div>
+              </div>
+            </div>
+
+            <div class="progress-wrapper">
+              <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted);">
+                <span>Progresso da Meta</span>
+                <strong>${m.progress_percentage.toFixed(1)}%</strong>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill" style="width: ${Math.min(100, m.progress_percentage)}%;"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 2. Ranking Tab
+    async function loadRankingData() {
+      try {
+        const res = await fetch(`/api/work-sessions/ranking?period=${currentPeriod}`);
+        const data = await res.json();
+        const container = document.getElementById('rankingListContainer');
+
+        if (!data || data.length === 0) {
+          container.innerHTML = '<div style="padding: 24px; color: var(--text-muted); text-align: center;">Nenhuma sessão registrada para este período.</div>';
+          return;
+        }
+
+        container.innerHTML = data.map((item, idx) => {
+          let topClass = '';
+          if (idx === 0) topClass = 'top1';
+          else if (idx === 1) topClass = 'top2';
+          else if (idx === 2) topClass = 'top3';
+
+          return `
+            <div class="ranking-item">
+              <div class="rank-left">
+                <div class="rank-num ${topClass}">#${item.rank_position}</div>
+                <div>
+                  <div style="font-weight: 700; font-size: 15px;">${item.user_name}</div>
+                  <div style="font-size: 12px; color: var(--text-muted);">Canais coletados: <strong>${item.channels_collected}</strong></div>
+                </div>
+              </div>
+              <div class="rank-hours">${item.formatted_hours}</div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Erro ranking:', err);
+      }
+    }
+
+    // 3. History Tab
+    async function loadHistoryData() {
+      try {
+        const res = await fetch('/api/work-sessions/history?limit=50');
+        const data = await res.json();
+        const tbody = document.getElementById('historyTableBody');
+
+        if (!data || data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">Nenhum histórico disponível.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.map(s => `
+          <tr>
+            <td><strong>${s.date_str}</strong></td>
+            <td>👤 ${s.user_name}</td>
+            <td><span class="status-tag active">${s.cycle_type}</span> (Meta: ${s.daily_target})</td>
+            <td>${formatDate(s.started_at).slice(11)} às ${s.ended_at ? formatDate(s.ended_at).slice(11) : 'Em aberto'}</td>
+            <td style="font-family: 'JetBrains Mono', monospace; color: var(--primary);"><strong>${s.formatted_active_time}</strong></td>
+            <td><strong>${s.collected_count}</strong> canais</td>
+            <td>${s.average_rate.toFixed(1)}/h</td>
+            <td><span class="status-tag ${s.status.toLowerCase()}">${s.status}</span></td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error('Erro history:', err);
+      }
+    }
+
+    // 4. Channels Tab
+    async function loadChannelsData() {
+      try {
+        const res = await fetch('/api/channels/list');
+        const data = await res.json();
+        allChannels = data.channels || [];
+        renderChannelsTable(allChannels);
+      } catch (err) {
+        console.error('Erro canais:', err);
+      }
+    }
+
+    function renderChannelsTable(channels) {
+      const tbody = document.getElementById('channelsTableBody');
+      if (!channels || channels.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">Nenhum canal coletado.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = channels.map(ch => `
+        <tr>
+          <td>
+            <a href="${ch.channel_url}" target="_blank" style="color: inherit; text-decoration: none; font-weight: 700;">
+              ${ch.channel_name}
+            </a>
+            <div style="font-size: 12px; color: var(--primary); font-family: 'JetBrains Mono', monospace;">${ch.channel_handle || '-'}</div>
+          </td>
+          <td><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; background: rgba(255,255,255,0.06); padding: 3px 6px; border-radius: 4px;">${ch.channel_id}</span></td>
+          <td>👤 ${ch.first_collected_by ? ch.first_collected_by.name : 'Equipe'}</td>
+          <td>${ch.source} ${ch.search_term ? `("<em>${ch.search_term}</em>")` : ''}</td>
+          <td>${formatDate(ch.first_collected_at)}</td>
+        </tr>
+      `).join('');
+    }
+
+    document.getElementById('channelSearch').addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) { renderChannelsTable(allChannels); return; }
+      const filtered = allChannels.filter(c => 
+        (c.channel_name && c.channel_name.toLowerCase().includes(q)) ||
+        (c.channel_handle && c.channel_handle.toLowerCase().includes(q)) ||
+        (c.channel_id && c.channel_id.toLowerCase().includes(q)) ||
+        (c.first_collected_by && c.first_collected_by.name.toLowerCase().includes(q))
+      );
+      renderChannelsTable(filtered);
+    });
+
+    document.getElementById('btnExportCsv').addEventListener('click', () => {
+      if (!allChannels || allChannels.length === 0) { alert('Nenhum dado para exportar.'); return; }
+      const headers = ['Channel ID', 'Nome', 'Handle', 'URL', 'Coletado Por', 'Origem', 'Data'];
+      const rows = allChannels.map(ch => [
+        `"${ch.channel_id}"`, `"${ch.channel_name}"`, `"${ch.channel_handle || ''}"`, `"${ch.channel_url}"`,
+        `"${ch.first_collected_by ? ch.first_collected_by.name : ''}"`, `"${ch.source}"`, `"${ch.first_collected_at}"`
+      ]);
+      const csv = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const link = document.createElement('a');
+      link.href = encodeURI(csv);
+      link.download = `prospector_canais_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+
+    // 5. Settings Tab
+    async function loadSettingsData() {
+      try {
+        const res = await fetch('/api/work-sessions/settings');
+        const data = await res.json();
+        document.getElementById('cfgDefaultTarget').value = data.default_daily_target || 160;
+      } catch (err) {
+        console.error('Erro settings:', err);
+      }
+    }
+
+    document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const val = parseInt(document.getElementById('cfgDefaultTarget').value, 10);
+      try {
+        await fetch('/api/work-sessions/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ default_daily_target: val })
+        });
+        const fb = document.getElementById('cfgFeedback');
+        fb.style.display = 'block';
+        setTimeout(() => fb.style.display = 'none', 3000);
+      } catch (err) {
+        alert('Erro ao salvar configurações.');
+      }
+    });
+
+    function refreshCurrentTab() {
+      if (activeTab === 'overview') loadOverviewData();
+      else if (activeTab === 'ranking') loadRankingData();
+      else if (activeTab === 'history') loadHistoryData();
+      else if (activeTab === 'channels') loadChannelsData();
+      else if (activeTab === 'settings') loadSettingsData();
+    }
+
+    // Auto-refresh every 10s
+    refreshCurrentTab();
+    setInterval(refreshCurrentTab, 10000);
+  </script>
+</body>
+</html>

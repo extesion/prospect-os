@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Prospector</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-icon">⚡</span>
+        <span class="brand-title">YOUTUBE PROSPECTOR</span>
+      </div>
+      <div id="connectionPill" class="status-pill status-offline">
+        <span class="status-dot"></span>
+        <span class="status-text">Verificando...</span>
+      </div>
+    </header>
+
+    <!-- Error Banner -->
+    <div id="errorBanner" class="error-banner" style="display: none;"></div>
+
+    <!-- View: Login Form -->
+    <div id="loginView" class="view-section" style="display: none;">
+      <div class="login-intro">
+        <p>Faça login para iniciar a coleta sincronizada com a equipe.</p>
+      </div>
+      <form id="loginForm" class="form-layout">
+        <div class="form-group">
+          <label for="loginEmail">E-mail</label>
+          <input type="email" id="loginEmail" placeholder="seu.email@empresa.com" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Senha</label>
+          <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <div class="form-group config-group">
+          <div class="config-toggle" id="toggleApiUrl">
+            <span>⚙ Configurar URL da API</span>
+          </div>
+          <div id="apiUrlContainer" style="display: none; margin-top: 6px;">
+            <input type="text" id="customApiUrl" placeholder="http://localhost:8000/api">
+          </div>
+        </div>
+        <button type="submit" id="btnLogin" class="btn-primary">
+          ENTRAR
+        </button>
+      </form>
+    </div>
+
+    <!-- View: Dashboard / Active Prospector -->
+    <div id="mainView" class="view-section" style="display: none;">
+      <!-- User profile bar -->
+      <div class="user-bar">
+        <div class="user-info">
+          <span class="user-label">Usuário:</span>
+          <strong id="userName">Carregando...</strong>
+        </div>
+        <button id="btnLogout" class="btn-link" title="Sair da conta">Sair</button>
+      </div>
+
+      <!-- WORK SESSION PRODUCTIVITY CARD -->
+      <div class="card session-card" id="sessionCard">
+        <!-- Idle State (Coleta Parada) -->
+        <div id="sessionIdleView">
+          <div class="session-header">
+            <span class="card-title">SESSÃO DE TRABALHO</span>
+            <span class="session-tag idle">○ COLETA PARADA</span>
+          </div>
+          <p class="session-desc">Inicie sua sessão para contabilizar horas de prospecção e acompanhar seu ritmo.</p>
+          <button id="btnOpenStartModal" class="btn-start-session">
+            🚀 INICIAR COLETA
+          </button>
+        </div>
+
+        <!-- Active / Paused State -->
+        <div id="sessionActiveView" style="display: none;">
+          <div class="session-header">
+            <div>
+              <span class="card-title">SESSÃO DE TRABALHO</span>
+              <div class="cycle-name-tag" id="sessionCycleName">Ciclo 8 Horas</div>
+            </div>
+            <span id="sessionStatusTag" class="session-tag active">● ATIVO</span>
+          </div>
+
+          <!-- Live Timer -->
+          <div class="timer-display">
+            <span class="timer-digits" id="sessionTimer">00:00:00</span>
+            <span class="timer-sub" id="sessionTimerSub">Tempo efetivamente trabalhado</span>
+          </div>
+
+          <!-- Production Progress -->
+          <div class="production-progress">
+            <div class="prod-row">
+              <span>Produção:</span>
+              <strong id="sessionProdCount">0 / 160 canais</strong>
+              <span class="prod-pct" id="sessionProdPct">0%</span>
+            </div>
+            <div class="prod-bar-bg">
+              <div class="prod-bar-fill" id="sessionProdBar" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <!-- Rhythm Rates Grid -->
+          <div class="rhythm-grid">
+            <div class="rhythm-box">
+              <span class="r-num" id="sessionCurrentRate">0.0/h</span>
+              <span class="r-lbl">Ritmo Atual</span>
+            </div>
+            <div class="rhythm-box">
+              <span class="r-num" id="sessionTargetRate">20.0/h</span>
+              <span class="r-lbl">Meta/Hora</span>
+            </div>
+            <div class="rhythm-box">
+              <span class="r-num highlight" id="sessionRequiredRate">20.0/h</span>
+              <span class="r-lbl">Ritmo Necessário</span>
+            </div>
+          </div>
+
+          <!-- Target Status Pill -->
+          <div class="situation-row">
+            <span id="sessionSituationPill" class="situation-pill in-target">✓ Dentro da meta</span>
+            <span class="proj-text" id="sessionProjText">Prev: aprox. 8h</span>
+          </div>
+
+          <!-- Controls: Pause/Resume & Finish -->
+          <div class="session-actions">
+            <button id="btnPauseResume" class="btn-pause">⏸ PAUSAR</button>
+            <button id="btnOpenFinishModal" class="btn-finish">⏹ FINALIZAR</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Current Page Stats -->
+      <div class="card page-card">
+        <div class="card-title">PÁGINA ATUAL (YOUTUBE)</div>
+        <div class="stats-row">
+          <div class="stat-box">
+            <span class="stat-num" id="pageFoundCount">0</span>
+            <span class="stat-desc">Encontrados</span>
+          </div>
+          <div class="stat-box stat-new">
+            <span class="stat-num" id="pageNewCount">0</span>
+            <span class="stat-desc">Novos</span>
+          </div>
+          <div class="stat-box stat-exists">
+            <span class="stat-num" id="pageExistsCount">0</span>
+            <span class="stat-desc">Já coletados</span>
+          </div>
+        </div>
+        <button id="btnBulkCollect" class="btn-action" disabled>
+          ⚡ COLETAR NOVOS
+        </button>
+      </div>
+
+      <!-- Today metrics -->
+      <div class="card today-card">
+        <div class="card-title">HOJE</div>
+        <div class="metrics-list">
+          <div class="metric-line">
+            <span>Você coletou:</span>
+            <strong id="userTodayCount">0 canais</strong>
+          </div>
+          <div class="metric-line">
+            <span>Equipe:</span>
+            <strong id="teamTodayCount">0 canais</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Action -->
+      <div class="dashboard-footer">
+        <button id="btnOpenDashboard" class="btn-secondary">
+          🔗 ABRIR DASHBOARD & RANKING
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: INICIAR SESSÃO / ESCOLHA DO CICLO -->
+  <div id="startModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>INICIAR COLETA</h3>
+        <button id="btnCloseStartModal" class="btn-close-modal">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Meta de Hoje:</label>
+          <input type="number" id="startTargetInput" value="160" min="1" max="5000">
+        </div>
+
+        <label style="font-size: 11px; font-weight: 700; color: #8e8e98; text-transform: uppercase; margin-top: 4px; display: block;">
+          Escolha seu ciclo:
+        </label>
+        <div class="cycle-buttons">
+          <button type="button" class="cycle-opt-btn active" data-cycle="8H" data-hours="8">
+            <div class="cycle-title">Ciclo 8 Horas</div>
+            <div class="cycle-desc">Meta: 20,0 canais/h</div>
+          </button>
+          <button type="button" class="cycle-opt-btn" data-cycle="6H" data-hours="6">
+            <div class="cycle-title">Ciclo 6 Horas</div>
+            <div class="cycle-desc">Meta: 26,7 canais/h</div>
+          </button>
+          <button type="button" class="cycle-opt-btn" data-cycle="CUSTOM" data-hours="custom">
+            <div class="cycle-title">Personalizado</div>
+            <div class="cycle-desc">Configurar horas</div>
+          </button>
+        </div>
+
+        <!-- Custom Hours Input (Hidden by default) -->
+        <div id="customHoursContainer" style="display: none; margin-top: 8px;">
+          <div class="form-group">
+            <label>Horas do Ciclo:</label>
+            <input type="number" id="startCustomHours" value="7" min="1" max="24" step="0.5">
+          </div>
+        </div>
+
+        <!-- Pace Preview -->
+        <div class="pace-preview-box">
+          <span>Ritmo Necessário Inicial:</span>
+          <strong id="startPacePreview">20,0 canais/h</strong>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="btnConfirmStart" class="btn-primary" style="width: 100%;">
+          COMEÇAR
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: FINALIZAR SESSÃO -->
+  <div id="finishModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>FINALIZAR COLETA</h3>
+        <button id="btnCloseFinishModal" class="btn-close-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 13px; color: #d1d5db; margin-bottom: 12px;">Deseja finalizar sua sessão de coleta de hoje?</p>
+        <div class="summary-box">
+          <div class="summary-line">
+            <span>Tempo trabalhado:</span>
+            <strong id="finishTimeSummary">00h 00m</strong>
+          </div>
+          <div class="summary-line">
+            <span>Canais coletados:</span>
+            <strong id="finishCountSummary">0 canais</strong>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; gap: 8px;">
+        <button id="btnCancelFinish" class="btn-secondary" style="flex: 1;">CANCELAR</button>
+        <button id="btnConfirmFinish" class="btn-primary" style="flex: 1; background: #e74c3c;">FINALIZAR</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../cache.js"></script>
+  <script src="../api.js"></script>
+  <script src="../auth.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
