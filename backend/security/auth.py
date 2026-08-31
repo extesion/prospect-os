@@ -59,4 +59,15 @@ def get_current_user(
     user = db.query(User).filter(User.id == int(user_id)).first()
     if user is None or not user.active:
         raise credentials_exception
+        
     return user
+
+def get_current_admin_user(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    if current_user.role != "ADMIN":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso restrito a administradores (403 Forbidden)."
+        )
+    return current_user

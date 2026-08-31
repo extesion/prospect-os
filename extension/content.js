@@ -457,7 +457,7 @@
           newCount,
           existsCount
         });
-      } else if (request.action === "COLLECT_ALL_NEW_PAGE") {
+      } else if (request.action === "COLLECT_ALL_NEW_PAGE" || request.action === "TRIGGER_COLLECT_ALL_NEW") {
         handleCollectAllNew().then(() => {
           sendResponse({ success: true });
         });

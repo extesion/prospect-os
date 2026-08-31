@@ -1,6 +1,6 @@
 import re
 import unicodedata
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from qualifier.config.qualification_config import qualification_config
 
 def strip_accents(text: str) -> str:
@@ -9,15 +9,17 @@ def strip_accents(text: str) -> str:
 class KeywordAnalyzer:
 
     @staticmethod
-    def extract_keywords(
+    def extract_keywords_with_sources(
         texts_with_sources: List[Dict[str, str]],
         custom_keywords: Optional[List[str]] = None
-    ) -> List[Dict[str, Any]]:
+    ) -> Tuple[List[Dict[str, Any]], Dict[str, List[str]]]:
         """
-        Scans texts for commercial keywords and returns matches with small surrounding context.
+        Scans texts specifically for commercial keywords, extracts occurrence contexts,
+        and builds an exact mapping of keyword -> [sources_found].
         """
         keywords_to_check = custom_keywords or qualification_config.COMMERCIAL_KEYWORDS
         found: List[Dict[str, Any]] = []
+        sources_map: Dict[str, List[str]] = {}
         seen_pairs = set()
 
         for item in texts_with_sources:
@@ -30,11 +32,16 @@ class KeywordAnalyzer:
 
             for kw in keywords_to_check:
                 kw_norm = strip_accents(kw.lower())
-                # Use word boundary where appropriate
                 pattern = r'\b' + re.escape(kw_norm) + r'\b'
                 matches = list(re.finditer(pattern, normalized_text))
 
                 if matches:
+                    # Register source mapping
+                    if kw not in sources_map:
+                        sources_map[kw] = []
+                    if source not in sources_map[kw]:
+                        sources_map[kw].append(source)
+
                     pair_key = (kw.lower(), source)
                     if pair_key in seen_pairs:
                         continue
@@ -56,4 +63,12 @@ class KeywordAnalyzer:
                         "context": context_snippet
                     })
 
+        return found, sources_map
+
+    @staticmethod
+    def extract_keywords(
+        texts_with_sources: List[Dict[str, str]],
+        custom_keywords: Optional[List[str]] = None
+    ) -> List[Dict[str, Any]]:
+        found, _ = KeywordAnalyzer.extract_keywords_with_sources(texts_with_sources, custom_keywords)
         return found

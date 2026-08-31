@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube APIs & Quota — YouTube Prospector</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fffbeb',
+              500: '#f59e0b',
+              600: '#d97706',
+            },
+            dark: {
+              bg: '#0b0f17',
+              card: '#121826',
+              border: '#1f293d',
+              hover: '#1b2438'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0b0f17;
+      color: #e2e8f0;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+  <!-- ===================================================================== -->
+  <!-- TOP NAVBAR                                                            -->
+  <!-- ===================================================================== -->
+  <header class="bg-dark-card border-b border-dark-border sticky top-0 z-40 px-6 py-3.5 shadow-md">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      
+      <!-- Logo & Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center shadow-lg shadow-rose-500/20 text-white font-black text-xl">
+          <i class="fa-brands fa-youtube"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-lg text-white tracking-tight">YOUTUBE DATA APIs & QUOTAS</h1>
+            <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20">ADMIN</span>
+          </div>
+          <p class="text-xs text-slate-400">Gerenciamento multi-chaves, auditoria de consumo e quotas estimadas</p>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="flex items-center gap-2 text-xs font-semibold">
+        <a href="/dashboard" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="/qualifier" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-bolt text-amber-400"></i>
+          <span>Qualificador</span>
+        </a>
+        <a href="/users" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-users text-indigo-400"></i>
+          <span>Usuários</span>
+        </a>
+        <button onclick="openCreateApiModal()" class="ml-2 px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold transition flex items-center gap-1.5 shadow-lg shadow-rose-600/20">
+          <i class="fa-solid fa-plus"></i>
+          <span>Adicionar API</span>
+        </button>
+      </nav>
+
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- MAIN CONTAINER                                                        -->
+  <!-- ===================================================================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+
+    <!-- QUOTA OVERVIEW CONSOLIDATED -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div class="bg-dark-card border border-dark-border p-4 rounded-xl shadow-sm">
+        <span class="text-xs font-semibold text-slate-400 uppercase">Uso Total Hoje</span>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span id="stat-total-usage" class="text-2xl font-bold text-white">0</span>
+          <span class="text-[10px] text-slate-500 font-mono">unidades</span>
+        </div>
+        <span class="text-[10px] text-slate-500 block mt-1">* Uso estimado pelo sistema</span>
+      </div>
+
+      <div class="bg-dark-card border border-dark-border p-4 rounded-xl shadow-sm">
+        <span class="text-xs font-semibold text-emerald-400 uppercase">Disponível Ativo</span>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span id="stat-total-avail" class="text-2xl font-bold text-emerald-400">0</span>
+          <span class="text-[10px] text-slate-500 font-mono">unidades</span>
+        </div>
+        <span class="text-[10px] text-slate-500 block mt-1">Limite total: <strong id="stat-total-limit" class="text-slate-400">0</strong></span>
+      </div>
+
+      <div class="bg-dark-card border border-dark-border p-4 rounded-xl shadow-sm">
+        <span class="text-xs font-semibold text-indigo-400 uppercase">APIs Ativas</span>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span id="stat-active-apis" class="text-2xl font-bold text-indigo-400">0</span>
+          <i class="fa-solid fa-circle-check text-indigo-400 text-sm"></i>
+        </div>
+        <span class="text-[10px] text-slate-500 block mt-1">Rotação automática pronta</span>
+      </div>
+
+      <div class="bg-dark-card border border-dark-border p-4 rounded-xl shadow-sm">
+        <span class="text-xs font-semibold text-slate-400 uppercase">Ciclo de Reset</span>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span class="text-base font-bold text-slate-200">00:00 UTC</span>
+          <i class="fa-regular fa-clock text-slate-500 text-sm"></i>
+        </div>
+        <span class="text-[10px] text-slate-500 block mt-1">Reset diário às 21:00 BRT</span>
+      </div>
+    </div>
+
+    <!-- API CARDS / LIST -->
+    <div class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-sm text-white flex items-center gap-2">
+          <i class="fa-solid fa-server text-rose-500"></i>
+          <span>Projetos & Chaves da API</span>
+        </h3>
+        <button onclick="loadApis()" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" title="Recarregar">
+          <i class="fa-solid fa-arrows-rotate text-xs"></i>
+        </button>
+      </div>
+
+      <div id="apis-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Rendered dynamically -->
+        <div class="col-span-2 text-center py-12 text-slate-500 bg-dark-card border border-dark-border rounded-xl">
+          <i class="fa-solid fa-circle-notch fa-spin text-rose-500 mb-2 text-xl"></i>
+          <p>Carregando configurações de API...</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: ADICIONAR / EDITAR API CONFIG                                 -->
+  <!-- ===================================================================== -->
+  <div id="api-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-dark-card border border-dark-border w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-scale-up">
+      <div class="px-6 py-4 bg-slate-900 border-b border-dark-border flex items-center justify-between">
+        <h3 id="modal-title" class="font-bold text-white text-sm flex items-center gap-2">
+          <i class="fa-brands fa-youtube text-rose-500"></i>
+          <span>Nova Chave da API</span>
+        </h3>
+        <button onclick="closeApiModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="api-form" onsubmit="handleSaveApi(event)" class="p-6 space-y-4 text-xs">
+        <input type="hidden" id="form-api-id">
+
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Nome do Projeto</label>
+          <input type="text" id="form-name" required placeholder="Ex: Projeto Principal / GCP 02" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-rose-500">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">YouTube Data API v3 Key</label>
+          <input type="password" id="form-api-key" placeholder="AIzaSy..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-rose-500 font-mono">
+          <span class="text-[10px] text-slate-500 mt-0.5 block">As chaves são salvas com segurança no backend e nunca expostas no navegador.</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">Limite Diário (Unidades)</label>
+            <input type="number" id="form-daily-limit" value="10000" min="100" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-rose-500">
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">Status</label>
+            <select id="form-status" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-rose-500">
+              <option value="ACTIVE">Ativa</option>
+              <option value="INACTIVE">Inativa</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-800 flex justify-end gap-2">
+          <button type="button" onclick="closeApiModal()" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 font-semibold transition">Cancelar</button>
+          <button type="submit" id="btn-save-api" class="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold transition shadow-lg shadow-rose-600/20">Salvar API</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
+
+  <!-- ===================================================================== -->
+  <!-- JAVASCRIPT CONTROLLER                                                 -->
+  <!-- ===================================================================== -->
+  <script>
+    let apisData = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadApis();
+    });
+
+    async function loadApis() {
+      const container = document.getElementById('apis-container');
+      container.innerHTML = `
+        <div class="col-span-2 text-center py-12 text-slate-500 bg-dark-card border border-dark-border rounded-xl">
+          <i class="fa-solid fa-circle-notch fa-spin text-rose-500 mb-2 text-xl"></i>
+          <p>Carregando configurações de API...</p>
+        </div>
+      `;
+
+      try {
+        const token = localStorage.getItem('token') || '';
+        const res = await fetch('/api/youtube-apis', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          container.innerHTML = `
+            <div class="col-span-2 text-center py-12 text-rose-400 bg-dark-card border border-dark-border rounded-xl">
+              <i class="fa-solid fa-shield-halved text-2xl mb-2 block"></i>
+              Acesso negado (403 Forbidden). Apenas administradores podem gerenciar chaves de API.
+            </div>
+          `;
+          return;
+        }
+
+        if (!res.ok) throw new Error('Erro ao carregar dados de APIs');
+        const data = await res.json();
+        
+        apisData = data.apis || [];
+        renderSummary(data.summary);
+        renderApisList(apisData);
+
+      } catch (err) {
+        container.innerHTML = `
+          <div class="col-span-2 text-center py-8 text-rose-400 bg-dark-card border border-dark-border rounded-xl">
+            <i class="fa-solid fa-triangle-exclamation mb-1 text-lg"></i>
+            <p>${err.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    function renderSummary(summary) {
+      document.getElementById('stat-total-usage').textContent = summary.total_usage_today.toLocaleString('pt-BR');
+      document.getElementById('stat-total-avail').textContent = summary.total_available_active.toLocaleString('pt-BR');
+      document.getElementById('stat-total-limit').textContent = summary.total_limit_active.toLocaleString('pt-BR');
+      document.getElementById('stat-active-apis').textContent = summary.active_apis;
+    }
+
+    function renderApisList(apis) {
+      const container = document.getElementById('apis-container');
+      if (!apis || apis.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-2 text-center py-12 text-slate-500 bg-dark-card border border-dark-border rounded-xl">
+            Nenhuma chave de API configurada. Clique em "Adicionar API" para cadastrar.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = apis.map(api => {
+        let barColor = 'from-emerald-500 to-emerald-400';
+        let badgeColor = 'bg-emerald-950 text-emerald-400 border-emerald-800';
+
+        if (api.status_text === 'ATENÇÃO') {
+          barColor = 'from-amber-500 to-amber-400';
+          badgeColor = 'bg-amber-950 text-amber-400 border-amber-800';
+        } else if (api.status_text === 'CRÍTICO') {
+          barColor = 'from-orange-500 to-orange-400';
+          badgeColor = 'bg-orange-950 text-orange-400 border-orange-800';
+        } else if (api.status_text === 'LIMITE ATINGIDO' || api.status !== 'ACTIVE') {
+          barColor = 'from-rose-500 to-rose-400';
+          badgeColor = 'bg-rose-950 text-rose-400 border-rose-800';
+        }
+
+        const isActive = api.status === 'ACTIVE';
+
+        return `
+          <div class="bg-dark-card border border-dark-border p-5 rounded-xl shadow-sm space-y-4">
+            
+            <!-- Header -->
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h4 class="font-bold text-white text-sm">${api.name}</h4>
+                <span class="font-mono text-xs text-slate-400">${api.masked_key}</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="px-2.5 py-0.5 text-[10px] font-black rounded-md border ${badgeColor}">
+                  ${api.status_text}
+                </span>
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded-md ${isActive ? 'bg-slate-800 text-emerald-400' : 'bg-slate-800 text-rose-400'} border border-slate-700">
+                  ${isActive ? 'ATIVO' : 'INATIVO'}
+                </span>
+              </div>
+            </div>
+
+            <!-- Progress & Numbers -->
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between text-xs font-semibold">
+                <span class="text-slate-300">${api.usage_today.toLocaleString('pt-BR')} / ${api.daily_limit.toLocaleString('pt-BR')} unidades</span>
+                <span class="font-mono font-bold text-white">${api.percentage}%</span>
+              </div>
+
+              <!-- Bar -->
+              <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-800">
+                <div class="bg-gradient-to-r ${barColor} h-2.5 rounded-full transition-all duration-500" style="width: ${Math.min(100, api.percentage)}%"></div>
+              </div>
+
+              <div class="flex items-center justify-between text-[10px] text-slate-500 pt-0.5">
+                <span>Disponível estimado: <strong>${api.available_today.toLocaleString('pt-BR')}</strong></span>
+                <span>Último uso: ${api.last_used_at || 'Nunca'}</span>
+              </div>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+              <span class="text-[10px] text-slate-500">Adicionado em: ${api.created_at || '—'}</span>
+
+              <div class="flex items-center gap-1.5">
+                <button onclick="openEditApiModal(${api.id})" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold transition" title="Editar Limite ou Nome">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button onclick="toggleApiStatus(${api.id}, '${api.status}')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 ${isActive ? 'text-amber-400' : 'text-emerald-400'} border border-slate-700 font-semibold transition" title="${isActive ? 'Pausar' : 'Ativar'}">
+                  <i class="fa-solid ${isActive ? 'fa-pause' : 'fa-play'}"></i>
+                </button>
+                <button onclick="deleteApiConfig(${api.id}, '${api.name}')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-rose-950 text-rose-400 border border-slate-700 font-semibold transition" title="Excluir">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openCreateApiModal() {
+      document.getElementById('form-api-id').value = '';
+      document.getElementById('modal-title').innerHTML = '<i class="fa-brands fa-youtube text-rose-500"></i><span>Nova Chave da API</span>';
+      document.getElementById('form-name').value = '';
+      document.getElementById('form-api-key').value = '';
+      document.getElementById('form-api-key').required = true;
+      document.getElementById('form-daily-limit').value = '10000';
+      document.getElementById('form-status').value = 'ACTIVE';
+      document.getElementById('api-modal').classList.remove('hidden');
+    }
+
+    function openEditApiModal(apiId) {
+      const api = apisData.find(x => x.id === apiId);
+      if (!api) return;
+
+      document.getElementById('form-api-id').value = api.id;
+      document.getElementById('modal-title').innerHTML = '<i class="fa-solid fa-pen-to-square text-rose-500"></i><span>Editar Configuração de API</span>';
+      document.getElementById('form-name').value = api.name;
+      document.getElementById('form-api-key').value = '';
+      document.getElementById('form-api-key').required = false;
+      document.getElementById('form-daily-limit').value = api.daily_limit;
+      document.getElementById('form-status').value = api.status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE';
+      document.getElementById('api-modal').classList.remove('hidden');
+    }
+
+    function closeApiModal() {
+      document.getElementById('api-modal').classList.add('hidden');
+    }
+
+    async function handleSaveApi(e) {
+      e.preventDefault();
+      const apiId = document.getElementById('form-api-id').value;
+      const name = document.getElementById('form-name').value.trim();
+      const apiKey = document.getElementById('form-api-key').value.trim();
+      const dailyLimit = parseInt(document.getElementById('form-daily-limit').value);
+      const status = document.getElementById('form-status').value;
+
+      const token = localStorage.getItem('token') || '';
+
+      try {
+        if (!apiId) {
+          if (!apiKey) throw new Error('A chave de API é obrigatória.');
+          const res = await fetch('/api/youtube-apis', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ name, api_key: apiKey, daily_limit: dailyLimit, status })
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Erro ao cadastrar API');
+          }
+          showToast('Configuração de API cadastrada com sucesso!', 'success');
+        } else {
+          const bodyData = { name, daily_limit: dailyLimit, status };
+          if (apiKey) bodyData.api_key = apiKey;
+
+          const res = await fetch(`/api/youtube-apis/${apiId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(bodyData)
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Erro ao atualizar API');
+          }
+          showToast('Configuração atualizada com sucesso!', 'success');
+        }
+
+        closeApiModal();
+        loadApis();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function toggleApiStatus(apiId, currentStatus) {
+      const token = localStorage.getItem('token') || '';
+      const newStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+      try {
+        const res = await fetch(`/api/youtube-apis/${apiId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ status: newStatus })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Erro ao alterar status');
+        }
+        showToast(`API agora está ${newStatus === 'ACTIVE' ? 'ATIVA' : 'INATIVA'}!`, 'success');
+        loadApis();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function deleteApiConfig(apiId, name) {
+      if (!confirm(`Tem certeza que deseja remover a configuração de API "${name}"?`)) return;
+      const token = localStorage.getItem('token') || '';
+      try {
+        const res = await fetch(`/api/youtube-apis/${apiId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Erro ao remover API');
+        }
+        showToast('Configuração removida com sucesso!', 'success');
+        loadApis();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      let bg = 'bg-slate-800 border-slate-700 text-slate-200';
+      if (type === 'success') bg = 'bg-emerald-950 border-emerald-700 text-emerald-300';
+      if (type === 'error') bg = 'bg-rose-950 border-rose-700 text-rose-300';
+
+      toast.className = `flex items-center gap-2 px-4 py-2.5 rounded-xl border shadow-xl text-xs font-semibold transition-all duration-300 ${bg}`;
+      toast.innerHTML = `
+        <i class="fa-solid ${type === 'success' ? 'fa-circle-check' : (type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info')}"></i>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+  </script>
+
+</body>
+</html>

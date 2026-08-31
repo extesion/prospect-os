@@ -27,6 +27,9 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+from backend.routes import auth, channels, stats, work_sessions, users, youtube_apis
+from qualifier.routes.qualification import router as qualification_router
+
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
@@ -42,6 +45,8 @@ app.include_router(channels.router, prefix=settings.API_V1_STR)
 app.include_router(stats.router, prefix=settings.API_V1_STR)
 app.include_router(work_sessions.router, prefix=settings.API_V1_STR)
 app.include_router(qualification_router, prefix=settings.API_V1_STR)
+app.include_router(users.router, prefix=settings.API_V1_STR)
+app.include_router(youtube_apis.router, prefix=settings.API_V1_STR)
 
 # Also expose without /api prefix for convenience
 app.include_router(auth.router)
@@ -49,6 +54,8 @@ app.include_router(channels.router)
 app.include_router(stats.router)
 app.include_router(work_sessions.router)
 app.include_router(qualification_router)
+app.include_router(users.router)
+app.include_router(youtube_apis.router)
 
 
 @app.get("/health", tags=["Health"])
@@ -88,6 +95,22 @@ def get_qualifier():
     if os.path.exists(template_path):
         return FileResponse(template_path)
     return {"message": "Template qualifier.html não encontrado."}
+
+@app.get("/users", tags=["Users"])
+def get_users_page():
+    """Retorna a Interface Web de Gestão de Usuários (ADMIN)."""
+    template_path = os.path.join(os.path.dirname(__file__), "templates", "users.html")
+    if os.path.exists(template_path):
+        return FileResponse(template_path)
+    return {"message": "Template users.html não encontrado."}
+
+@app.get("/youtube-apis", tags=["YouTube APIs"])
+def get_youtube_apis_page():
+    """Retorna a Interface Web de Gestão de YouTube Data APIs e Quotas (ADMIN)."""
+    template_path = os.path.join(os.path.dirname(__file__), "templates", "youtube_apis.html")
+    if os.path.exists(template_path):
+        return FileResponse(template_path)
+    return {"message": "Template youtube_apis.html não encontrado."}
 
 @app.get("/", tags=["Root"])
 def root():

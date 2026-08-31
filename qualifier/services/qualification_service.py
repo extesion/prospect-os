@@ -117,7 +117,8 @@ class QualificationService:
 
         for idx, vid in enumerate(sorted_videos, 1):
             vid_desc = vid.get("description", "")
-            texts_with_sources.append({"text": vid_desc, "source": f"video_{idx}"})
+            source_name = "last_video_description" if idx == 1 else f"video_description_{idx}"
+            texts_with_sources.append({"text": vid_desc, "source": source_name})
             for t in (vid.get("tags") or []):
                 all_tags.append(t)
 
@@ -131,7 +132,7 @@ class QualificationService:
         extracted_whatsapp = WhatsAppDetector.detect_whatsapp(texts_with_sources, extracted_links)
 
         # 5. Extract Keywords
-        keywords_found = KeywordAnalyzer.extract_keywords(texts_with_sources)
+        keywords_found, keywords_sources = KeywordAnalyzer.extract_keywords_with_sources(texts_with_sources)
 
         # 6. Detect Niche
         detected_niche, niche_confidence = NicheDetector.detect_niche(
@@ -152,11 +153,13 @@ class QualificationService:
         # 8. Activity Calculation
         days_since_last_video = None
         last_video_date = None
+        last_video_title = None
         estimated_frequency = None
         activity_status = "INACTIVE"
 
         if sorted_videos:
             most_recent_dt = parse_iso_datetime(sorted_videos[0].get("published_at"))
+            last_video_title = sorted_videos[0].get("title")
             if most_recent_dt:
                 last_video_date = most_recent_dt
                 delta = now - most_recent_dt
@@ -169,30 +172,24 @@ class QualificationService:
                 else:
                     activity_status = "INACTIVE"
 
-            # Estimate posting frequency across analyzed videos
             if len(sorted_videos) >= 2:
-                oldest_dt = parse_iso_datetime(sorted_videos[-1].get("published_at"))
-                if most_recent_dt and oldest_dt and most_recent_dt > oldest_dt:
-                    span_days = (most_recent_dt - oldest_dt).total_seconds() / 86400.0
-                    intervals = len(sorted_videos) - 1
-                    estimated_frequency = round(span_days / intervals, 1)
+                timestamps = [parse_iso_datetime(v.get("published_at")) for v in sorted_videos if v.get("published_at")]
+                valid_ts = [t for t in timestamps if t is not None]
+                if len(valid_ts) >= 2:
+                    diffs = [(valid_ts[i] - valid_ts[i+1]).total_seconds() / 86400.0 for i in range(len(valid_ts)-1)]
+                    positive_diffs = [d for d in diffs if d > 0]
+                    if positive_diffs:
+                        estimated_frequency = round(sum(positive_diffs) / len(positive_diffs), 1)
 
-        # Has external links flag
+        # 9. Compute Score
         has_any_external_links = bool(
             extracted_links.get("website") or
             extracted_links.get("instagram") or
-            extracted_links.get("tiktok") or
-            extracted_links.get("twitter") or
-            extracted_links.get("facebook") or
-            extracted_links.get("linkedin") or
-            extracted_links.get("whatsapp_link") or
-            extracted_links.get("link_aggregators") or
             extracted_links.get("sales_platforms") or
-            extracted_links.get("other_links")
+            extracted_links.get("link_aggregators")
         )
 
-        # 9. Scoring Engine
-        score_res = ScoringEngine.calculate_score(
+        score_res = ScoringEngine.compute_score(
             email=extracted_email.get("email"),
             website=extracted_links.get("website"),
             whatsapp=extracted_whatsapp.get("whatsapp"),
@@ -219,8 +216,12 @@ class QualificationService:
         qual_res.activity_status = activity_status
         qual_res.days_since_last_video = days_since_last_video
         qual_res.last_video_date = last_video_date
+        qual_res.last_video_title = last_video_title
         qual_res.estimated_posting_frequency_days = estimated_frequency
         
+        qual_res.channel_description_analyzed = True
+        qual_res.last_video_description_analyzed = len(sorted_videos) > 0
+
         qual_res.subscribers = channel_data.get("subscribers", 0)
         qual_res.total_views = channel_data.get("total_views", 0)
         qual_res.total_videos = channel_data.get("total_videos", 0)
@@ -243,6 +244,7 @@ class QualificationService:
         qual_res.sales_platforms = extracted_links.get("sales_platforms")
         qual_res.commercial_signals = commercial_signals
         qual_res.keywords_found = keywords_found
+        qual_res.keywords_sources = keywords_sources
         qual_res.score_breakdown = score_res["score_breakdown"]
         qual_res.qualification_reason = score_res["qualification_reason"]
         qual_res.qualification_version = qualification_config.QUALIFICATION_VERSION

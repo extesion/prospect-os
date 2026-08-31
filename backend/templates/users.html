@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestão de Usuários — YouTube Prospector</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fffbeb',
+              500: '#f59e0b',
+              600: '#d97706',
+            },
+            dark: {
+              bg: '#0b0f17',
+              card: '#121826',
+              border: '#1f293d',
+              hover: '#1b2438'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0b0f17;
+      color: #e2e8f0;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+  <!-- ===================================================================== -->
+  <!-- TOP NAVBAR                                                            -->
+  <!-- ===================================================================== -->
+  <header class="bg-dark-card border-b border-dark-border sticky top-0 z-40 px-6 py-3.5 shadow-md">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      
+      <!-- Logo & Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-black text-xl">
+          <i class="fa-solid fa-users-gear"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-lg text-white tracking-tight">GESTÃO DE USUÁRIOS</h1>
+            <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">ADMIN</span>
+          </div>
+          <p class="text-xs text-slate-400">Controle de membros, permissões (ADMIN/USER) e segurança</p>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="flex items-center gap-2 text-xs font-semibold">
+        <a href="/dashboard" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="/qualifier" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-bolt text-amber-400"></i>
+          <span>Qualificador</span>
+        </a>
+        <a href="/youtube-apis" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center gap-1.5">
+          <i class="fa-brands fa-youtube text-rose-400"></i>
+          <span>YouTube APIs</span>
+        </a>
+        <button onclick="openCreateUserModal()" class="ml-2 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/20">
+          <i class="fa-solid fa-user-plus"></i>
+          <span>Novo Usuário</span>
+        </button>
+      </nav>
+
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- MAIN CONTAINER                                                        -->
+  <!-- ===================================================================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+
+    <!-- STATS CARDS -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div class="bg-dark-card border border-dark-border p-4 rounded-xl shadow-sm">
+        <span class="text-xs font-semibold text-slate-400 uppercase">Total Usuários</span>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span id="stat-total" class="text-2xl font-bold text-white">0</span>
+          <i class="fa-solid fa-users text-slate-500 text-sm"></i>
+        </div>
+      </div>
+
+      <div class="bg-dark-card border border-dark-border p-4 rounded-xl shadow-sm">
+        <span class="text-xs font-semibold text-indigo-400 uppercase">Administradores</span>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span id="stat-admins" class="text-2xl font-bold text-indigo-400">0</span>
+          <i class="fa-solid fa-shield-halved text-indigo-400 text-sm"></i>
+        </div>
+      </div>
+
+      <div class="bg-dark-card border border-dark-border p-4 rounded-xl shadow-sm">
+        <span class="text-xs font-semibold text-emerald-400 uppercase">Ativos</span>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span id="stat-active" class="text-2xl font-bold text-emerald-400">0</span>
+          <i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+        </div>
+      </div>
+
+      <div class="bg-dark-card border border-dark-border p-4 rounded-xl shadow-sm">
+        <span class="text-xs font-semibold text-rose-400 uppercase">Desativados</span>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span id="stat-inactive" class="text-2xl font-bold text-rose-400">0</span>
+          <i class="fa-solid fa-ban text-rose-400 text-sm"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- USERS TABLE -->
+    <div class="bg-dark-card border border-dark-border rounded-xl shadow-sm overflow-hidden flex flex-col">
+      <div class="p-4 border-b border-dark-border flex items-center justify-between">
+        <h3 class="font-bold text-sm text-white flex items-center gap-2">
+          <i class="fa-solid fa-list text-slate-400"></i>
+          <span>Contas Cadastradas</span>
+        </h3>
+        <span class="text-xs text-slate-400">Gerencie níveis de acesso e senhas</span>
+      </div>
+
+      <div class="overflow-x-auto custom-scrollbar">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="bg-slate-900/90 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-dark-border">
+            <tr>
+              <th class="py-3.5 px-4">NOME</th>
+              <th class="py-3.5 px-4">E-MAIL / LOGIN</th>
+              <th class="py-3.5 px-4 text-center">NÍVEL</th>
+              <th class="py-3.5 px-4 text-center">STATUS</th>
+              <th class="py-3.5 px-4 text-center">CRIADO EM</th>
+              <th class="py-3.5 px-4 text-right">AÇÕES</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody" class="divide-y divide-slate-800/60 font-medium">
+            <tr>
+              <td colspan="6" class="text-center py-8 text-slate-500">
+                <i class="fa-solid fa-circle-notch fa-spin text-indigo-500 mb-2"></i>
+                <p>Carregando usuários...</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: CRIAR / EDITAR USUÁRIO                                         -->
+  <!-- ===================================================================== -->
+  <div id="user-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-dark-card border border-dark-border w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-scale-up">
+      <div class="px-6 py-4 bg-slate-900 border-b border-dark-border flex items-center justify-between">
+        <h3 id="modal-title" class="font-bold text-white text-sm flex items-center gap-2">
+          <i class="fa-solid fa-user-plus text-indigo-400"></i>
+          <span>Novo Usuário</span>
+        </h3>
+        <button onclick="closeUserModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="user-form" onsubmit="handleSaveUser(event)" class="p-6 space-y-4 text-xs">
+        <input type="hidden" id="form-user-id">
+
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Nome Completo</label>
+          <input type="text" id="form-name" required placeholder="Ex: Maria Silva" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">E-mail / Login</label>
+          <input type="email" id="form-email" required placeholder="Ex: maria@prospector.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <div id="password-field-container">
+          <label class="block font-bold text-slate-300 mb-1">Senha Inicial</label>
+          <input type="password" id="form-password" placeholder="Mínimo 4 caracteres" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">Nível de Acesso</label>
+            <select id="form-role" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500">
+              <option value="USER">USER (Operacional)</option>
+              <option value="ADMIN">ADMIN (Completo)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">Status</label>
+            <select id="form-active" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500">
+              <option value="true">ATIVO</option>
+              <option value="false">INATIVO</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-800 flex justify-end gap-2">
+          <button type="button" onclick="closeUserModal()" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 font-semibold transition">Cancelar</button>
+          <button type="submit" id="btn-save-user" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition shadow-lg shadow-indigo-600/20">Salvar Conta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
+
+  <!-- ===================================================================== -->
+  <!-- JAVASCRIPT CONTROLLER                                                 -->
+  <!-- ===================================================================== -->
+  <script>
+    let usersList = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadUsers();
+    });
+
+    async function loadUsers() {
+      const tbody = document.getElementById('users-tbody');
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="text-center py-8 text-slate-500">
+            <i class="fa-solid fa-circle-notch fa-spin text-indigo-500 mb-2"></i>
+            <p>Carregando usuários...</p>
+          </td>
+        </tr>
+      `;
+
+      try {
+        const token = localStorage.getItem('token') || '';
+        const res = await fetch('/api/users', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" class="text-center py-8 text-rose-400">
+                <i class="fa-solid fa-shield-halved text-2xl mb-2 block"></i>
+                Acesso negado (403 Forbidden). Faça login com uma conta de Administrador.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        if (!res.ok) throw new Error('Falha ao obter lista de usuários');
+        usersList = await res.json();
+        renderUsersTable(usersList);
+        updateStats(usersList);
+
+      } catch (err) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center py-8 text-rose-400">
+              <i class="fa-solid fa-triangle-exclamation mb-1 text-lg"></i>
+              <p>${err.message}</p>
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    function renderUsersTable(users) {
+      const tbody = document.getElementById('users-tbody');
+      if (!users || users.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-500">Nenhum usuário cadastrado.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = users.map(u => {
+        const roleBadge = u.role === 'ADMIN'
+          ? '<span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-indigo-950 text-indigo-300 border border-indigo-800">ADMIN</span>'
+          : '<span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-slate-800 text-slate-300 border border-slate-700">USER</span>';
+
+        const statusBadge = u.active
+          ? '<span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-950 text-emerald-400 border border-emerald-800">ATIVO</span>'
+          : '<span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-rose-950 text-rose-400 border border-rose-800">INATIVO</span>';
+
+        const createdDate = u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '—';
+
+        return `
+          <tr class="hover:bg-dark-hover transition">
+            <td class="py-3 px-4">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-slate-300 text-xs">
+                  ${u.name.charAt(0).toUpperCase()}
+                </div>
+                <span class="font-bold text-white">${u.name}</span>
+              </div>
+            </td>
+            <td class="py-3 px-4 font-mono text-slate-300">${u.email}</td>
+            <td class="py-3 px-4 text-center">${roleBadge}</td>
+            <td class="py-3 px-4 text-center">${statusBadge}</td>
+            <td class="py-3 px-4 text-center text-slate-400">${createdDate}</td>
+            <td class="py-3 px-4 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <button onclick="openEditUserModal(${u.id})" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition" title="Editar Usuário">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button onclick="promptResetPassword(${u.id}, '${u.name}')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xs font-semibold transition" title="Redefinir Senha">
+                  <i class="fa-solid fa-key"></i>
+                </button>
+                <button onclick="toggleUserStatus(${u.id}, ${u.active})" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 ${u.active ? 'text-rose-400' : 'text-emerald-400'} border border-slate-700 text-xs font-semibold transition" title="${u.active ? 'Desativar' : 'Ativar'}">
+                  <i class="fa-solid ${u.active ? 'fa-user-slash' : 'fa-user-check'}"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function updateStats(users) {
+      document.getElementById('stat-total').textContent = users.length;
+      document.getElementById('stat-admins').textContent = users.filter(u => u.role === 'ADMIN').length;
+      document.getElementById('stat-active').textContent = users.filter(u => u.active).length;
+      document.getElementById('stat-inactive').textContent = users.filter(u => !u.active).length;
+    }
+
+    function openCreateUserModal() {
+      document.getElementById('form-user-id').value = '';
+      document.getElementById('modal-title').innerHTML = '<i class="fa-solid fa-user-plus text-indigo-400"></i><span>Novo Usuário</span>';
+      document.getElementById('form-name').value = '';
+      document.getElementById('form-email').value = '';
+      document.getElementById('form-password').value = '';
+      document.getElementById('form-password').required = true;
+      document.getElementById('form-role').value = 'USER';
+      document.getElementById('form-active').value = 'true';
+      document.getElementById('user-modal').classList.remove('hidden');
+    }
+
+    function openEditUserModal(userId) {
+      const u = usersList.find(x => x.id === userId);
+      if (!u) return;
+
+      document.getElementById('form-user-id').value = u.id;
+      document.getElementById('modal-title').innerHTML = '<i class="fa-solid fa-pen-to-square text-indigo-400"></i><span>Editar Usuário</span>';
+      document.getElementById('form-name').value = u.name;
+      document.getElementById('form-email').value = u.email;
+      document.getElementById('form-password').value = '';
+      document.getElementById('form-password').required = false;
+      document.getElementById('form-role').value = u.role || 'USER';
+      document.getElementById('form-active').value = u.active ? 'true' : 'false';
+      document.getElementById('user-modal').classList.remove('hidden');
+    }
+
+    function closeUserModal() {
+      document.getElementById('user-modal').classList.add('hidden');
+    }
+
+    async function handleSaveUser(e) {
+      e.preventDefault();
+      const userId = document.getElementById('form-user-id').value;
+      const name = document.getElementById('form-name').value.trim();
+      const email = document.getElementById('form-email').value.trim();
+      const password = document.getElementById('form-password').value.trim();
+      const role = document.getElementById('form-role').value;
+      const active = document.getElementById('form-active').value === 'true';
+
+      const token = localStorage.getItem('token') || '';
+
+      try {
+        if (!userId) {
+          // CREATE
+          if (!password) throw new Error('A senha inicial é obrigatória');
+          const res = await fetch('/api/users', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ name, email, password, role, active })
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Erro ao criar usuário');
+          }
+          showToast('Usuário criado com sucesso!', 'success');
+        } else {
+          // EDIT
+          const bodyData = { name, email, role, active };
+          if (password) bodyData.password = password;
+
+          const res = await fetch(`/api/users/${userId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(bodyData)
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Erro ao atualizar usuário');
+          }
+          showToast('Usuário atualizado com sucesso!', 'success');
+        }
+
+        closeUserModal();
+        loadUsers();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function promptResetPassword(userId, name) {
+      const newPassword = prompt(`Digite a nova senha para ${name}:`);
+      if (!newPassword || !newPassword.trim()) return;
+
+      const token = localStorage.getItem('token') || '';
+      try {
+        const res = await fetch(`/api/users/${userId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ password: newPassword.trim() })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Erro ao redefinir senha');
+        }
+        showToast(`Senha de ${name} redefinida com sucesso!`, 'success');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function toggleUserStatus(userId, currentActive) {
+      const token = localStorage.getItem('token') || '';
+      try {
+        const res = await fetch(`/api/users/${userId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ active: !currentActive })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Erro ao alternar status');
+        }
+        showToast(`Status atualizado para ${!currentActive ? 'ATIVO' : 'INATIVO'}!`, 'success');
+        loadUsers();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      let bg = 'bg-slate-800 border-slate-700 text-slate-200';
+      if (type === 'success') bg = 'bg-emerald-950 border-emerald-700 text-emerald-300';
+      if (type === 'error') bg = 'bg-rose-950 border-rose-700 text-rose-300';
+
+      toast.className = `flex items-center gap-2 px-4 py-2.5 rounded-xl border shadow-xl text-xs font-semibold transition-all duration-300 ${bg}`;
+      toast.innerHTML = `
+        <i class="fa-solid ${type === 'success' ? 'fa-circle-check' : (type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info')}"></i>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+  </script>
+
+</body>
+</html>

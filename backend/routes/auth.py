@@ -28,7 +28,7 @@ def login(login_data: UserLogin, db: Session = Depends(get_db)):
 
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": str(user.id), "email": user.email, "name": user.name},
+        data={"sub": str(user.id), "email": user.email, "name": user.name, "role": user.role or "USER"},
         expires_delta=access_token_expires
     )
 
@@ -56,6 +56,7 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
         name=user_data.name.strip(),
         email=user_data.email.lower().strip(),
         password_hash=get_password_hash(user_data.password),
+        role=(user_data.role or "USER").upper(),
         active=True
     )
     db.add(new_user)

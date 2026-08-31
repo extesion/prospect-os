@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from sqlalchemy import (
-    Column, Integer, String, BigInteger, DateTime, Float, Text, JSON, Index, ForeignKey
+    Column, Integer, String, BigInteger, DateTime, Float, Text, JSON, Index, ForeignKey, Boolean
 )
 from sqlalchemy.orm import relationship
 from backend.database.connection import Base
@@ -26,8 +26,13 @@ class QualificationResult(Base):
     activity_status = Column(String(20), default="INACTIVE", nullable=False) # 'ACTIVE', 'LOW_ACTIVITY', 'INACTIVE'
     days_since_last_video = Column(Integer, nullable=True)
     last_video_date = Column(DateTime(timezone=True), nullable=True)
+    last_video_title = Column(String(500), nullable=True)
     estimated_posting_frequency_days = Column(Float, nullable=True)
     
+    # Analyzed Sources Verification Flags
+    channel_description_analyzed = Column(Boolean, default=True)
+    last_video_description_analyzed = Column(Boolean, default=True)
+
     # Channel Statistics
     subscribers = Column(BigInteger, default=0, nullable=False)
     total_views = Column(BigInteger, default=0, nullable=False)
@@ -54,7 +59,8 @@ class QualificationResult(Base):
     link_aggregators = Column(JSON, nullable=True) # e.g. [{"platform": "linktree", "url": "..."}]
     sales_platforms = Column(JSON, nullable=True)  # e.g. [{"platform": "hotmart", "url": "..."}]
     commercial_signals = Column(JSON, nullable=True) # [{"type": "course", "source": "video_1", "value": "..."}]
-    keywords_found = Column(JSON, nullable=True)     # [{"keyword": "consultoria", "source": "channel_desc", "context": "..."}]
+    keywords_found = Column(JSON, nullable=True)     # [{"keyword": "consultoria", "source": "channel_description", "context": "..."}]
+    keywords_sources = Column(JSON, nullable=True)   # {"consultoria": ["channel_description"], "parcerias": ["last_video_description"]}
     score_breakdown = Column(JSON, nullable=True)    # {"email": 20, "website": 15, ...}
     
     # Reasoning & Versioning

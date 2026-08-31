@@ -1,0 +1,481 @@
+/* Reset & Global */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #0b0f17;
+  color: #e2e8f0;
+  font-size: 13px;
+  line-height: 1.4;
+  min-height: 100vh;
+  display: flex;
+  flex-col: column;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Header */
+.sp-header {
+  background-color: #121826;
+  border-bottom: 1px solid #1f293d;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.sp-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sp-logo-icon {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: #000;
+  font-weight: 900;
+}
+
+.sp-logo-title h1 {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #fff;
+}
+
+.sp-badge-sub {
+  font-size: 9px;
+  font-weight: 700;
+  color: #f59e0b;
+  letter-spacing: 0.5px;
+  display: block;
+}
+
+.sp-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.sp-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.sp-dot-online {
+  background-color: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+
+.sp-dot-offline {
+  background-color: #f43f5e;
+}
+
+/* Main Container */
+.sp-main {
+  flex: 1;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Cards */
+.sp-card {
+  background-color: #121826;
+  border: 1px solid #1f293d;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+}
+
+.sp-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.sp-card-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sp-card-subtitle {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 4px;
+  margin-bottom: 12px;
+}
+
+/* User Profile Bar */
+.sp-user-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #121826;
+  border: 1px solid #1f293d;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.sp-user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sp-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #f59e0b;
+  font-size: 13px;
+}
+
+.sp-user-name {
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+}
+
+.sp-user-role-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 1px;
+}
+
+.sp-role-badge {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background-color: #312e81;
+  color: #c7d2fe;
+  border: 1px solid #4338ca;
+}
+
+.sp-user-subtext {
+  font-size: 10px;
+  color: #10b981;
+  font-weight: 600;
+}
+
+/* Badges */
+.sp-badge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.sp-badge-active {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.sp-badge-paused {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* Session Grid */
+.sp-session-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.sp-metric-box {
+  background-color: #0b0f17;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.sp-metric-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  display: block;
+}
+
+.sp-metric-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: #f8fafc;
+  margin-top: 2px;
+  display: block;
+}
+
+.sp-timer {
+  font-family: monospace;
+  color: #38bdf8;
+}
+
+/* Progress Bar */
+.sp-progress-container {
+  margin-bottom: 12px;
+}
+
+.sp-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.sp-progress-labels strong {
+  color: #fff;
+}
+
+.sp-progress-bar {
+  width: 100%;
+  height: 6px;
+  background-color: #1e293b;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.sp-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #10b981);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+/* Buttons */
+.sp-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.sp-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.sp-btn-primary {
+  background-color: #f59e0b;
+  color: #0b0f17;
+}
+
+.sp-btn-primary:hover:not(:disabled) {
+  background-color: #d97706;
+}
+
+.sp-btn-secondary {
+  background-color: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+}
+
+.sp-btn-secondary:hover:not(:disabled) {
+  background-color: #334155;
+}
+
+.sp-btn-danger {
+  background-color: rgba(244, 63, 94, 0.15);
+  color: #fb7185;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+}
+
+.sp-btn-danger:hover:not(:disabled) {
+  background-color: rgba(244, 63, 94, 0.3);
+}
+
+.sp-btn-success {
+  background-color: #10b981;
+  color: #022c22;
+}
+
+.sp-btn-success:hover:not(:disabled) {
+  background-color: #059669;
+}
+
+.sp-btn-icon {
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  color: #94a3b8;
+  transition: background-color 0.15s;
+}
+
+.sp-btn-icon:hover {
+  background-color: #1e293b;
+}
+
+.sp-session-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* Page Stats */
+.sp-page-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.sp-page-stat-item {
+  background-color: #0b0f17;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 8px;
+  text-align: center;
+}
+
+.sp-stat-num {
+  font-size: 20px;
+  font-weight: 800;
+  display: block;
+}
+
+.sp-stat-new {
+  color: #34d399;
+}
+
+.sp-stat-exists {
+  color: #94a3b8;
+}
+
+.sp-stat-desc {
+  font-size: 10px;
+  color: #64748b;
+  display: block;
+}
+
+.sp-btn-bulk {
+  padding: 11px 12px;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+
+/* Admin Shortcuts */
+.sp-admin-card {
+  border-color: #312e81;
+  background: linear-gradient(180deg, #121826 0%, #1e1b4b 100%);
+}
+
+.sp-admin-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.sp-admin-buttons .sp-btn {
+  padding: 7px 10px;
+  font-size: 11px;
+}
+
+/* Forms */
+.sp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sp-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sp-input-group label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.sp-input-group input {
+  background-color: #0b0f17;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: #fff;
+  font-size: 12px;
+  outline: none;
+}
+
+.sp-input-group input:focus {
+  border-color: #f59e0b;
+}
+
+.sp-error-message {
+  background-color: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  color: #fb7185;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+/* Toast */
+.sp-toast {
+  position: fixed;
+  bottom: 14px;
+  left: 14px;
+  right: 14px;
+  background-color: #1e293b;
+  border: 1px solid #475569;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  z-index: 100;
+  transition: opacity 0.2s;
+}

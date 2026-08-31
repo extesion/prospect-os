@@ -109,9 +109,19 @@
           <span>Configurações</span>
         </button>
 
-        <a href="/dashboard" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5" title="Ir para Dashboard de Produtividade">
+        <a href="/dashboard" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5" title="Ir para Dashboard">
           <i class="fa-solid fa-chart-pie"></i>
           <span>Dashboard</span>
+        </a>
+
+        <a href="/users" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 transition flex items-center gap-1.5" title="Gestão de Usuários (Admin)">
+          <i class="fa-solid fa-users"></i>
+          <span>Usuários</span>
+        </a>
+
+        <a href="/youtube-apis" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 transition flex items-center gap-1.5" title="YouTube APIs & Quotas (Admin)">
+          <i class="fa-brands fa-youtube"></i>
+          <span>APIs</span>
         </a>
       </div>
 
@@ -448,11 +458,42 @@
 
         </div>
 
+        <!-- SECTION: FONTES ANALISADAS -->
+        <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl space-y-2.5">
+          <h4 class="font-bold text-slate-200 flex items-center justify-between">
+            <span class="flex items-center gap-2">
+              <i class="fa-solid fa-list-check text-emerald-400"></i>
+              <span>Fontes Públicas Analisadas</span>
+            </span>
+            <span class="text-[10px] text-slate-500 uppercase">Validação de Origem</span>
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div class="bg-slate-950/60 p-3 rounded-lg border border-slate-800/80 flex items-start justify-between">
+              <div>
+                <span class="font-bold text-slate-200 block">Descrição do Canal</span>
+                <span class="text-[10px] text-slate-400">Sobre / About do canal</span>
+              </div>
+              <span id="modal-src-channel-desc" class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">✓ Analisada</span>
+            </div>
+
+            <div class="bg-slate-950/60 p-3 rounded-lg border border-slate-800/80 flex items-start justify-between">
+              <div>
+                <span class="font-bold text-slate-200 block truncate max-w-[200px]" id="modal-src-video-title">Último Vídeo: —</span>
+                <span class="text-[10px] text-slate-400 block" id="modal-src-video-date">Data: —</span>
+              </div>
+              <span id="modal-src-video-desc" class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">✓ Analisada</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Commercial Signals & Keywords Found -->
         <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-xl space-y-3">
-          <h4 class="font-bold text-slate-200 flex items-center gap-2">
-            <i class="fa-solid fa-tags text-amber-400"></i>
-            <span>Sinais Comerciais & Palavras-Chave</span>
+          <h4 class="font-bold text-slate-200 flex items-center justify-between">
+            <span class="flex items-center gap-2">
+              <i class="fa-solid fa-tags text-amber-400"></i>
+              <span>Sinais Comerciais & Palavras-Chave</span>
+            </span>
+            <span class="text-[10px] text-slate-500">Origem: Canal & Último Vídeo</span>
           </h4>
           <div id="modal-signals-chips" class="flex flex-wrap gap-1.5">
             <!-- Chips rendered via JS -->
@@ -1001,7 +1042,21 @@
           </div>
         `;
 
-        // Commercial signals chips
+        // Fontes Analisadas Elements
+        const firstVid = vids.length > 0 ? vids[0] : null;
+        document.getElementById('modal-src-video-title').textContent = firstVid ? `Último Vídeo: ${firstVid.title}` : (q.last_video_title ? `Último Vídeo: ${q.last_video_title}` : 'Último Vídeo: Nenhum vídeo');
+        document.getElementById('modal-src-video-date').textContent = q.last_video_date ? `Publicado: ${q.last_video_date}` : (firstVid && firstVid.published_at ? `Publicado: ${firstVid.published_at}` : 'Data: —');
+
+        const vidDescBadge = document.getElementById('modal-src-video-desc');
+        if (firstVid || q.last_video_description_analyzed) {
+          vidDescBadge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800';
+          vidDescBadge.textContent = '✓ Analisada';
+        } else {
+          vidDescBadge.className = 'px-2 py-0.5 rounded text-[11px] font-medium bg-slate-800 text-slate-400 border border-slate-700';
+          vidDescBadge.textContent = 'Não disponível';
+        }
+
+        // Commercial signals and Keywords with Source Badges
         const signalsContainer = document.getElementById('modal-signals-chips');
         const signals = q.commercial_signals || [];
         const keywords = q.keywords_found || [];
@@ -1015,11 +1070,18 @@
             </span>
           `).join('');
 
-          const kwHtml = keywords.map(k => `
-            <span class="px-2 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[11px]" title="${k.context}">
-              #${k.keyword}
-            </span>
-          `).join('');
+          const kwHtml = keywords.map(k => {
+            let srcLabel = 'descrição do canal';
+            if (k.source === 'last_video_description') srcLabel = 'descrição último vídeo';
+            else if (k.source && k.source.includes('video')) srcLabel = 'vídeos recentes';
+
+            return `
+              <span class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-200 border border-slate-700 text-[11px] flex items-center gap-1.5" title="${k.context || ''}">
+                <strong class="text-amber-400 font-bold">#${k.keyword}</strong>
+                <span class="text-[10px] text-slate-400">→ ${srcLabel}</span>
+              </span>
+            `;
+          }).join('');
 
           signalsContainer.innerHTML = sigHtml + kwHtml;
         }

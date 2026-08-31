@@ -3,46 +3,39 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
 import requests
 import logging
+from sqlalchemy.orm import Session
 
 from qualifier.config.qualification_config import qualification_config
+from qualifier.services.youtube_api_manager import YouTubeApiManager, YouTubeQuotaExceededException
 
 logger = logging.getLogger(__name__)
 
-class YouTubeQuotaExceededException(Exception):
-    pass
-
 class YouTubeService:
     BASE_URL = "https://www.googleapis.com/youtube/v3"
-    
-    _estimated_quota_used_today: int = 0
-    _last_quota_reset_day: Optional[int] = None
-
-    @classmethod
-    def _track_quota(cls, units: int = 1):
-        current_day = datetime.now(timezone.utc).day
-        if cls._last_quota_reset_day != current_day:
-            cls._estimated_quota_used_today = 0
-            cls._last_quota_reset_day = current_day
-
-        cls._estimated_quota_used_today += units
-        if cls._estimated_quota_used_today >= qualification_config.DAILY_QUOTA_LIMIT:
-            logger.warning(f"[QUOTA_LIMIT] Daily quota limit reached: {cls._estimated_quota_used_today}/{qualification_config.DAILY_QUOTA_LIMIT}")
 
     @classmethod
     def get_quota_used_today(cls) -> int:
-        return cls._estimated_quota_used_today
+        return YouTubeApiManager._estimated_quota_used_today if hasattr(YouTubeApiManager, '_estimated_quota_used_today') else 0
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, db: Optional[Session] = None):
         self.api_key = api_key or qualification_config.YOUTUBE_API_KEY or os.getenv("YOUTUBE_API_KEY", "")
+        self.db = db
+        self.config_id = None
 
-    def _check_quota_available(self):
+    def _ensure_api_key(self):
+        if self.db:
+            try:
+                cfg, key = YouTubeApiManager.get_active_config(self.db)
+                self.api_key = key
+                self.config_id = cfg.id if cfg else None
+                return
+            except Exception as e:
+                logger.warning(f"[YOUTUBE_MANAGER] Manager resolution notice: {str(e)}")
+
         if not self.api_key:
             self.api_key = qualification_config.YOUTUBE_API_KEY or os.getenv("YOUTUBE_API_KEY", "")
             if not self.api_key:
                 raise ValueError("Chave da YouTube API (YOUTUBE_API_KEY) não configurada.")
-
-        if self._estimated_quota_used_today >= qualification_config.DAILY_QUOTA_LIMIT:
-            raise YouTubeQuotaExceededException("Daily YouTube API quota limit reached.")
 
     def fetch_channels_batch(self, channel_ids: List[str]) -> Dict[str, Dict[str, Any]]:
         """
@@ -53,11 +46,11 @@ class YouTubeService:
         if not channel_ids:
             return {}
 
-        self._check_quota_available()
+        self._ensure_api_key()
         results: Dict[str, Dict[str, Any]] = {}
 
         standard_ids = []
-        handle_map = {} # handle -> list of original_channel_ids
+        handle_map = {}
 
         for cid in channel_ids:
             if cid.startswith("UC_HDL_"):
@@ -69,10 +62,9 @@ class YouTubeService:
             elif len(cid) == 24 and cid.startswith("UC"):
                 standard_ids.append(cid)
             else:
-                # Treat any other custom string as handle
                 handle_map.setdefault(cid, []).append(cid)
 
-        # 1. Fetch standard IDs in batches of 50
+        # 1. Standard IDs in batches of 50
         if standard_ids:
             for i in range(0, len(standard_ids), 50):
                 chunk = standard_ids[i:i + 50]
@@ -86,19 +78,20 @@ class YouTubeService:
                 }
 
                 try:
-                    self._track_quota(1)
                     response = requests.get(url, params=params, timeout=10)
                     
                     if response.status_code == 403:
-                        err_json = response.json().get("error", {})
-                        reasons = [e.get("reason") for e in err_json.get("errors", [])]
-                        if "quotaExceeded" in reasons or "rateLimitExceeded" in reasons:
-                            raise YouTubeQuotaExceededException("YouTube API quota exceeded (HTTP 403).")
-                        raise Exception(f"YouTube API error 403: {err_json.get('message')}")
-                    
+                        err_msg = response.text
+                        if self.db:
+                            YouTubeApiManager.record_usage(self.db, self.config_id, "channels.list", 1, success=False, error_message=err_msg)
+                        raise YouTubeQuotaExceededException(f"YouTube API error 403: {err_msg}")
+
                     response.raise_for_status()
                     data = response.json()
                     
+                    if self.db:
+                        YouTubeApiManager.record_usage(self.db, self.config_id, "channels.list", 1, success=True)
+
                     for item in data.get("items", []):
                         real_cid = item.get("id")
                         parsed_data = self._parse_channel_item(item)
@@ -107,10 +100,12 @@ class YouTubeService:
                 except YouTubeQuotaExceededException:
                     raise
                 except Exception as e:
-                    logger.error(f"[YOUTUBE] Error fetching standard channels batch: {str(e)}")
+                    if self.db:
+                        YouTubeApiManager.record_usage(self.db, self.config_id, "channels.list", 1, success=False, error_message=str(e))
+                    logger.error(f"[YOUTUBE] Error fetching channels batch: {str(e)}")
                     raise
 
-        # 2. Fetch handle-based channels via forHandle
+        # 2. Handle-based channels via forHandle
         for handle, orig_cids in handle_map.items():
             url = f"{self.BASE_URL}/channels"
             params = {
@@ -120,29 +115,31 @@ class YouTubeService:
             }
 
             try:
-                self._track_quota(1)
                 response = requests.get(url, params=params, timeout=10)
                 
                 if response.status_code == 403:
-                    err_json = response.json().get("error", {})
-                    reasons = [e.get("reason") for e in err_json.get("errors", [])]
-                    if "quotaExceeded" in reasons or "rateLimitExceeded" in reasons:
-                        raise YouTubeQuotaExceededException("YouTube API quota exceeded (HTTP 403).")
-                    raise Exception(f"YouTube API error 403: {err_json.get('message')}")
+                    err_msg = response.text
+                    if self.db:
+                        YouTubeApiManager.record_usage(self.db, self.config_id, "channels.list (handle)", 1, success=False, error_message=err_msg)
+                    raise YouTubeQuotaExceededException(f"YouTube API error 403 on handle {handle}: {err_msg}")
 
                 if response.status_code == 200:
                     data = response.json()
                     items = data.get("items", [])
                     if items:
                         parsed_data = self._parse_channel_item(items[0])
-                        # Map both real_id and each original_cid to the parsed data
                         results[parsed_data["channel_id"]] = parsed_data
                         for orig_cid in orig_cids:
                             results[orig_cid] = parsed_data
+                    
+                    if self.db:
+                        YouTubeApiManager.record_usage(self.db, self.config_id, "channels.list (handle)", 1, success=True)
 
             except YouTubeQuotaExceededException:
                 raise
             except Exception as e:
+                if self.db:
+                    YouTubeApiManager.record_usage(self.db, self.config_id, "channels.list (handle)", 1, success=False, error_message=str(e))
                 logger.warning(f"[YOUTUBE] Could not resolve handle {handle}: {str(e)}")
 
         return results
@@ -178,7 +175,7 @@ class YouTubeService:
         if not uploads_playlist_id:
             return []
 
-        self._check_quota_available()
+        self._ensure_api_key()
         url = f"{self.BASE_URL}/playlistItems"
         params = {
             "part": "contentDetails",
@@ -188,12 +185,17 @@ class YouTubeService:
         }
 
         try:
-            self._track_quota(1)
             response = requests.get(url, params=params, timeout=10)
             if response.status_code == 403:
+                if self.db:
+                    YouTubeApiManager.record_usage(self.db, self.config_id, "playlistItems.list", 1, success=False, error_message=response.text)
                 raise YouTubeQuotaExceededException("YouTube API quota exceeded in playlistItems (HTTP 403).")
+            
             response.raise_for_status()
             data = response.json()
+
+            if self.db:
+                YouTubeApiManager.record_usage(self.db, self.config_id, "playlistItems.list", 1, success=True)
 
             video_ids = []
             for item in data.get("items", []):
@@ -204,6 +206,8 @@ class YouTubeService:
         except YouTubeQuotaExceededException:
             raise
         except Exception as e:
+            if self.db:
+                YouTubeApiManager.record_usage(self.db, self.config_id, "playlistItems.list", 1, success=False, error_message=str(e))
             logger.error(f"[YOUTUBE] Error fetching playlist items: {str(e)}")
             return []
 
@@ -215,7 +219,7 @@ class YouTubeService:
         if not video_ids:
             return {}
 
-        self._check_quota_available()
+        self._ensure_api_key()
         results: Dict[str, Dict[str, Any]] = {}
 
         for i in range(0, len(video_ids), 50):
@@ -230,12 +234,17 @@ class YouTubeService:
             }
 
             try:
-                self._track_quota(1)
                 response = requests.get(url, params=params, timeout=10)
                 if response.status_code == 403:
+                    if self.db:
+                        YouTubeApiManager.record_usage(self.db, self.config_id, "videos.list", 1, success=False, error_message=response.text)
                     raise YouTubeQuotaExceededException("YouTube API quota exceeded in videos.list (HTTP 403).")
+                
                 response.raise_for_status()
                 data = response.json()
+
+                if self.db:
+                    YouTubeApiManager.record_usage(self.db, self.config_id, "videos.list", 1, success=True)
 
                 for item in data.get("items", []):
                     vid = item.get("id")
@@ -257,6 +266,8 @@ class YouTubeService:
             except YouTubeQuotaExceededException:
                 raise
             except Exception as e:
+                if self.db:
+                    YouTubeApiManager.record_usage(self.db, self.config_id, "videos.list", 1, success=False, error_message=str(e))
                 logger.error(f"[YOUTUBE] Error fetching videos batch: {str(e)}")
                 raise
 

@@ -178,3 +178,6 @@ class ScoringEngine:
             "score_breakdown": breakdown,
             "qualification_reason": full_reason
         }
+
+    compute_score = calculate_score
+

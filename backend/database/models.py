@@ -15,6 +15,7 @@ class User(Base):
     name = Column(String(100), nullable=False)
     email = Column(String(150), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
+    role = Column(String(20), default="USER", nullable=False)  # 'ADMIN', 'USER'
     active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
@@ -122,5 +123,40 @@ class CycleSetting(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     default_daily_target = Column(Integer, default=160, nullable=False)
-    presets_json = Column(Text, nullable=True) # '[{"name":"Ciclo 8 Horas","hours":8,"target":160},{"name":"Ciclo 6 Horas","hours":6,"target":160}]'
+    presets_json = Column(Text, nullable=True)
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+
+class YouTubeApiConfig(Base):
+    __tablename__ = "youtube_api_configs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False)
+    api_key = Column(String(255), nullable=False)
+    status = Column(String(50), default="ACTIVE", nullable=False) # 'ACTIVE', 'QUOTA_EXCEEDED', 'ERROR', 'INACTIVE'
+    daily_limit = Column(Integer, default=10000, nullable=False)
+    last_used_at = Column(DateTime(timezone=True), nullable=True)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    usages = relationship("YouTubeApiUsage", back_populates="api_config", cascade="all, delete-orphan")
+
+
+class YouTubeApiUsage(Base):
+    __tablename__ = "youtube_api_usage"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    api_config_id = Column(Integer, ForeignKey("youtube_api_configs.id", ondelete="SET NULL"), nullable=True, index=True)
+    endpoint = Column(String(100), nullable=False) # 'channels.list', 'playlistItems.list', 'videos.list'
+    units = Column(Integer, default=1, nullable=False)
+    requested_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+    success = Column(Boolean, default=True, nullable=False)
+    error_message = Column(Text, nullable=True)
+
+    api_config = relationship("YouTubeApiConfig", back_populates="usages")
+
+    __table_args__ = (
+        Index("idx_yt_usage_requested_at", "requested_at"),
+        Index("idx_yt_usage_config", "api_config_id"),
+    )

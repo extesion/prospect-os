@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Prospector — Painel Operacional</title>
+  <link rel="stylesheet" href="sidepanel.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  
+  <!-- HEADER -->
+  <header class="sp-header">
+    <div class="sp-logo">
+      <div class="sp-logo-icon">⚡</div>
+      <div class="sp-logo-title">
+        <h1>PROSPECTOR</h1>
+        <span class="sp-badge-sub">SIDE PANEL</span>
+      </div>
+    </div>
+
+    <div id="sp-connection-status" class="sp-status-indicator">
+      <span class="sp-dot sp-dot-online"></span>
+      <span id="sp-status-text">Conectado</span>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="sp-main">
+
+    <!-- VIEW 1: AUTHENTICATION / LOGIN -->
+    <section id="view-login" class="sp-card sp-view hidden">
+      <div class="sp-card-title">
+        <span>🔐 Login Operacional</span>
+      </div>
+      <p class="sp-card-subtitle">Entre com sua conta de operador para iniciar a coleta e registrar suas horas.</p>
+
+      <form id="form-login" class="sp-form">
+        <div class="sp-input-group">
+          <label for="login-email">E-mail / Login</label>
+          <input type="email" id="login-email" required placeholder="seu@prospector.com" />
+        </div>
+
+        <div class="sp-input-group">
+          <label for="login-password">Senha</label>
+          <input type="password" id="login-password" required placeholder="••••••••" />
+        </div>
+
+        <div id="login-error" class="sp-error-message hidden"></div>
+
+        <button type="submit" id="btn-login" class="sp-btn sp-btn-primary">
+          <span>ENTRAR NA PLATAFORMA</span>
+        </button>
+      </form>
+    </section>
+
+    <!-- VIEW 2: OPERATIONAL WORKSPACE (WHEN LOGGED IN) -->
+    <section id="view-workspace" class="sp-view hidden">
+
+      <!-- USER PROFILE BAR -->
+      <div class="sp-user-bar">
+        <div class="sp-user-info">
+          <div class="sp-user-avatar" id="user-avatar-initial">U</div>
+          <div>
+            <div class="sp-user-name" id="user-display-name">Carregando...</div>
+            <div class="sp-user-role-container">
+              <span class="sp-role-badge" id="user-role-badge">USER</span>
+              <span class="sp-user-subtext">● Conectado</span>
+            </div>
+          </div>
+        </div>
+
+        <button id="btn-logout" class="sp-btn-icon" title="Encerrar sessão">
+          🚪
+        </button>
+      </div>
+
+      <!-- WORK SESSION CARD -->
+      <div class="sp-card sp-session-card">
+        <div class="sp-card-header">
+          <span class="sp-card-title">⏱️ Sessão de Trabalho</span>
+          <span id="session-status-badge" class="sp-badge sp-badge-active">● ATIVA</span>
+        </div>
+
+        <!-- Timer & Rhythm -->
+        <div class="sp-session-grid">
+          <div class="sp-metric-box">
+            <span class="sp-metric-label">Tempo Ativo</span>
+            <span class="sp-metric-value sp-timer" id="session-timer">00:00:00</span>
+          </div>
+
+          <div class="sp-metric-box">
+            <span class="sp-metric-label">Ritmo</span>
+            <span class="sp-metric-value" id="session-pace">0,0/h</span>
+          </div>
+        </div>
+
+        <!-- Target Progress -->
+        <div class="sp-progress-container">
+          <div class="sp-progress-labels">
+            <span>Coletados: <strong id="session-collected">0</strong></span>
+            <span>Meta: <strong id="session-target">160</strong></span>
+          </div>
+          <div class="sp-progress-bar">
+            <div id="session-progress-fill" class="sp-progress-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Session Controls -->
+        <div class="sp-session-actions">
+          <button id="btn-toggle-pause" class="sp-btn sp-btn-secondary">
+            <span id="btn-pause-text">⏸️ Pausar</span>
+          </button>
+          <button id="btn-finish-session" class="sp-btn sp-btn-danger">
+            <span>⏹️ Finalizar</span>
+          </button>
+        </div>
+
+        <!-- Start New Session Button (if no session active) -->
+        <button id="btn-start-session" class="sp-btn sp-btn-success hidden">
+          <span>▶️ INICIAR TURNO DE 8H</span>
+        </button>
+      </div>
+
+      <!-- CURRENT YOUTUBE PAGE SUMMARY -->
+      <div class="sp-card sp-page-card">
+        <div class="sp-card-header">
+          <span class="sp-card-title">📺 Página Atual do YouTube</span>
+          <button id="btn-refresh-page" class="sp-btn-icon" title="Verificar canais na página">
+            🔄
+          </button>
+        </div>
+
+        <div class="sp-page-stats">
+          <div class="sp-page-stat-item">
+            <span class="sp-stat-num sp-stat-new" id="page-new-count">0</span>
+            <span class="sp-stat-desc">Novos para Coletar</span>
+          </div>
+          <div class="sp-page-stat-item">
+            <span class="sp-stat-num sp-stat-exists" id="page-exists-count">0</span>
+            <span class="sp-stat-desc">Já no Banco</span>
+          </div>
+        </div>
+
+        <button id="btn-collect-all-new" class="sp-btn sp-btn-primary sp-btn-bulk" disabled>
+          <span>⚡ COLETAR NOVOS</span>
+        </button>
+      </div>
+
+      <!-- ADMIN SHORTCUT (ONLY VISIBLE IF ADMIN) -->
+      <div id="admin-shortcuts-container" class="sp-card sp-admin-card hidden">
+        <div class="sp-card-title">
+          <span>👑 Painel de Administração</span>
+        </div>
+        <p class="sp-card-subtitle">Acesso rápido aos painéis de gestão da equipe e quotas.</p>
+        
+        <div class="sp-admin-buttons">
+          <button id="btn-open-dashboard" class="sp-btn sp-btn-secondary">
+            <span>📊 Dashboard</span>
+          </button>
+          <button id="btn-open-qualifier" class="sp-btn sp-btn-secondary">
+            <span>⚡ Qualificador</span>
+          </button>
+          <button id="btn-open-users" class="sp-btn sp-btn-secondary">
+            <span>👥 Usuários</span>
+          </button>
+          <button id="btn-open-apis" class="sp-btn sp-btn-secondary">
+            <span>🔑 APIs</span>
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="sp-toast" class="sp-toast hidden"></div>
+
+  <!-- SCRIPTS -->
+  <script src="../cache.js"></script>
+  <script src="../api.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>
