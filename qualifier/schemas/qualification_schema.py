@@ -107,10 +107,13 @@ class QualificationJobResponse(BaseModel):
     updated_at: datetime
 
 class QualificationStatsResponse(BaseModel):
+    total_channels: int = 0
+    total_not_analyzed: int = 0
     total_qualified: int = 0
     total_review: int = 0
     total_rejected: int = 0
     total_failed: int = 0
+    total_outreach_ready: int = 0
     pending_jobs: int = 0
     processing_jobs: int = 0
     completed_jobs: int = 0
@@ -118,6 +121,44 @@ class QualificationStatsResponse(BaseModel):
     failed_jobs: int = 0
     estimated_quota_used_today: int = 0
     daily_quota_limit: int = 9500
+
+class LeadItemResponse(BaseModel):
+    channel_id: str
+    channel_name: str
+    channel_handle: Optional[str] = None
+    channel_url: str
+    first_collected_at: Optional[datetime] = None
+    
+    status: str # NOT_ANALYZED, PENDING, PROCESSING, QUALIFIED, REVIEW, REJECTED, FAILED, RETRY
+    score: Optional[int] = None
+    detected_niche: Optional[str] = None
+    niche_confidence: Optional[float] = 0.0
+    subscribers: Optional[int] = 0
+    total_videos: Optional[int] = 0
+    days_since_last_video: Optional[int] = None
+    last_video_date: Optional[datetime] = None
+    
+    email: Optional[str] = None
+    whatsapp: Optional[str] = None
+    website: Optional[str] = None
+    instagram: Optional[str] = None
+    
+    outreach_ready: bool = False
+    qualification_reason: Optional[str] = None
+    qualified_at: Optional[datetime] = None
+    error_message: Optional[str] = None
+
+class LeadsPaginationResponse(BaseModel):
+    total: int
+    page: int
+    page_size: int
+    leads: List[LeadItemResponse]
+    stats: Dict[str, int]
+
+class QualifyBatchRequest(BaseModel):
+    channel_ids: Optional[List[str]] = None
+    qualify_all_pending: Optional[bool] = False
+    batch_size: Optional[int] = 50
 
 class ConfigUpdateRequest(BaseModel):
     daily_quota_limit: Optional[int] = None

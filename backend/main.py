@@ -81,6 +81,14 @@ def get_dashboard():
         return FileResponse(template_path)
     return {"message": "Template dashboard.html não encontrado."}
 
+@app.get("/qualifier", tags=["Qualifier"])
+def get_qualifier():
+    """Retorna a Interface Web Operacional do Qualificador de Leads."""
+    template_path = os.path.join(os.path.dirname(__file__), "templates", "qualifier.html")
+    if os.path.exists(template_path):
+        return FileResponse(template_path)
+    return {"message": "Template qualifier.html não encontrado."}
+
 @app.get("/", tags=["Root"])
 def root():
     return {

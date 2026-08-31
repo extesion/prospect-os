@@ -358,3 +358,29 @@ def test_qualification_api_endpoints():
     backfill_resp = client.post("/api/qualification/backfill", headers=headers)
     assert backfill_resp.status_code == 200
     assert "enqueued_count" in backfill_resp.json()
+
+    # 8. Web UI Endpoint
+    ui_resp = client.get("/qualifier")
+    assert ui_resp.status_code == 200
+    assert "QUALIFICADOR DE LEADS" in ui_resp.text
+
+    # 9. Status Overview Endpoint
+    overview_resp = client.get("/api/qualification/status-overview")
+    assert overview_resp.status_code == 200
+    ov_data = overview_resp.json()
+    assert ov_data["connections"]["local_processor"] == "online"
+    assert "stats" in ov_data
+
+    # 10. Leads List with Filters
+    leads_resp = client.get("/api/qualification/leads?page=1&page_size=50")
+    assert leads_resp.status_code == 200
+    l_data = leads_resp.json()
+    assert l_data["total"] >= 1
+    assert len(l_data["leads"]) >= 1
+
+    # 11. Modal Detail Endpoint
+    detail_resp = client.get("/api/qualification/leads/UC_QUAL_TEST_01/detail")
+    assert detail_resp.status_code == 200
+    d_data = detail_resp.json()
+    assert d_data["channel"]["channel_name"] == "Tech e Negócios Pro"
+    assert d_data["qualification"]["score"] >= 70

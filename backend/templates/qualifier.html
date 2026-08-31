@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Qualificador de Leads — YouTube Prospector</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fffbeb',
+              100: '#fef3c7',
+              400: '#fbbf24',
+              500: '#f59e0b',
+              600: '#d97706',
+              900: '#78350f',
+            },
+            dark: {
+              bg: '#0b0f17',
+              card: '#121826',
+              border: '#1f293d',
+              hover: '#1b2438'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0b0f17;
+      color: #e2e8f0;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+  <!-- ===================================================================== -->
+  <!-- TOP NAVBAR & SYSTEM STATUS INDICATORS                                 -->
+  <!-- ===================================================================== -->
+  <header class="bg-dark-card border-b border-dark-border sticky top-0 z-40 px-6 py-3.5 shadow-md">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      
+      <!-- Logo & Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20 text-slate-950 font-black text-xl">
+          <i class="fa-solid fa-bolt"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-lg text-white tracking-tight">QUALIFICADOR DE LEADS</h1>
+            <span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20">v1.0</span>
+          </div>
+          <p class="text-xs text-slate-400">Análise estruturada, scoring comercial e extração de contatos</p>
+        </div>
+      </div>
+
+      <!-- Live Connection Indicators -->
+      <div class="flex items-center flex-wrap gap-2 text-xs font-medium">
+        <div id="status-youtube" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>YouTube API: <strong class="text-emerald-400" id="yt-text">Conectada</strong></span>
+        </div>
+
+        <div id="status-processor" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span>Processador Local: <strong class="text-emerald-400">Online</strong></span>
+        </div>
+
+        <div id="status-db" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span>Banco: <strong class="text-emerald-400">Conectado</strong></span>
+        </div>
+
+        <!-- Settings Button -->
+        <button onclick="openConfigModal()" class="ml-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-gear"></i>
+          <span>Configurações</span>
+        </button>
+
+        <a href="/dashboard" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5" title="Ir para Dashboard de Produtividade">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>Dashboard</span>
+        </a>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- MAIN OPERATIONAL CONTAINER                                            -->
+  <!-- ===================================================================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+
+    <!-- METRIC CARDS -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      
+      <!-- Não Analisados -->
+      <div onclick="filterByTab('NOT_ANALYZED')" class="cursor-pointer bg-dark-card border border-dark-border hover:border-slate-600 p-4 rounded-xl transition duration-150 shadow-sm relative overflow-hidden group">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Não Analisados</span>
+          <div class="w-8 h-8 rounded-lg bg-slate-800 text-slate-300 flex items-center justify-center text-sm group-hover:bg-slate-700 transition">
+            <i class="fa-solid fa-hourglass-start"></i>
+          </div>
+        </div>
+        <div class="mt-3">
+          <span id="stat-not-analyzed" class="text-2xl font-bold text-white">0</span>
+          <span class="text-xs text-slate-400 block mt-0.5">aguardando qualificação</span>
+        </div>
+        <div class="absolute bottom-0 left-0 right-0 h-1 bg-slate-600"></div>
+      </div>
+
+      <!-- Qualificados -->
+      <div onclick="filterByTab('QUALIFIED')" class="cursor-pointer bg-dark-card border border-dark-border hover:border-emerald-500/50 p-4 rounded-xl transition duration-150 shadow-sm relative overflow-hidden group">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Qualificados</span>
+          <div class="w-8 h-8 rounded-lg bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 flex items-center justify-center text-sm group-hover:scale-110 transition">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+        </div>
+        <div class="mt-3">
+          <span id="stat-qualified" class="text-2xl font-bold text-emerald-400">0</span>
+          <span class="text-xs text-slate-400 block mt-0.5">score 70 a 100</span>
+        </div>
+        <div class="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500"></div>
+      </div>
+
+      <!-- Em Revisão -->
+      <div onclick="filterByTab('REVIEW')" class="cursor-pointer bg-dark-card border border-dark-border hover:border-amber-500/50 p-4 rounded-xl transition duration-150 shadow-sm relative overflow-hidden group">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-amber-400 uppercase tracking-wider">Em Revisão</span>
+          <div class="w-8 h-8 rounded-lg bg-amber-950/60 text-amber-400 border border-amber-800/40 flex items-center justify-center text-sm group-hover:scale-110 transition">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+        </div>
+        <div class="mt-3">
+          <span id="stat-review" class="text-2xl font-bold text-amber-400">0</span>
+          <span class="text-xs text-slate-400 block mt-0.5">score 40 a 69</span>
+        </div>
+        <div class="absolute bottom-0 left-0 right-0 h-1 bg-amber-500"></div>
+      </div>
+
+      <!-- Descartados -->
+      <div onclick="filterByTab('REJECTED')" class="cursor-pointer bg-dark-card border border-dark-border hover:border-rose-500/50 p-4 rounded-xl transition duration-150 shadow-sm relative overflow-hidden group">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-rose-400 uppercase tracking-wider">Descartados</span>
+          <div class="w-8 h-8 rounded-lg bg-rose-950/60 text-rose-400 border border-rose-800/40 flex items-center justify-center text-sm group-hover:scale-110 transition">
+            <i class="fa-solid fa-ban"></i>
+          </div>
+        </div>
+        <div class="mt-3">
+          <span id="stat-rejected" class="text-2xl font-bold text-rose-400">0</span>
+          <span class="text-xs text-slate-400 block mt-0.5">score 0 a 39 / inativo</span>
+        </div>
+        <div class="absolute bottom-0 left-0 right-0 h-1 bg-rose-500"></div>
+      </div>
+
+      <!-- Prontos para Contato (Outreach Ready) -->
+      <div onclick="filterByTab('OUTREACH_READY')" class="cursor-pointer bg-dark-card border border-dark-border hover:border-cyan-500/50 p-4 rounded-xl transition duration-150 shadow-sm relative overflow-hidden group col-span-2 sm:col-span-1">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Prontos Contato</span>
+          <div class="w-8 h-8 rounded-lg bg-cyan-950/60 text-cyan-400 border border-cyan-800/40 flex items-center justify-center text-sm group-hover:scale-110 transition">
+            <i class="fa-solid fa-paper-plane"></i>
+          </div>
+        </div>
+        <div class="mt-3">
+          <span id="stat-outreach-ready" class="text-2xl font-bold text-cyan-400">0</span>
+          <span class="text-xs text-slate-400 block mt-0.5">qualificado + e-mail ✓</span>
+        </div>
+        <div class="absolute bottom-0 left-0 right-0 h-1 bg-cyan-500"></div>
+      </div>
+
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- REAL-TIME BATCH PROCESSING BANNER (HIDDEN BY DEFAULT)               -->
+    <!-- =================================================================== -->
+    <div id="processing-banner" class="hidden bg-gradient-to-r from-amber-950/80 via-slate-900 to-amber-950/80 border border-amber-500/30 p-4 rounded-xl shadow-lg animate-fade-in">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg animate-spin">
+            <i class="fa-solid fa-circle-notch"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h4 class="font-bold text-white text-sm">QUALIFICANDO EM SEGUNDO PLANO...</h4>
+              <span id="progress-channel-name" class="text-xs px-2 py-0.5 rounded bg-slate-800 text-amber-300 font-mono">Processando...</span>
+            </div>
+            <p id="progress-text" class="text-xs text-slate-300 mt-0.5">Progresso: 0 / 0 leads processados</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <button id="btn-cancel-batch" onclick="cancelBatchProcessing()" class="px-3 py-1.5 rounded-lg bg-rose-900/80 hover:bg-rose-800 text-rose-200 text-xs font-semibold transition border border-rose-700">
+            <i class="fa-solid fa-stop mr-1"></i> Parar Fila
+          </button>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="w-full bg-slate-800 rounded-full h-2 mt-3 overflow-hidden">
+        <div id="progress-bar-fill" class="bg-gradient-to-r from-amber-500 to-emerald-400 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- FILTERS & ACTIONS BAR                                               -->
+    <!-- =================================================================== -->
+    <div class="bg-dark-card border border-dark-border p-4 rounded-xl shadow-sm space-y-4">
+      
+      <!-- Top Action Row: Batch buttons & Search -->
+      <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+        
+        <!-- Left: Batch Operations -->
+        <div class="flex items-center flex-wrap gap-2">
+          <button id="btn-qualify-selected" onclick="qualifySelectedLeads()" disabled class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-bold text-xs uppercase tracking-wider transition flex items-center gap-2 shadow-lg shadow-amber-500/10">
+            <i class="fa-solid fa-bolt"></i>
+            <span id="label-qualify-selected">Qualificar Selecionados (0)</span>
+          </button>
+
+          <button onclick="qualifyAllPending()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition border border-slate-700 flex items-center gap-2">
+            <i class="fa-solid fa-play text-emerald-400"></i>
+            <span>Qualificar Todos Pendentes</span>
+          </button>
+
+          <button onclick="loadLeads()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" title="Recarregar Tabela">
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </button>
+        </div>
+
+        <!-- Right: Search Input -->
+        <div class="relative flex-1 max-w-md">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+          <input 
+            type="text" 
+            id="search-input" 
+            placeholder="Buscar por nome do canal, handle (@...) ou ID..."
+            oninput="handleSearchInput(event)"
+            class="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition"
+          >
+        </div>
+
+      </div>
+
+      <!-- Filter Tabs & Checkbox toggles -->
+      <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pt-3 border-t border-slate-800">
+        
+        <!-- Status Tabs -->
+        <div class="flex items-center gap-1 overflow-x-auto pb-1 custom-scrollbar text-xs font-semibold">
+          <button onclick="filterByTab('ALL')" class="tab-btn active px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition" data-tab="ALL">
+            Todos (<span id="tab-count-all">0</span>)
+          </button>
+          <button onclick="filterByTab('NOT_ANALYZED')" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition" data-tab="NOT_ANALYZED">
+            Não Analisados (<span id="tab-count-not-analyzed">0</span>)
+          </button>
+          <button onclick="filterByTab('QUALIFIED')" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition" data-tab="QUALIFIED">
+            Qualificados (<span id="tab-count-qualified">0</span>)
+          </button>
+          <button onclick="filterByTab('REVIEW')" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition" data-tab="REVIEW">
+            Revisar (<span id="tab-count-review">0</span>)
+          </button>
+          <button onclick="filterByTab('REJECTED')" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition" data-tab="REJECTED">
+            Descartados (<span id="tab-count-rejected">0</span>)
+          </button>
+          <button onclick="filterByTab('OUTREACH_READY')" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition" data-tab="OUTREACH_READY">
+            Prontos Contato (<span id="tab-count-outreach">0</span>)
+          </button>
+          <button onclick="filterByTab('FAILED')" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition" data-tab="FAILED">
+            Erros
+          </button>
+        </div>
+
+        <!-- Quick Attribute Filters -->
+        <div class="flex items-center flex-wrap gap-2 text-xs text-slate-300">
+          <label class="flex items-center gap-1.5 cursor-pointer bg-slate-900/60 px-2.5 py-1 rounded-md border border-slate-800 hover:border-slate-700">
+            <input type="checkbox" id="filter-email" onchange="loadLeads()" class="rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0">
+            <span>Com E-mail</span>
+          </label>
+
+          <label class="flex items-center gap-1.5 cursor-pointer bg-slate-900/60 px-2.5 py-1 rounded-md border border-slate-800 hover:border-slate-700">
+            <input type="checkbox" id="filter-whatsapp" onchange="loadLeads()" class="rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0">
+            <span>Com WhatsApp</span>
+          </label>
+
+          <label class="flex items-center gap-1.5 cursor-pointer bg-slate-900/60 px-2.5 py-1 rounded-md border border-slate-800 hover:border-slate-700">
+            <input type="checkbox" id="filter-website" onchange="loadLeads()" class="rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0">
+            <span>Com Site</span>
+          </label>
+
+          <label class="flex items-center gap-1.5 cursor-pointer bg-slate-900/60 px-2.5 py-1 rounded-md border border-slate-800 hover:border-slate-700">
+            <input type="checkbox" id="filter-insta" onchange="loadLeads()" class="rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0">
+            <span>Instagram</span>
+          </label>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- LEADS DATA TABLE                                                    -->
+    <!-- =================================================================== -->
+    <div class="bg-dark-card border border-dark-border rounded-xl shadow-sm overflow-hidden flex flex-col">
+      
+      <div class="overflow-x-auto custom-scrollbar">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="bg-slate-900/90 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-dark-border">
+            <tr>
+              <th class="py-3.5 px-4 w-10 text-center">
+                <input type="checkbox" id="check-all" onchange="toggleSelectAll(event)" class="rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0 cursor-pointer">
+              </th>
+              <th class="py-3.5 px-4 min-w-[220px]">CANAL</th>
+              <th class="py-3.5 px-4 text-center">STATUS</th>
+              <th class="py-3.5 px-4 text-center">INSCRITOS</th>
+              <th class="py-3.5 px-4 text-center">ÚLTIMO VÍDEO</th>
+              <th class="py-3.5 px-4 text-center">SCORE</th>
+              <th class="py-3.5 px-4 text-center">CONTATO</th>
+              <th class="py-3.5 px-4 text-right">AÇÃO</th>
+            </tr>
+          </thead>
+          <tbody id="leads-tbody" class="divide-y divide-slate-800/60 font-medium">
+            <!-- Dynamic rows rendered via JavaScript -->
+            <tr>
+              <td colspan="8" class="text-center py-12 text-slate-500">
+                <i class="fa-solid fa-circle-notch fa-spin text-xl text-amber-500 mb-2"></i>
+                <p>Carregando leads do banco de dados...</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Footer -->
+      <div class="px-6 py-3 bg-slate-900/70 border-t border-dark-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+        <div>
+          Mostrando <span id="page-start" class="font-bold text-white">0</span> - <span id="page-end" class="font-bold text-white">0</span> de <span id="page-total" class="font-bold text-white">0</span> leads
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <button id="btn-prev-page" onclick="changePage(-1)" disabled class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed text-slate-200 transition">
+            <i class="fa-solid fa-chevron-left mr-1"></i> Anterior
+          </button>
+          <span class="px-3 py-1.5 rounded bg-slate-900 border border-slate-700 text-slate-300 font-bold" id="page-current">1</span>
+          <button id="btn-next-page" onclick="changePage(1)" disabled class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed text-slate-200 transition">
+            Próximo <i class="fa-solid fa-chevron-right ml-1"></i>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: VER ANÁLISE / SCORE DETALHADO                                  -->
+  <!-- ===================================================================== -->
+  <div id="analysis-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-dark-card border border-dark-border w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-up">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-slate-900 border-b border-dark-border flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div id="modal-badge-score" class="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex flex-col items-center justify-center">
+            <span id="modal-score-val" class="font-black text-lg leading-tight">82</span>
+            <span class="text-[9px] uppercase font-bold">Score</span>
+          </div>
+          <div>
+            <h3 id="modal-channel-name" class="font-bold text-white text-base">Nome do Canal</h3>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span id="modal-status-badge" class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">QUALIFICADO</span>
+              <span id="modal-niche-badge" class="text-xs text-slate-400">Nicho: Marketing</span>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="closeAnalysisModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div class="p-6 overflow-y-auto space-y-6 custom-scrollbar text-xs">
+        
+        <!-- Qualification Reason Highlight Box -->
+        <div class="bg-slate-900/90 border border-amber-500/30 p-4 rounded-xl">
+          <div class="flex items-center gap-2 text-amber-400 font-bold mb-1">
+            <i class="fa-solid fa-lightbulb"></i>
+            <span>Diagnóstico do Qualificador</span>
+          </div>
+          <p id="modal-reason-text" class="text-slate-300 leading-relaxed text-xs">Canal ativo com excelente presença digital e sinais claros de venda.</p>
+        </div>
+
+        <!-- 2-Columns: Score Breakdown & Extracted Data Origins -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          <!-- Column 1: Score Points Breakdown -->
+          <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-xl">
+            <h4 class="font-bold text-slate-200 mb-3 flex items-center justify-between">
+              <span>Composição da Pontuação</span>
+              <span class="text-[10px] text-slate-500 uppercase">Regras Locais</span>
+            </h4>
+            <div id="modal-breakdown-list" class="space-y-2 text-xs">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Column 2: Direct Contacts & Origins -->
+          <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-xl">
+            <h4 class="font-bold text-slate-200 mb-3 flex items-center justify-between">
+              <span>Contatos & Origem dos Dados</span>
+              <span class="text-[10px] text-slate-500 uppercase">Extração Regex</span>
+            </h4>
+            <div id="modal-contacts-list" class="space-y-2 text-xs">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Commercial Signals & Keywords Found -->
+        <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-xl space-y-3">
+          <h4 class="font-bold text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-tags text-amber-400"></i>
+            <span>Sinais Comerciais & Palavras-Chave</span>
+          </h4>
+          <div id="modal-signals-chips" class="flex flex-wrap gap-1.5">
+            <!-- Chips rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Analyzed Recent Videos -->
+        <div class="space-y-3">
+          <h4 class="font-bold text-slate-200 flex items-center justify-between">
+            <span class="flex items-center gap-2">
+              <i class="fa-brands fa-youtube text-rose-500"></i>
+              <span>Últimos Vídeos Analisados</span>
+            </span>
+            <span class="text-[10px] text-slate-500">Playlist de Uploads</span>
+          </h4>
+          <div id="modal-videos-list" class="space-y-2">
+            <!-- Video cards rendered via JS -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-3.5 bg-slate-900 border-t border-dark-border flex items-center justify-between">
+        <div class="flex items-center gap-2 text-[11px] text-slate-400">
+          <span>Última análise:</span>
+          <strong id="modal-analyzed-at" class="text-slate-300">Hoje</strong>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="modal-btn-requalify" onclick="requalifyCurrentModalLead()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold transition">
+            <i class="fa-solid fa-arrows-rotate mr-1"></i> Requalificar
+          </button>
+          
+          <button disabled class="px-3.5 py-1.5 rounded-lg bg-cyan-950 text-cyan-500 border border-cyan-800/40 text-xs font-bold opacity-60 cursor-not-allowed" title="Disponível na Etapa 3">
+            <i class="fa-solid fa-envelope mr-1"></i> Criar Mensagem (Em Breve)
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: CONFIGURAÇÕES                                                  -->
+  <!-- ===================================================================== -->
+  <div id="config-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-dark-card border border-dark-border w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-scale-up">
+      <div class="px-6 py-4 bg-slate-900 border-b border-dark-border flex items-center justify-between">
+        <h3 class="font-bold text-white text-sm flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-amber-500"></i>
+          <span>Configurações do Qualificador</span>
+        </h3>
+        <button onclick="closeConfigModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs">
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Vídeos Recentes para Analisar por Canal</label>
+          <input type="number" id="cfg-videos-count" value="3" min="1" max="10" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500">
+          <span class="text-[10px] text-slate-500 mt-0.5 block">Padrão: 3 vídeos mais recentes.</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">Score Mínimo Qualificado</label>
+            <input type="number" id="cfg-threshold-qual" value="70" min="50" max="95" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">Score Mínimo Revisão</label>
+            <input type="number" id="cfg-threshold-rev" value="40" min="20" max="65" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Dias para Canal Ativo (Máximo)</label>
+          <input type="number" id="cfg-active-days" value="30" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Limite Diário de Quota (Unidades)</label>
+          <input type="number" id="cfg-quota-limit" value="9500" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500">
+        </div>
+      </div>
+
+      <div class="px-6 py-3.5 bg-slate-900 border-t border-dark-border flex justify-end gap-2">
+        <button onclick="closeConfigModal()" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 font-semibold text-xs transition">Cancelar</button>
+        <button onclick="saveConfigurations()" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition">Salvar Alterações</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
+
+  <!-- ===================================================================== -->
+  <!-- JAVASCRIPT FRONTEND CONTROLLER (LOCAL API CLIENT)                     -->
+  <!-- ===================================================================== -->
+  <script>
+    // State
+    let currentTab = 'ALL';
+    let currentPage = 1;
+    const pageSize = 50;
+    let selectedChannelIds = new Set();
+    let currentModalChannelId = null;
+    let isProcessingBatch = false;
+    let searchDebounceTimer = null;
+
+    // On Load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadStatusOverview();
+      loadLeads();
+    });
+
+    // 1. Load Status Overview & Connection Health
+    async function loadStatusOverview() {
+      try {
+        const res = await fetch('/api/qualification/status-overview');
+        if (!res.ok) throw new Error('Falha ao obter status');
+        const data = await res.json();
+
+        // Update indicators
+        const ytConnected = data.connections.youtube_api === 'connected';
+        document.getElementById('yt-text').textContent = ytConnected ? 'Conectada' : 'Sem Chave';
+        document.getElementById('yt-text').className = ytConnected ? 'text-emerald-400' : 'text-rose-400';
+
+        // Update metric cards
+        document.getElementById('stat-not-analyzed').textContent = data.stats.not_analyzed;
+        document.getElementById('stat-qualified').textContent = data.stats.qualified;
+        document.getElementById('stat-review').textContent = data.stats.review;
+        document.getElementById('stat-rejected').textContent = data.stats.rejected;
+        document.getElementById('stat-outreach-ready').textContent = data.stats.outreach_ready;
+
+        // Update tab count badges
+        document.getElementById('tab-count-all').textContent = data.stats.total_channels;
+        document.getElementById('tab-count-not-analyzed').textContent = data.stats.not_analyzed;
+        document.getElementById('tab-count-qualified').textContent = data.stats.qualified;
+        document.getElementById('tab-count-review').textContent = data.stats.review;
+        document.getElementById('tab-count-rejected').textContent = data.stats.rejected;
+        document.getElementById('tab-count-outreach').textContent = data.stats.outreach_ready;
+
+      } catch (err) {
+        console.error('Error fetching overview:', err);
+      }
+    }
+
+    // 2. Fetch Leads with Filters & Render Table
+    async function loadLeads() {
+      const tbody = document.getElementById('leads-tbody');
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" class="text-center py-8 text-slate-500">
+            <i class="fa-solid fa-circle-notch fa-spin text-amber-500 mb-2"></i>
+            <p>Carregando leads...</p>
+          </td>
+        </tr>
+      `;
+
+      const searchVal = document.getElementById('search-input').value.trim();
+      const hasEmail = document.getElementById('filter-email').checked;
+      const hasWhatsapp = document.getElementById('filter-whatsapp').checked;
+      const hasWebsite = document.getElementById('filter-website').checked;
+      const hasInsta = document.getElementById('filter-insta').checked;
+
+      const params = new URLSearchParams({
+        page: currentPage,
+        page_size: pageSize
+      });
+
+      if (currentTab !== 'ALL') {
+        params.append('status_filter', currentTab);
+      }
+      if (searchVal) params.append('q', searchVal);
+      if (hasEmail) params.append('has_email', 'true');
+      if (hasWhatsapp) params.append('has_whatsapp', 'true');
+      if (hasWebsite) params.append('has_website', 'true');
+      if (hasInsta) params.append('has_instagram', 'true');
+
+      try {
+        const res = await fetch(`/api/qualification/leads?${params.toString()}`);
+        if (!res.ok) throw new Error('Erro ao carregar lista de leads');
+        const data = await res.json();
+
+        renderTable(data.leads);
+        renderPagination(data.total, data.page, data.page_size);
+        loadStatusOverview();
+
+      } catch (err) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="text-center py-8 text-rose-400">
+              <i class="fa-solid fa-triangle-exclamation mb-1 text-lg"></i>
+              <p>${err.message}</p>
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    // 3. Render Table Rows
+    function renderTable(leads) {
+      const tbody = document.getElementById('leads-tbody');
+      if (!leads || leads.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="text-center py-12 text-slate-500">
+              <i class="fa-regular fa-folder-open text-2xl mb-2 text-slate-600 block"></i>
+              Nenhum lead encontrado com os filtros selecionados.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = leads.map(lead => {
+        const isChecked = selectedChannelIds.has(lead.channel_id) ? 'checked' : '';
+        
+        // Status Badge
+        let statusBadge = '';
+        if (lead.status === 'QUALIFIED') {
+          statusBadge = '<span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-emerald-950 text-emerald-400 border border-emerald-800">QUALIFICADO</span>';
+        } else if (lead.status === 'REVIEW') {
+          statusBadge = '<span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-amber-950 text-amber-400 border border-amber-800">REVISAR</span>';
+        } else if (lead.status === 'REJECTED') {
+          statusBadge = '<span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-rose-950 text-rose-400 border border-rose-800">DESCARTADO</span>';
+        } else if (lead.status === 'PROCESSING') {
+          statusBadge = '<span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">ANALISANDO...</span>';
+        } else if (lead.status === 'FAILED') {
+          statusBadge = '<span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-rose-900 text-rose-300 border border-rose-700" title="' + (lead.error_message || '') + '">ERRO</span>';
+        } else {
+          statusBadge = '<span class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-slate-800 text-slate-400 border border-slate-700">NÃO ANALISADO</span>';
+        }
+
+        // Score Badge
+        let scoreHtml = '<span class="text-slate-600 font-bold">—</span>';
+        if (lead.score !== null && lead.score !== undefined) {
+          let scoreColor = 'text-emerald-400 bg-emerald-950/60 border-emerald-800';
+          if (lead.score < 40) scoreColor = 'text-rose-400 bg-rose-950/60 border-rose-800';
+          else if (lead.score < 70) scoreColor = 'text-amber-400 bg-amber-950/60 border-amber-800';
+
+          scoreHtml = `<span class="inline-block px-2.5 py-0.5 rounded-full font-black text-xs border ${scoreColor}">${lead.score}/100</span>`;
+        }
+
+        // Days since last video
+        let lastVideoHtml = '<span class="text-slate-600">—</span>';
+        if (lead.days_since_last_video !== null && lead.days_since_last_video !== undefined) {
+          let dotColor = 'bg-emerald-500';
+          if (lead.days_since_last_video > 90) dotColor = 'bg-rose-500';
+          else if (lead.days_since_last_video > 30) dotColor = 'bg-amber-500';
+
+          lastVideoHtml = `
+            <div class="flex items-center justify-center gap-1.5">
+              <span class="w-2 h-2 rounded-full ${dotColor}"></span>
+              <span>${lead.days_since_last_video}d atrás</span>
+            </div>
+          `;
+        }
+
+        // Contacts icons
+        const emailIcon = lead.email 
+          ? `<span class="text-emerald-400 cursor-pointer" title="${lead.email}" onclick="copyText('${lead.email}', 'E-mail copiado!')"><i class="fa-solid fa-envelope"></i></span>`
+          : `<span class="text-slate-600"><i class="fa-regular fa-envelope"></i></span>`;
+
+        const waIcon = lead.whatsapp
+          ? `<span class="text-emerald-400 cursor-pointer" title="${lead.whatsapp}" onclick="copyText('${lead.whatsapp}', 'WhatsApp copiado!')"><i class="fa-brands fa-whatsapp"></i></span>`
+          : `<span class="text-slate-600"><i class="fa-brands fa-whatsapp"></i></span>`;
+
+        const siteIcon = lead.website
+          ? `<a href="${lead.website}" target="_blank" class="text-cyan-400 hover:underline" title="${lead.website}"><i class="fa-solid fa-globe"></i></a>`
+          : `<span class="text-slate-600"><i class="fa-solid fa-globe"></i></span>`;
+
+        const instaIcon = lead.instagram
+          ? `<a href="${lead.instagram}" target="_blank" class="text-pink-400 hover:underline" title="${lead.instagram}"><i class="fa-brands fa-instagram"></i></a>`
+          : `<span class="text-slate-600"><i class="fa-brands fa-instagram"></i></span>`;
+
+        // Action Button
+        let actionBtn = '';
+        if (lead.status === 'NOT_ANALYZED' || lead.status === 'PENDING' || lead.status === 'FAILED') {
+          actionBtn = `
+            <button onclick="qualifySingleLead('${lead.channel_id}')" class="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-sm">
+              <i class="fa-solid fa-bolt mr-1"></i> Qualificar
+            </button>
+          `;
+        } else {
+          actionBtn = `
+            <div class="flex items-center justify-end gap-1.5">
+              <button onclick="openAnalysisModal('${lead.channel_id}')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition">
+                <i class="fa-solid fa-eye mr-1 text-amber-400"></i> Ver
+              </button>
+              <button onclick="qualifySingleLead('${lead.channel_id}')" class="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition" title="Requalificar">
+                <i class="fa-solid fa-arrows-rotate"></i>
+              </button>
+            </div>
+          `;
+        }
+
+        return `
+          <tr class="hover:bg-dark-hover transition">
+            <td class="py-3 px-4 text-center">
+              <input type="checkbox" data-cid="${lead.channel_id}" onchange="toggleSelectRow(event, '${lead.channel_id}')" ${isChecked} class="row-checkbox rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0 cursor-pointer">
+            </td>
+            <td class="py-3 px-4">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-slate-400 text-xs shrink-0">
+                  ${lead.channel_name.charAt(0).toUpperCase()}
+                </div>
+                <div class="truncate max-w-[200px]">
+                  <a href="${lead.channel_url}" target="_blank" class="font-bold text-white hover:text-amber-400 transition truncate block">
+                    ${lead.channel_name}
+                  </a>
+                  <span class="text-[11px] text-slate-400 block">${lead.channel_handle || lead.channel_id}</span>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-4 text-center">${statusBadge}</td>
+            <td class="py-3 px-4 text-center font-semibold text-slate-200">${lead.subscribers ? lead.subscribers.toLocaleString('pt-BR') : '—'}</td>
+            <td class="py-3 px-4 text-center">${lastVideoHtml}</td>
+            <td class="py-3 px-4 text-center">${scoreHtml}</td>
+            <td class="py-3 px-4 text-center">
+              <div class="flex items-center justify-center gap-2 text-sm">
+                ${emailIcon}
+                ${waIcon}
+                ${siteIcon}
+                ${instaIcon}
+              </div>
+            </td>
+            <td class="py-3 px-4 text-right">${actionBtn}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 4. Render Pagination Controls
+    function renderPagination(total, page, size) {
+      document.getElementById('page-total').textContent = total;
+      const start = total === 0 ? 0 : (page - 1) * size + 1;
+      const end = Math.min(page * size, total);
+      document.getElementById('page-start').textContent = start;
+      document.getElementById('page-end').textContent = end;
+      document.getElementById('page-current').textContent = page;
+
+      document.getElementById('btn-prev-page').disabled = page <= 1;
+      document.getElementById('btn-next-page').disabled = end >= total;
+    }
+
+    function changePage(delta) {
+      currentPage += delta;
+      loadLeads();
+    }
+
+    // 5. Tabs & Search Handlers
+    function filterByTab(tabName) {
+      currentTab = tabName;
+      currentPage = 1;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        if (btn.dataset.tab === tabName) {
+          btn.className = 'tab-btn active px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold transition';
+        } else {
+          btn.className = 'tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
+        }
+      });
+      loadLeads();
+    }
+
+    function handleSearchInput(e) {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        currentPage = 1;
+        loadLeads();
+      }, 350);
+    }
+
+    // 6. Selection Logic
+    function toggleSelectRow(e, channelId) {
+      if (e.target.checked) {
+        selectedChannelIds.add(channelId);
+      } else {
+        selectedChannelIds.delete(channelId);
+      }
+      updateSelectedButtonState();
+    }
+
+    function toggleSelectAll(e) {
+      const checked = e.target.checked;
+      document.querySelectorAll('.row-checkbox').forEach(cb => {
+        cb.checked = checked;
+        const cid = cb.dataset.cid;
+        if (cid) {
+          if (checked) selectedChannelIds.add(cid);
+          else selectedChannelIds.delete(cid);
+        }
+      });
+      updateSelectedButtonState();
+    }
+
+    function updateSelectedButtonState() {
+      const btn = document.getElementById('btn-qualify-selected');
+      const label = document.getElementById('label-qualify-selected');
+      const count = selectedChannelIds.size;
+      label.textContent = `Qualificar Selecionados (${count})`;
+      btn.disabled = count === 0;
+    }
+
+    // 7. Qualify Single Channel Action
+    async function qualifySingleLead(channelId) {
+      showToast('Qualificando canal...', 'info');
+      try {
+        const res = await fetch(`/api/qualification/qualify-single/${channelId}`, {
+          method: 'POST'
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Erro ao qualificar canal');
+        }
+        const data = await res.json();
+        showToast(`Canal qualificado! Score: ${data.score}/100`, 'success');
+        loadLeads();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    // 8. Qualify Batch Actions (Selected or All Pending)
+    async function qualifySelectedLeads() {
+      if (selectedChannelIds.size === 0) return;
+      const ids = Array.from(selectedChannelIds);
+      runBatchProcessing(ids);
+    }
+
+    async function qualifyAllPending() {
+      runBatchProcessing([], true);
+    }
+
+    async function runBatchProcessing(channelIds, qualifyAll = false) {
+      isProcessingBatch = true;
+      const banner = document.getElementById('processing-banner');
+      banner.classList.remove('hidden');
+
+      const totalToProcess = qualifyAll ? 'todos pendentes' : channelIds.length;
+      document.getElementById('progress-text').textContent = `Iniciando processamento em lote (${totalToProcess})...`;
+      document.getElementById('progress-bar-fill').style.width = '15%';
+
+      try {
+        const res = await fetch('/api/qualification/qualify-batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            channel_ids: channelIds,
+            qualify_all_pending: qualifyAll,
+            batch_size: 50
+          })
+        });
+
+        if (!res.ok) throw new Error('Falha no processamento em lote');
+        const data = await res.json();
+
+        document.getElementById('progress-bar-fill').style.width = '100%';
+        document.getElementById('progress-text').textContent = `Concluído! ${data.completed} qualificados, ${data.failed} falhas.`;
+
+        showToast(`Lote finalizado com sucesso! ${data.completed} leads qualificados.`, 'success');
+        selectedChannelIds.clear();
+        updateSelectedButtonState();
+
+        setTimeout(() => {
+          banner.classList.add('hidden');
+          loadLeads();
+        }, 1800);
+
+      } catch (err) {
+        showToast(err.message, 'error');
+        banner.classList.add('hidden');
+      } finally {
+        isProcessingBatch = false;
+      }
+    }
+
+    function cancelBatchProcessing() {
+      document.getElementById('processing-banner').classList.add('hidden');
+      showToast('Fila pausada na visualização.', 'info');
+    }
+
+    // 9. Analysis Modal Logic
+    async function openAnalysisModal(channelId) {
+      currentModalChannelId = channelId;
+      const modal = document.getElementById('analysis-modal');
+      modal.classList.remove('hidden');
+
+      try {
+        const res = await fetch(`/api/qualification/leads/${channelId}/detail`);
+        if (!res.ok) throw new Error('Não foi possível carregar detalhes do canal');
+        const data = await res.json();
+
+        const ch = data.channel;
+        const q = data.qualification;
+        const vids = data.analyzed_videos || [];
+
+        document.getElementById('modal-channel-name').textContent = ch.channel_name;
+        document.getElementById('modal-score-val').textContent = q.score !== null ? q.score : '—';
+        document.getElementById('modal-status-badge').textContent = q.status;
+        document.getElementById('modal-niche-badge').textContent = `Nicho: ${q.detected_niche || 'Geral'} (${Math.round(q.niche_confidence * 100)}% conf)`;
+        document.getElementById('modal-reason-text').textContent = q.qualification_reason || 'Nenhuma observação registrada.';
+        document.getElementById('modal-analyzed-at').textContent = q.qualified_at || 'Hoje';
+
+        // Score Breakdown
+        const breakdownList = document.getElementById('modal-breakdown-list');
+        if (q.score_breakdown && Object.keys(q.score_breakdown).length > 0) {
+          breakdownList.innerHTML = Object.entries(q.score_breakdown).map(([k, v]) => {
+            const isPos = v > 0;
+            const color = isPos ? 'text-emerald-400' : (v < 0 ? 'text-rose-400' : 'text-slate-400');
+            const sign = isPos ? '+' : '';
+            return `
+              <div class="flex items-center justify-between py-1 border-b border-slate-800/60">
+                <span class="text-slate-400 capitalize">${k.replace(/_/g, ' ')}</span>
+                <span class="font-bold ${color}">${sign}${v}</span>
+              </div>
+            `;
+          }).join('');
+        } else {
+          breakdownList.innerHTML = '<span class="text-slate-500">Sem dados de breakdown</span>';
+        }
+
+        // Contacts & Sources
+        const contactsList = document.getElementById('modal-contacts-list');
+        contactsList.innerHTML = `
+          <div class="py-1 border-b border-slate-800/60 flex justify-between">
+            <span class="text-slate-400">E-mail:</span>
+            <span class="font-bold text-white">${q.email || '<span class="text-slate-600">Não encontrado</span>'}</span>
+          </div>
+          ${q.email_source ? `<div class="text-[10px] text-slate-500 -mt-1 mb-1">Origem: ${q.email_source}</div>` : ''}
+
+          <div class="py-1 border-b border-slate-800/60 flex justify-between">
+            <span class="text-slate-400">WhatsApp:</span>
+            <span class="font-bold text-white">${q.whatsapp || '<span class="text-slate-600">Não encontrado</span>'}</span>
+          </div>
+
+          <div class="py-1 border-b border-slate-800/60 flex justify-between">
+            <span class="text-slate-400">Website:</span>
+            <span class="font-bold text-cyan-400 truncate max-w-[180px]">${q.website ? `<a href="${q.website}" target="_blank">${q.website}</a>` : '<span class="text-slate-600 font-normal">Não encontrado</span>'}</span>
+          </div>
+
+          <div class="py-1 border-b border-slate-800/60 flex justify-between">
+            <span class="text-slate-400">Instagram:</span>
+            <span class="font-bold text-pink-400 truncate max-w-[180px]">${q.instagram ? `<a href="${q.instagram}" target="_blank">${q.instagram}</a>` : '<span class="text-slate-600 font-normal">Não encontrado</span>'}</span>
+          </div>
+        `;
+
+        // Commercial signals chips
+        const signalsContainer = document.getElementById('modal-signals-chips');
+        const signals = q.commercial_signals || [];
+        const keywords = q.keywords_found || [];
+        if (signals.length === 0 && keywords.length === 0) {
+          signalsContainer.innerHTML = '<span class="text-slate-500">Nenhum sinal comercial detectado</span>';
+        } else {
+          const sigHtml = signals.map(s => `
+            <span class="px-2 py-1 rounded bg-amber-950/60 text-amber-300 border border-amber-800/40 text-[11px] font-semibold flex items-center gap-1">
+              <i class="fa-solid fa-check text-amber-400 text-[10px]"></i>
+              ${s.type.replace(/_/g, ' ')}
+            </span>
+          `).join('');
+
+          const kwHtml = keywords.map(k => `
+            <span class="px-2 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[11px]" title="${k.context}">
+              #${k.keyword}
+            </span>
+          `).join('');
+
+          signalsContainer.innerHTML = sigHtml + kwHtml;
+        }
+
+        // Recent Videos List
+        const videosList = document.getElementById('modal-videos-list');
+        if (vids.length === 0) {
+          videosList.innerHTML = '<span class="text-slate-500">Nenhum vídeo registrado</span>';
+        } else {
+          videosList.innerHTML = vids.map(v => `
+            <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800 flex flex-col gap-1">
+              <div class="flex items-start justify-between gap-2">
+                <h5 class="font-bold text-slate-200 line-clamp-1">${v.title}</h5>
+                <span class="text-[10px] text-slate-400 whitespace-nowrap">${v.published_at || ''}</span>
+              </div>
+              <p class="text-[11px] text-slate-400 line-clamp-2">${v.description || 'Sem descrição.'}</p>
+              <div class="flex items-center gap-3 text-[10px] text-slate-500 mt-1">
+                <span><i class="fa-solid fa-eye mr-1"></i>${v.view_count.toLocaleString('pt-BR')} views</span>
+                <span><i class="fa-solid fa-thumbs-up mr-1"></i>${v.like_count.toLocaleString('pt-BR')} likes</span>
+                <span><i class="fa-solid fa-comments mr-1"></i>${v.comment_count.toLocaleString('pt-BR')} comentários</span>
+              </div>
+            </div>
+          `).join('');
+        }
+
+      } catch (err) {
+        showToast(err.message, 'error');
+        closeAnalysisModal();
+      }
+    }
+
+    function closeAnalysisModal() {
+      document.getElementById('analysis-modal').classList.add('hidden');
+      currentModalChannelId = null;
+    }
+
+    async function requalifyCurrentModalLead() {
+      if (!currentModalChannelId) return;
+      await qualifySingleLead(currentModalChannelId);
+      openAnalysisModal(currentModalChannelId);
+    }
+
+    // 10. Config Modal Logic
+    function openConfigModal() {
+      document.getElementById('config-modal').classList.remove('hidden');
+    }
+
+    function closeConfigModal() {
+      document.getElementById('config-modal').classList.add('hidden');
+    }
+
+    async function saveConfigurations() {
+      const videosCount = parseInt(document.getElementById('cfg-videos-count').value);
+      const thresholdQual = parseInt(document.getElementById('cfg-threshold-qual').value);
+      const thresholdRev = parseInt(document.getElementById('cfg-threshold-rev').value);
+      const activeDays = parseInt(document.getElementById('cfg-active-days').value);
+      const quotaLimit = parseInt(document.getElementById('cfg-quota-limit').value);
+
+      try {
+        const res = await fetch('/api/qualification/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            videos_to_analyze: videosCount,
+            score_qualified_threshold: thresholdQual,
+            score_review_threshold: thresholdRev,
+            active_days_threshold: activeDays,
+            daily_quota_limit: quotaLimit
+          })
+        });
+
+        if (!res.ok) throw new Error('Erro ao salvar configurações');
+        showToast('Configurações salvas com sucesso!', 'success');
+        closeConfigModal();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    // 11. Utilities (Toast & Clipboard)
+    function copyText(text, msg) {
+      navigator.clipboard.writeText(text);
+      showToast(msg || 'Copiado para a área de transferência!', 'success');
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      let bg = 'bg-slate-800 border-slate-700 text-slate-200';
+      if (type === 'success') bg = 'bg-emerald-950 border-emerald-700 text-emerald-300';
+      if (type === 'error') bg = 'bg-rose-950 border-rose-700 text-rose-300';
+
+      toast.className = `flex items-center gap-2 px-4 py-2.5 rounded-xl border shadow-xl text-xs font-semibold transition-all duration-300 ${bg}`;
+      toast.innerHTML = `
+        <i class="fa-solid ${type === 'success' ? 'fa-circle-check' : (type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info')}"></i>
+        <span>${message}</span>
+      `;
+
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+  </script>
+
+</body>
+</html>
