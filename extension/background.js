@@ -13,10 +13,10 @@ chrome.runtime.onInstalled.addListener(() => {
       .catch((error) => console.error("[SidePanel] Erro ao definir comportamento:", error));
   }
 
-  // Define URL padrão se ainda não existir
+  // Define URL padrão se ainda não existir ou se for localhost legado
   chrome.storage.local.get(["apiUrl"], (result) => {
-    if (!result.apiUrl) {
-      chrome.storage.local.set({ apiUrl: "http://localhost:8000/api" });
+    if (!result.apiUrl || result.apiUrl.includes("localhost:8000")) {
+      chrome.storage.local.set({ apiUrl: "https://prospect-os-seven.vercel.app/api" });
     }
   });
 });

@@ -64,7 +64,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const teamTodayCount = document.getElementById("teamTodayCount");
   const btnOpenDashboard = document.getElementById("btnOpenDashboard");
 
-  let dashboardUrl = "http://localhost:8000/dashboard";
+  let dashboardUrl = "https://prospect-os-seven.vercel.app/dashboard";
   let currentSession = null;
   let timerInterval = null;
   let selectedCycleType = "8H";
@@ -99,7 +99,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   chrome.storage.local.get(["apiUrl"], (result) => {
-    customApiUrl.value = result.apiUrl || "http://localhost:8000/api";
+    let url = result.apiUrl || "https://prospect-os-seven.vercel.app/api";
+    if (url.includes("localhost:8000")) {
+      url = "https://prospect-os-seven.vercel.app/api";
+      chrome.storage.local.set({ apiUrl: url });
+    }
+    customApiUrl.value = url;
   });
 
   customApiUrl.addEventListener("change", () => {

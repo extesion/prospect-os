@@ -303,27 +303,29 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ADMIN SHORTCUTS
   // --------------------------------------------------------------------------
 
+  const BASE_WEB_URL = "https://prospect-os-seven.vercel.app";
+
   if (btnOpenDashboard) {
     btnOpenDashboard.addEventListener("click", () => {
-      chrome.tabs.create({ url: "http://localhost:8000/dashboard" });
+      chrome.tabs.create({ url: `${BASE_WEB_URL}/dashboard` });
     });
   }
 
   if (btnOpenQualifier) {
     btnOpenQualifier.addEventListener("click", () => {
-      chrome.tabs.create({ url: "http://localhost:8000/qualifier" });
+      chrome.tabs.create({ url: `${BASE_WEB_URL}/qualifier` });
     });
   }
 
   if (btnOpenUsers) {
     btnOpenUsers.addEventListener("click", () => {
-      chrome.tabs.create({ url: "http://localhost:8000/users" });
+      chrome.tabs.create({ url: `${BASE_WEB_URL}/users` });
     });
   }
 
   if (btnOpenApis) {
     btnOpenApis.addEventListener("click", () => {
-      chrome.tabs.create({ url: "http://localhost:8000/youtube-apis" });
+      chrome.tabs.create({ url: `${BASE_WEB_URL}/youtube-apis` });
     });
   }
 

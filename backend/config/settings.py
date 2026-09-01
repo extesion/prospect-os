@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     ]
     
     # Dashboard URL (config for extension)
-    DASHBOARD_URL: str = os.getenv("DASHBOARD_URL", "http://localhost:8000/dashboard")
+    DASHBOARD_URL: str = os.getenv("DASHBOARD_URL", "https://prospect-os-seven.vercel.app/dashboard")
 
     # YouTube API
     YOUTUBE_API_KEY: str = os.getenv("YOUTUBE_API_KEY", "")

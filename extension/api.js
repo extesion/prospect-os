@@ -4,13 +4,18 @@
  */
 class ProspectorAPI {
   constructor() {
-    this.defaultBaseUrl = "http://localhost:8000/api";
+    this.defaultBaseUrl = "https://prospect-os-seven.vercel.app/api";
   }
 
   async getBaseUrl() {
     return new Promise((resolve) => {
       chrome.storage.local.get(["apiUrl"], (result) => {
         let url = result.apiUrl || this.defaultBaseUrl;
+        // Auto-migrate legacy localhost URLs to production Vercel
+        if (!url || url.includes("localhost:8000")) {
+          url = this.defaultBaseUrl;
+          chrome.storage.local.set({ apiUrl: url });
+        }
         // Strip trailing slash
         if (url.endsWith("/")) url = url.slice(0, -1);
         // Ensure /api path if not present
