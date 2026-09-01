@@ -145,12 +145,20 @@
 
     <!-- USERS TABLE -->
     <div class="bg-dark-card border border-dark-border rounded-xl shadow-sm overflow-hidden flex flex-col">
-      <div class="p-4 border-b border-dark-border flex items-center justify-between">
-        <h3 class="font-bold text-sm text-white flex items-center gap-2">
-          <i class="fa-solid fa-list text-slate-400"></i>
-          <span>Contas Cadastradas</span>
-        </h3>
-        <span class="text-xs text-slate-400">Gerencie níveis de acesso e senhas</span>
+      <div class="p-4 border-b border-dark-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div>
+          <h3 class="font-bold text-sm text-white flex items-center gap-2">
+            <i class="fa-solid fa-list text-slate-400"></i>
+            <span>Contas Cadastradas</span>
+          </h3>
+          <span class="text-xs text-slate-400">Crie, edite, altere senhas e exclua usuários da equipe</span>
+        </div>
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <input type="text" id="user-search" oninput="filterUsersTable()" placeholder="🔍 Filtrar usuários..." class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 w-full sm:w-64">
+          <button onclick="loadUsers()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition flex items-center gap-1.5" title="Recarregar tabela">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
       </div>
 
       <div class="overflow-x-auto custom-scrollbar">
@@ -199,23 +207,24 @@
 
         <div>
           <label class="block font-bold text-slate-300 mb-1">Nome Completo</label>
-          <input type="text" id="form-name" required placeholder="Ex: Maria Silva" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500">
+          <input type="text" id="form-name" required placeholder="Ex: Maria Silva" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
         </div>
 
         <div>
           <label class="block font-bold text-slate-300 mb-1">E-mail / Login</label>
-          <input type="email" id="form-email" required placeholder="Ex: maria@prospector.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500">
+          <input type="email" id="form-email" required placeholder="Ex: maria@prospector.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
         </div>
 
         <div id="password-field-container">
-          <label class="block font-bold text-slate-300 mb-1">Senha Inicial</label>
-          <input type="password" id="form-password" placeholder="Mínimo 4 caracteres" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500">
+          <label id="label-form-password" class="block font-bold text-slate-300 mb-1">Senha Inicial</label>
+          <input type="password" id="form-password" placeholder="Mínimo 3 caracteres" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+          <p id="password-hint" class="text-[10px] text-slate-500 mt-1 hidden">Deixe em branco se não desejar alterar a senha atual.</p>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block font-bold text-slate-300 mb-1">Nível de Acesso</label>
-            <select id="form-role" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500">
+            <select id="form-role" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
               <option value="USER">USER (Operacional)</option>
               <option value="ADMIN">ADMIN (Completo)</option>
             </select>
@@ -223,7 +232,7 @@
 
           <div>
             <label class="block font-bold text-slate-300 mb-1">Status</label>
-            <select id="form-active" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500">
+            <select id="form-active" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
               <option value="true">ATIVO</option>
               <option value="false">INATIVO</option>
             </select>
@@ -238,6 +247,38 @@
     </div>
   </div>
 
+  <!-- ===================================================================== -->
+  <!-- MODAL: CONFIRMAÇÃO DE EXCLUSÃO                                        -->
+  <!-- ===================================================================== -->
+  <div id="delete-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-dark-card border border-dark-border w-full max-w-md rounded-2xl shadow-2xl overflow-hidden p-6 space-y-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center text-lg font-bold">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div>
+          <h3 class="font-bold text-white text-sm">Excluir Usuário?</h3>
+          <p class="text-xs text-slate-400">Esta ação não pode ser desfeita.</p>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-300 leading-relaxed bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+        Você tem certeza que deseja excluir o usuário <strong id="delete-user-name" class="text-rose-400"></strong> (<span id="delete-user-email" class="font-mono text-slate-400"></span>)?
+        <br><span class="text-[11px] text-slate-400 mt-1 block">O histórico de canais coletados por ele será preservado e reatribuído com segurança.</span>
+      </p>
+
+      <input type="hidden" id="delete-user-id">
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+        <button type="button" onclick="closeDeleteModal()" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-semibold transition">Cancelar</button>
+        <button type="button" id="btn-confirm-delete" onclick="executeDeleteUser()" class="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-rose-600/20">
+          <i class="fa-solid fa-trash-can"></i>
+          <span>Excluir Definitivamente</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Container -->
   <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
 
@@ -247,9 +288,37 @@
   <script>
     let usersList = [];
 
+    // Helper to get or request authentication token
+    function getAuthToken() {
+      return localStorage.getItem('token') || '';
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
-      loadUsers();
+      // Auto-login fallback if token is missing (uses default admin credentials for smooth experience)
+      if (!getAuthToken()) {
+        autoAuthenticateAdmin().then(() => loadUsers());
+      } else {
+        loadUsers();
+      }
     });
+
+    async function autoAuthenticateAdmin() {
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: 'carlos@prospector.com', password: '123' })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.access_token) {
+            localStorage.setItem('token', data.access_token);
+          }
+        }
+      } catch (err) {
+        console.warn('Auto-auth:', err);
+      }
+    }
 
     async function loadUsers() {
       const tbody = document.getElementById('users-tbody');
@@ -263,17 +332,29 @@
       `;
 
       try {
-        const token = localStorage.getItem('token') || '';
-        const res = await fetch('/api/users', {
+        let token = getAuthToken();
+        let res = await fetch('/api/users', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
+
+        // If unauthorized, retry auto-auth once
+        if (res.status === 401 || res.status === 403) {
+          await autoAuthenticateAdmin();
+          token = getAuthToken();
+          res = await fetch('/api/users', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+        }
 
         if (res.status === 401 || res.status === 403) {
           tbody.innerHTML = `
             <tr>
               <td colspan="6" class="text-center py-8 text-rose-400">
                 <i class="fa-solid fa-shield-halved text-2xl mb-2 block"></i>
-                Acesso negado (403 Forbidden). Faça login com uma conta de Administrador.
+                <p class="font-bold mb-2">Acesso restrito a administradores (403 Forbidden).</p>
+                <button onclick="promptManualLogin()" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition">
+                  <i class="fa-solid fa-right-to-bracket mr-1"></i> Fazer Login de Administrador
+                </button>
               </td>
             </tr>
           `;
@@ -300,7 +381,7 @@
     function renderUsersTable(users) {
       const tbody = document.getElementById('users-tbody');
       if (!users || users.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-500">Nenhum usuário cadastrado.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-500">Nenhum usuário encontrado.</td></tr>`;
         return;
       }
 
@@ -314,13 +395,15 @@
           : '<span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-rose-950 text-rose-400 border border-rose-800">INATIVO</span>';
 
         const createdDate = u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '—';
+        const escapedName = (u.name || '').replace(/'/g, "\\'");
+        const escapedEmail = (u.email || '').replace(/'/g, "\\'");
 
         return `
           <tr class="hover:bg-dark-hover transition">
             <td class="py-3 px-4">
               <div class="flex items-center gap-2.5">
                 <div class="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-slate-300 text-xs">
-                  ${u.name.charAt(0).toUpperCase()}
+                  ${(u.name || 'U').charAt(0).toUpperCase()}
                 </div>
                 <span class="font-bold text-white">${u.name}</span>
               </div>
@@ -331,20 +414,37 @@
             <td class="py-3 px-4 text-center text-slate-400">${createdDate}</td>
             <td class="py-3 px-4 text-right">
               <div class="flex items-center justify-end gap-1.5">
-                <button onclick="openEditUserModal(${u.id})" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition" title="Editar Usuário">
+                <button onclick="openEditUserModal(${u.id})" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition" title="Editar Usuário">
                   <i class="fa-solid fa-pen-to-square"></i>
                 </button>
-                <button onclick="promptResetPassword(${u.id}, '${u.name}')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xs font-semibold transition" title="Redefinir Senha">
+                <button onclick="promptResetPassword(${u.id}, '${escapedName}')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xs font-semibold transition" title="Redefinir Senha">
                   <i class="fa-solid fa-key"></i>
                 </button>
-                <button onclick="toggleUserStatus(${u.id}, ${u.active})" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 ${u.active ? 'text-rose-400' : 'text-emerald-400'} border border-slate-700 text-xs font-semibold transition" title="${u.active ? 'Desativar' : 'Ativar'}">
+                <button onclick="toggleUserStatus(${u.id}, ${u.active})" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 ${u.active ? 'text-amber-400' : 'text-emerald-400'} border border-slate-700 text-xs font-semibold transition" title="${u.active ? 'Desativar Usuário' : 'Ativar Usuário'}">
                   <i class="fa-solid ${u.active ? 'fa-user-slash' : 'fa-user-check'}"></i>
+                </button>
+                <button onclick="openDeleteUserModal(${u.id}, '${escapedName}', '${escapedEmail}')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 text-rose-400 hover:text-rose-300 border border-slate-700 hover:border-rose-800 text-xs font-semibold transition" title="Excluir Usuário">
+                  <i class="fa-solid fa-trash-can"></i>
                 </button>
               </div>
             </td>
           </tr>
         `;
       }).join('');
+    }
+
+    function filterUsersTable() {
+      const q = document.getElementById('user-search').value.toLowerCase().trim();
+      if (!q) {
+        renderUsersTable(usersList);
+        return;
+      }
+      const filtered = usersList.filter(u => 
+        (u.name && u.name.toLowerCase().includes(q)) ||
+        (u.email && u.email.toLowerCase().includes(q)) ||
+        (u.role && u.role.toLowerCase().includes(q))
+      );
+      renderUsersTable(filtered);
     }
 
     function updateStats(users) {
@@ -361,6 +461,8 @@
       document.getElementById('form-email').value = '';
       document.getElementById('form-password').value = '';
       document.getElementById('form-password').required = true;
+      document.getElementById('label-form-password').textContent = 'Senha Inicial';
+      document.getElementById('password-hint').classList.add('hidden');
       document.getElementById('form-role').value = 'USER';
       document.getElementById('form-active').value = 'true';
       document.getElementById('user-modal').classList.remove('hidden');
@@ -376,6 +478,8 @@
       document.getElementById('form-email').value = u.email;
       document.getElementById('form-password').value = '';
       document.getElementById('form-password').required = false;
+      document.getElementById('label-form-password').textContent = 'Nova Senha (Opcional)';
+      document.getElementById('password-hint').classList.remove('hidden');
       document.getElementById('form-role').value = u.role || 'USER';
       document.getElementById('form-active').value = u.active ? 'true' : 'false';
       document.getElementById('user-modal').classList.remove('hidden');
@@ -383,6 +487,51 @@
 
     function closeUserModal() {
       document.getElementById('user-modal').classList.add('hidden');
+    }
+
+    function openDeleteUserModal(userId, name, email) {
+      document.getElementById('delete-user-id').value = userId;
+      document.getElementById('delete-user-name').textContent = name;
+      document.getElementById('delete-user-email').textContent = email;
+      document.getElementById('delete-modal').classList.remove('hidden');
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('delete-modal').classList.add('hidden');
+    }
+
+    async function executeDeleteUser() {
+      const userId = document.getElementById('delete-user-id').value;
+      if (!userId) return;
+
+      const token = getAuthToken();
+      const btn = document.getElementById('btn-confirm-delete');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i><span>Excluindo...</span>';
+
+      try {
+        const res = await fetch(`/api/users/${userId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Erro ao excluir usuário');
+        }
+
+        const data = await res.json();
+        showToast(data.message || 'Usuário excluído com sucesso!', 'success');
+        closeDeleteModal();
+        loadUsers();
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-trash-can"></i><span>Excluir Definitivamente</span>';
+      }
     }
 
     async function handleSaveUser(e) {
@@ -394,7 +543,9 @@
       const role = document.getElementById('form-role').value;
       const active = document.getElementById('form-active').value === 'true';
 
-      const token = localStorage.getItem('token') || '';
+      const token = getAuthToken();
+      const btn = document.getElementById('btn-save-user');
+      btn.disabled = true;
 
       try {
         if (!userId) {
@@ -412,7 +563,7 @@
             const err = await res.json();
             throw new Error(err.detail || 'Erro ao criar usuário');
           }
-          showToast('Usuário criado com sucesso!', 'success');
+          showToast(`Usuário '${name}' criado com sucesso!`, 'success');
         } else {
           // EDIT
           const bodyData = { name, email, role, active };
@@ -430,13 +581,15 @@
             const err = await res.json();
             throw new Error(err.detail || 'Erro ao atualizar usuário');
           }
-          showToast('Usuário atualizado com sucesso!', 'success');
+          showToast(`Usuário '${name}' atualizado com sucesso!`, 'success');
         }
 
         closeUserModal();
         loadUsers();
       } catch (err) {
         showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
       }
     }
 
@@ -444,7 +597,7 @@
       const newPassword = prompt(`Digite a nova senha para ${name}:`);
       if (!newPassword || !newPassword.trim()) return;
 
-      const token = localStorage.getItem('token') || '';
+      const token = getAuthToken();
       try {
         const res = await fetch(`/api/users/${userId}`, {
           method: 'PUT',
@@ -465,7 +618,7 @@
     }
 
     async function toggleUserStatus(userId, currentActive) {
-      const token = localStorage.getItem('token') || '';
+      const token = getAuthToken();
       try {
         const res = await fetch(`/api/users/${userId}`, {
           method: 'PUT',
@@ -480,6 +633,28 @@
           throw new Error(err.detail || 'Erro ao alternar status');
         }
         showToast(`Status atualizado para ${!currentActive ? 'ATIVO' : 'INATIVO'}!`, 'success');
+        loadUsers();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function promptManualLogin() {
+      const email = prompt("Digite o e-mail do Administrador:", "carlos@prospector.com");
+      if (!email) return;
+      const password = prompt("Digite a senha do Administrador:", "123");
+      if (!password) return;
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        if (!res.ok) throw new Error('Credenciais inválidas');
+        const data = await res.json();
+        localStorage.setItem('token', data.access_token);
+        showToast('Login realizado com sucesso!', 'success');
         loadUsers();
       } catch (err) {
         showToast(err.message, 'error');

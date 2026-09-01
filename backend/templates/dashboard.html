@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
       --bg: #090a0f;
@@ -20,6 +21,7 @@
       --accent-gradient: linear-gradient(135deg, #ef4444, #f97316);
       --success: #10b981;
       --warning: #f59e0b;
+      --danger: #ef4444;
       --text: #f8fafc;
       --text-muted: #94a3b8;
       --table-header: #181b26;
@@ -186,7 +188,7 @@
     /* KPI Metrics Grid */
     .metrics-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 18px;
     }
 
@@ -230,6 +232,10 @@
       background: linear-gradient(135deg, #f59e0b, #fbbf24);
     }
 
+    .metric-card.indigo::after {
+      background: linear-gradient(135deg, #6366f1, #818cf8);
+    }
+
     .metric-label {
       font-size: 12px;
       font-weight: 700;
@@ -250,21 +256,7 @@
       color: var(--text-muted);
     }
 
-    /* Section Title */
-    .section-title-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 6px;
-    }
-
-    .section-title {
-      font-size: 16px;
-      font-weight: 800;
-      letter-spacing: -0.3px;
-    }
-
-    /* Team Members Live Grid */
+    /* Team Members Grid */
     .team-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -274,16 +266,12 @@
     .member-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 20px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      transition: all 0.2s;
-    }
-
-    .member-card:hover {
-      border-color: var(--card-hover);
+      gap: 16px;
+      position: relative;
     }
 
     .member-header {
@@ -295,149 +283,149 @@
     .member-info {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
 
     .member-avatar {
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
-      background: #1c2030;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: #1e2230;
+      border: 1px solid var(--card-border);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 700;
+      font-weight: 800;
+      font-size: 16px;
       color: var(--primary);
     }
 
     .member-name {
+      font-size: 15px;
       font-weight: 700;
-      font-size: 14px;
     }
 
     .status-tag {
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 4px 10px;
       border-radius: 20px;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .status-tag.active {
       background: rgba(16, 185, 129, 0.15);
-      color: #10b981;
+      color: var(--success);
       border: 1px solid rgba(16, 185, 129, 0.3);
     }
 
     .status-tag.paused {
       background: rgba(245, 158, 11, 0.15);
-      color: #f59e0b;
+      color: var(--warning);
       border: 1px solid rgba(245, 158, 11, 0.3);
     }
 
-    .status-tag.idle {
-      background: rgba(255, 255, 255, 0.05);
+    .status-tag.finished {
+      background: rgba(148, 163, 184, 0.15);
       color: var(--text-muted);
-      border: 1px solid var(--card-border);
+      border: 1px solid rgba(148, 163, 184, 0.3);
     }
 
     .member-stats-row {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
-      background: #181a24;
-      padding: 10px;
-      border-radius: 10px;
+      background: #0f1118;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
       text-align: center;
     }
 
     .m-stat-val {
-      font-weight: 800;
       font-size: 14px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
     }
 
     .m-stat-val.highlight {
       color: var(--primary);
-      font-family: 'JetBrains Mono', monospace;
     }
 
     .m-stat-lbl {
-      font-size: 9px;
+      font-size: 10px;
       color: var(--text-muted);
-      text-transform: uppercase;
+      font-weight: 600;
       margin-top: 2px;
     }
 
-    /* Progress bar */
     .progress-wrapper {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 6px;
     }
 
     .progress-bar-bg {
-      background: #1e2230;
       height: 6px;
-      border-radius: 3px;
+      background: #1b1e2a;
+      border-radius: 10px;
       overflow: hidden;
     }
 
     .progress-bar-fill {
-      background: var(--primary-gradient);
       height: 100%;
-      border-radius: 3px;
+      background: var(--primary-gradient);
+      border-radius: 10px;
       transition: width 0.3s ease;
     }
 
-    /* Ranking Section */
+    /* Section & Content Cards */
+    .content-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .content-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Ranking Items */
     .ranking-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 16px;
-      overflow: hidden;
-    }
-
-    .filter-pills {
+      padding: 24px;
       display: flex;
-      gap: 8px;
-    }
-
-    .filter-pill {
-      background: #181a24;
-      border: 1px solid var(--card-border);
-      color: var(--text-muted);
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .filter-pill.active {
-      background: var(--primary);
-      color: #ffffff;
-      border-color: var(--primary);
+      flex-direction: column;
+      gap: 14px;
     }
 
     .ranking-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 24px;
-      border-bottom: 1px solid var(--card-border);
-      transition: background 0.2s;
-    }
-
-    .ranking-item:last-child {
-      border-bottom: none;
-    }
-
-    .ranking-item:hover {
-      background: rgba(255, 255, 255, 0.02);
+      padding: 16px 20px;
+      background: #141722;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
     }
 
     .rank-left {
@@ -449,57 +437,27 @@
     .rank-num {
       width: 32px;
       height: 32px;
-      border-radius: 50%;
+      border-radius: 8px;
+      background: #1c202e;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 800;
       font-size: 14px;
-      background: #181b26;
-      color: var(--text-muted);
     }
 
-    .rank-num.top1 {
-      background: linear-gradient(135deg, #f59e0b, #fbbf24);
-      color: #000000;
-      box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
-    }
-
-    .rank-num.top2 {
-      background: linear-gradient(135deg, #94a3b8, #cbd5e1);
-      color: #000000;
-    }
-
-    .rank-num.top3 {
-      background: linear-gradient(135deg, #b45309, #d97706);
-      color: #ffffff;
-    }
+    .rank-num.top1 { background: #f59e0b; color: #000; }
+    .rank-num.top2 { background: #94a3b8; color: #000; }
+    .rank-num.top3 { background: #b45309; color: #fff; }
 
     .rank-hours {
-      font-size: 18px;
-      font-weight: 800;
       font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 16px;
       color: var(--primary);
     }
 
-    /* Table Styles */
-    .content-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      overflow: hidden;
-    }
-
-    .content-header {
-      padding: 18px 24px;
-      border-bottom: 1px solid var(--card-border);
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-    }
-
+    /* Tables */
     .table-container {
       overflow-x: auto;
     }
@@ -553,10 +511,51 @@
       text-decoration: none;
     }
 
+    .btn:hover {
+      opacity: 0.92;
+      transform: translateY(-1px);
+    }
+
     .btn-secondary {
       background: #1e2230;
       border: 1px solid var(--card-border);
       color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: #282d40;
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #dc2626, #ef4444);
+      color: white;
+      border: none;
+    }
+
+    .btn-danger:hover {
+      background: linear-gradient(135deg, #b91c1c, #dc2626);
+    }
+
+    .btn-icon {
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      border: 1px solid var(--card-border);
+      background: #1c202e;
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+      color: #fff;
+      background: #252a3d;
+    }
+
+    .btn-icon.delete:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: var(--danger);
     }
 
     .search-input {
@@ -568,6 +567,43 @@
       font-size: 13px;
       outline: none;
       min-width: 240px;
+    }
+
+    .search-input:focus {
+      border-color: var(--primary);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .badge-admin {
+      background: rgba(99, 102, 241, 0.15);
+      color: #818cf8;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    .badge-user {
+      background: rgba(148, 163, 184, 0.15);
+      color: #cbd5e1;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .badge-active {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-inactive {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
     }
 
     /* Config Tab Form */
@@ -595,7 +631,7 @@
       text-transform: uppercase;
     }
 
-    .form-group input {
+    .form-group input, .form-group select {
       background: #181a24;
       border: 1px solid var(--card-border);
       color: var(--text);
@@ -604,6 +640,132 @@
       font-size: 14px;
       outline: none;
     }
+
+    .form-group input:focus, .form-group select:focus {
+      border-color: var(--primary);
+    }
+
+    /* Modal Overlay & Card */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 7, 12, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-card {
+      background: #121520;
+      border: 1px solid var(--card-border);
+      width: 100%;
+      max-width: 480px;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      animation: modalFadeIn 0.2s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-header {
+      background: #171b28;
+      border-bottom: 1px solid var(--card-border);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-size: 15px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 18px;
+      cursor: pointer;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .modal-close:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    .modal-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      background: #141722;
+    }
+
+    /* Toast */
+    #toastContainer {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 120;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toast-msg {
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.1);
+      animation: toastIn 0.3s ease-out;
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .toast-msg.success { background: #064e3b; color: #a7f3d0; border-color: #059669; }
+    .toast-msg.error { background: #7f1d1d; color: #fecaca; border-color: #dc2626; }
+    .toast-msg.info { background: #1e293b; color: #e2e8f0; border-color: #475569; }
   </style>
 </head>
 <body>
@@ -622,12 +784,13 @@
       <button class="nav-tab-btn" data-tab="ranking">🏆 Ranking de Horas</button>
       <button class="nav-tab-btn" data-tab="history">📜 Histórico</button>
       <button class="nav-tab-btn" data-tab="channels">📺 Canais Coletados</button>
+      <button class="nav-tab-btn" data-tab="users">👥 Usuários</button>
       <button class="nav-tab-btn" data-tab="settings">⚙️ Configurações</button>
     </nav>
 
     <div class="header-right">
       <a href="/qualifier" class="btn btn-secondary" style="font-size: 12px; text-decoration: none;">⚡ Qualificador</a>
-      <a href="/users" class="btn btn-secondary" style="font-size: 12px; text-decoration: none;">👥 Usuários</a>
+      <a href="/users" class="btn btn-secondary" style="font-size: 12px; text-decoration: none;">👥 Gestão Completa</a>
       <a href="/youtube-apis" class="btn btn-secondary" style="font-size: 12px; text-decoration: none;">🔑 APIs</a>
       <div class="live-badge">
         <span class="live-dot"></span>
@@ -658,33 +821,30 @@
         <div class="metric-card">
           <div class="metric-label">Média da Equipe</div>
           <div class="metric-value" id="kpiTeamRate">0.0</div>
-          <div class="metric-sub">Canais por hora em média</div>
+          <div class="metric-sub">Canais por hora / prospector</div>
         </div>
       </div>
 
-      <div class="section-title-bar">
-        <div class="section-title">Status em Tempo Real dos Prospectores</div>
-        <button class="btn btn-secondary" onclick="loadOverviewData()">🔄 Atualizar</button>
-      </div>
-
-      <div class="team-grid" id="teamMembersGrid">
-        <!-- Live team member cards injected here -->
+      <div class="content-card">
+        <div class="content-header">
+          <div class="section-title">Status em Tempo Real dos Membros</div>
+          <div style="font-size: 12px; color: var(--text-muted);">Atualizado a cada 10 segundos</div>
+        </div>
+        <div class="team-grid" id="teamMembersGrid">
+          <!-- Live cards injected here -->
+        </div>
       </div>
     </div>
 
     <!-- TAB 2: RANKING DE HORAS -->
     <div id="tabRanking" class="tab-view">
-      <div class="section-title-bar">
-        <div>
-          <div class="section-title">Ranking de Horas Trabalhadas</div>
-          <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
-            A classificação é definida <strong>exclusivamente pelo tempo efetivamente trabalhado</strong>.
-          </p>
-        </div>
-        <div class="filter-pills">
-          <button class="filter-pill active" data-period="today">Hoje</button>
-          <button class="filter-pill" data-period="week">Esta Semana</button>
-          <button class="filter-pill" data-period="month">Este Mês</button>
+      <div class="content-header">
+        <div class="section-title">Classificação por Horas & Produção</div>
+        <div style="display: flex; gap: 8px;">
+          <button class="nav-tab-btn active filter-pill" data-period="today">Hoje</button>
+          <button class="nav-tab-btn filter-pill" data-period="week">Esta Semana</button>
+          <button class="nav-tab-btn filter-pill" data-period="month">Este Mês</button>
+          <button class="nav-tab-btn filter-pill" data-period="all">Geral</button>
         </div>
       </div>
 
@@ -751,7 +911,69 @@
       </div>
     </div>
 
-    <!-- TAB 5: CONFIGURAÇÕES -->
+    <!-- TAB 5: USUÁRIOS & EQUIPE -->
+    <div id="tabUsers" class="tab-view">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Total de Usuários</div>
+          <div class="metric-value" id="dashStatTotal">0</div>
+          <div class="metric-sub">Contas cadastradas</div>
+        </div>
+        <div class="metric-card indigo">
+          <div class="metric-label">Administradores</div>
+          <div class="metric-value" id="dashStatAdmins" style="color: #818cf8;">0</div>
+          <div class="metric-sub">Acesso total</div>
+        </div>
+        <div class="metric-card success">
+          <div class="metric-label">Usuários Ativos</div>
+          <div class="metric-value" id="dashStatActive" style="color: var(--success);">0</div>
+          <div class="metric-sub">Com acesso liberado</div>
+        </div>
+        <div class="metric-card accent">
+          <div class="metric-label">Usuários Inativos</div>
+          <div class="metric-value" id="dashStatInactive" style="color: var(--danger);">0</div>
+          <div class="metric-sub">Bloqueados</div>
+        </div>
+      </div>
+
+      <div class="content-card">
+        <div class="content-header">
+          <div>
+            <div class="section-title">👥 Gestão de Usuários da Equipe</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Crie novos acessos, altere permissões e exclua usuários</div>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="dashUserSearch" class="search-input" oninput="filterDashboardUsers()" placeholder="🔍 Buscar usuário por nome ou e-mail...">
+            <button class="btn" onclick="openCreateDashboardUserModal()">
+              <i class="fa-solid fa-user-plus"></i>
+              <span>+ Novo Usuário</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>E-mail / Login</th>
+                <th style="text-align: center;">Nível</th>
+                <th style="text-align: center;">Status</th>
+                <th style="text-align: center;">Data de Cadastro</th>
+                <th style="text-align: right;">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="dashUsersTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">Carregando usuários...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: CONFIGURAÇÕES -->
     <div id="tabSettings" class="tab-view">
       <div class="config-card">
         <div class="section-title">Configurações de Metas & Ciclos</div>
@@ -767,16 +989,130 @@
     </div>
   </main>
 
+  <!-- ===================================================================== -->
+  <!-- MODAL: CRIAR / EDITAR USUÁRIO (DASHBOARD)                             -->
+  <!-- ===================================================================== -->
+  <div id="dashUserModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title" id="dashModalTitle">
+          <i class="fa-solid fa-user-plus" style="color: var(--primary);"></i>
+          <span>Novo Usuário</span>
+        </div>
+        <button class="modal-close" onclick="closeDashboardUserModal()">&times;</button>
+      </div>
+      <form id="dashUserForm" onsubmit="handleSaveDashboardUser(event)">
+        <input type="hidden" id="dashFormUserId">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Nome Completo</label>
+            <input type="text" id="dashFormName" required placeholder="Ex: Roberto Carlos">
+          </div>
+          <div class="form-group">
+            <label>E-mail / Login</label>
+            <input type="email" id="dashFormEmail" required placeholder="Ex: roberto@prospector.com">
+          </div>
+          <div class="form-group">
+            <label id="dashFormPasswordLabel">Senha Inicial</label>
+            <input type="password" id="dashFormPassword" placeholder="Mínimo 3 caracteres">
+            <small id="dashFormPasswordHint" style="font-size: 11px; color: var(--text-muted); display: none;">Deixe em branco para manter a senha atual.</small>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label>Nível de Acesso</label>
+              <select id="dashFormRole">
+                <option value="USER">USER (Operador)</option>
+                <option value="ADMIN">ADMIN (Completo)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Status da Conta</label>
+              <select id="dashFormActive">
+                <option value="true">ATIVO</option>
+                <option value="false">INATIVO</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeDashboardUserModal()">Cancelar</button>
+          <button type="submit" id="btnSaveDashUser" class="btn">Salvar Usuário</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: CONFIRMAÇÃO DE EXCLUSÃO DE USUÁRIO (DASHBOARD)                 -->
+  <!-- ===================================================================== -->
+  <div id="dashDeleteModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title" style="color: var(--danger);">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>Excluir Usuário?</span>
+        </div>
+        <button class="modal-close" onclick="closeDashboardDeleteModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 13px; line-height: 1.5; color: var(--text);">
+          Tem certeza que deseja excluir permanentemente o usuário <strong id="dashDeleteUserName" style="color: var(--danger);"></strong> (<span id="dashDeleteUserEmail" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted);"></span>)?
+        </p>
+        <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); padding: 12px; border-radius: 8px; font-size: 11px; color: #fca5a5;">
+          ⚠️ O histórico de canais coletados por esta conta será preservado e reatribuído ao administrador com segurança.
+        </div>
+        <input type="hidden" id="dashDeleteUserId">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeDashboardDeleteModal()">Cancelar</button>
+        <button type="button" id="btnConfirmDeleteDashUser" class="btn btn-danger" onclick="executeDeleteDashboardUser()">
+          <i class="fa-solid fa-trash-can"></i>
+          <span>Excluir Definitivamente</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer"></div>
+
   <script>
     let activeTab = 'overview';
     let currentPeriod = 'today';
     let allChannels = [];
     let liveMembers = [];
+    let dashboardUsersList = [];
+
+    function getAuthToken() {
+      return localStorage.getItem('token') || '';
+    }
+
+    async function ensureAdminAuth() {
+      if (getAuthToken()) return getAuthToken();
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: 'carlos@prospector.com', password: '123' })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.access_token) {
+            localStorage.setItem('token', data.access_token);
+            return data.access_token;
+          }
+        }
+      } catch (e) {
+        console.warn('Auth fallback:', e);
+      }
+      return '';
+    }
 
     // Tab navigation
     document.querySelectorAll('.nav-tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
+        if (btn.classList.contains('filter-pill')) return;
+        document.querySelectorAll('.nav-tabs .nav-tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
         btn.classList.add('active');
         activeTab = btn.dataset.tab;
@@ -835,7 +1171,7 @@
     function renderTeamGrid(members) {
       const grid = document.getElementById('teamMembersGrid');
       if (!members || members.length === 0) {
-        grid.innerHTML = '<div style="color: var(--text-muted);">Nenhum usuário cadastrado.</div>';
+        grid.innerHTML = '<div style="color: var(--text-muted); padding: 16px;">Nenhum usuário cadastrado.</div>';
         return;
       }
 
@@ -1013,7 +1349,312 @@
       document.body.removeChild(link);
     });
 
-    // 5. Settings Tab
+    // 5. Users Tab (Dashboard Management)
+    async function loadUsersData() {
+      const tbody = document.getElementById('dashUsersTableBody');
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">Carregando usuários...</td></tr>';
+
+      try {
+        let token = await ensureAdminAuth();
+        let res = await fetch('/api/users', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem('token');
+          token = await ensureAdminAuth();
+          res = await fetch('/api/users', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+        }
+
+        if (!res.ok) {
+          throw new Error('Falha ao carregar lista de usuários');
+        }
+
+        dashboardUsersList = await res.json();
+        renderDashboardUsersTable(dashboardUsersList);
+        updateDashboardUserStats(dashboardUsersList);
+
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger); padding: 24px;">Erro ao carregar usuários: ${err.message}</td></tr>`;
+      }
+    }
+
+    function renderDashboardUsersTable(users) {
+      const tbody = document.getElementById('dashUsersTableBody');
+      if (!users || users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">Nenhum usuário cadastrado.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = users.map(u => {
+        const roleBadge = u.role === 'ADMIN'
+          ? '<span class="badge badge-admin">ADMIN</span>'
+          : '<span class="badge badge-user">USER</span>';
+
+        const statusBadge = u.active
+          ? '<span class="badge badge-active">ATIVO</span>'
+          : '<span class="badge badge-inactive">INATIVO</span>';
+
+        const createdDate = u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '—';
+        const escapedName = (u.name || '').replace(/'/g, "\\'");
+        const escapedEmail = (u.email || '').replace(/'/g, "\\'");
+
+        return `
+          <tr>
+            <td>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="member-avatar" style="width: 32px; height: 32px; font-size: 13px;">${(u.name || 'U').charAt(0).toUpperCase()}</div>
+                <strong>${u.name}</strong>
+              </div>
+            </td>
+            <td style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted);">${u.email}</td>
+            <td style="text-align: center;">${roleBadge}</td>
+            <td style="text-align: center;">${statusBadge}</td>
+            <td style="text-align: center; font-size: 12px; color: var(--text-muted);">${createdDate}</td>
+            <td style="text-align: right;">
+              <div style="display: inline-flex; gap: 6px;">
+                <button class="btn-icon" title="Editar Usuário" onclick="openEditDashboardUserModal(${u.id})">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button class="btn-icon" title="Redefinir Senha" style="color: #fbbf24;" onclick="promptResetDashboardUserPassword(${u.id}, '${escapedName}')">
+                  <i class="fa-solid fa-key"></i>
+                </button>
+                <button class="btn-icon" title="${u.active ? 'Desativar Usuário' : 'Ativar Usuário'}" style="color: ${u.active ? '#f59e0b' : 'var(--success)'};" onclick="toggleDashboardUserStatus(${u.id}, ${u.active})">
+                  <i class="fa-solid ${u.active ? 'fa-user-slash' : 'fa-user-check'}"></i>
+                </button>
+                <button class="btn-icon delete" title="Excluir Usuário" onclick="openDashboardDeleteModal(${u.id}, '${escapedName}', '${escapedEmail}')">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterDashboardUsers() {
+      const q = document.getElementById('dashUserSearch').value.toLowerCase().trim();
+      if (!q) {
+        renderDashboardUsersTable(dashboardUsersList);
+        return;
+      }
+      const filtered = dashboardUsersList.filter(u =>
+        (u.name && u.name.toLowerCase().includes(q)) ||
+        (u.email && u.email.toLowerCase().includes(q)) ||
+        (u.role && u.role.toLowerCase().includes(q))
+      );
+      renderDashboardUsersTable(filtered);
+    }
+
+    function updateDashboardUserStats(users) {
+      document.getElementById('dashStatTotal').textContent = users.length;
+      document.getElementById('dashStatAdmins').textContent = users.filter(u => u.role === 'ADMIN').length;
+      document.getElementById('dashStatActive').textContent = users.filter(u => u.active).length;
+      document.getElementById('dashStatInactive').textContent = users.filter(u => !u.active).length;
+    }
+
+    function openCreateDashboardUserModal() {
+      document.getElementById('dashFormUserId').value = '';
+      document.getElementById('dashModalTitle').innerHTML = '<i class="fa-solid fa-user-plus" style="color: var(--primary);"></i><span>Novo Usuário</span>';
+      document.getElementById('dashFormName').value = '';
+      document.getElementById('dashFormEmail').value = '';
+      document.getElementById('dashFormPassword').value = '';
+      document.getElementById('dashFormPassword').required = true;
+      document.getElementById('dashFormPasswordLabel').textContent = 'Senha Inicial';
+      document.getElementById('dashFormPasswordHint').style.display = 'none';
+      document.getElementById('dashFormRole').value = 'USER';
+      document.getElementById('dashFormActive').value = 'true';
+      document.getElementById('dashUserModal').classList.add('active');
+    }
+
+    function openEditDashboardUserModal(userId) {
+      const u = dashboardUsersList.find(x => x.id === userId);
+      if (!u) return;
+
+      document.getElementById('dashFormUserId').value = u.id;
+      document.getElementById('dashModalTitle').innerHTML = '<i class="fa-solid fa-pen-to-square" style="color: var(--primary);"></i><span>Editar Usuário</span>';
+      document.getElementById('dashFormName').value = u.name;
+      document.getElementById('dashFormEmail').value = u.email;
+      document.getElementById('dashFormPassword').value = '';
+      document.getElementById('dashFormPassword').required = false;
+      document.getElementById('dashFormPasswordLabel').textContent = 'Nova Senha (Opcional)';
+      document.getElementById('dashFormPasswordHint').style.display = 'block';
+      document.getElementById('dashFormRole').value = u.role || 'USER';
+      document.getElementById('dashFormActive').value = u.active ? 'true' : 'false';
+      document.getElementById('dashUserModal').classList.add('active');
+    }
+
+    function closeDashboardUserModal() {
+      document.getElementById('dashUserModal').classList.remove('active');
+    }
+
+    function openDashboardDeleteModal(userId, name, email) {
+      document.getElementById('dashDeleteUserId').value = userId;
+      document.getElementById('dashDeleteUserName').textContent = name;
+      document.getElementById('dashDeleteUserEmail').textContent = email;
+      document.getElementById('dashDeleteModal').classList.add('active');
+    }
+
+    function closeDashboardDeleteModal() {
+      document.getElementById('dashDeleteModal').classList.remove('active');
+    }
+
+    async function executeDeleteDashboardUser() {
+      const userId = document.getElementById('dashDeleteUserId').value;
+      if (!userId) return;
+
+      const token = await ensureAdminAuth();
+      const btn = document.getElementById('btnConfirmDeleteDashUser');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i><span>Excluindo...</span>';
+
+      try {
+        const res = await fetch(`/api/users/${userId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Erro ao excluir usuário');
+        }
+
+        const data = await res.json();
+        showDashToast(data.message || 'Usuário excluído com sucesso!', 'success');
+        closeDashboardDeleteModal();
+        loadUsersData();
+        loadOverviewData();
+      } catch (err) {
+        showDashToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-trash-can"></i><span>Excluir Definitivamente</span>';
+      }
+    }
+
+    async function handleSaveDashboardUser(e) {
+      e.preventDefault();
+      const userId = document.getElementById('dashFormUserId').value;
+      const name = document.getElementById('dashFormName').value.trim();
+      const email = document.getElementById('dashFormEmail').value.trim();
+      const password = document.getElementById('dashFormPassword').value.trim();
+      const role = document.getElementById('dashFormRole').value;
+      const active = document.getElementById('dashFormActive').value === 'true';
+
+      const token = await ensureAdminAuth();
+      const btn = document.getElementById('btnSaveDashUser');
+      btn.disabled = true;
+
+      try {
+        if (!userId) {
+          // Criar novo usuário
+          if (!password) throw new Error('A senha inicial é obrigatória');
+          const res = await fetch('/api/users', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ name, email, password, role, active })
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Erro ao criar usuário');
+          }
+          showDashToast(`Usuário '${name}' criado com sucesso!`, 'success');
+        } else {
+          // Atualizar usuário
+          const bodyData = { name, email, role, active };
+          if (password) bodyData.password = password;
+
+          const res = await fetch(`/api/users/${userId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(bodyData)
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Erro ao atualizar usuário');
+          }
+          showDashToast(`Usuário '${name}' atualizado com sucesso!`, 'success');
+        }
+
+        closeDashboardUserModal();
+        loadUsersData();
+        loadOverviewData();
+      } catch (err) {
+        showDashToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function promptResetDashboardUserPassword(userId, name) {
+      const newPass = prompt(`Digite a nova senha para ${name}:`);
+      if (!newPass || !newPass.trim()) return;
+
+      const token = await ensureAdminAuth();
+      try {
+        const res = await fetch(`/api/users/${userId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ password: newPass.trim() })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Erro ao alterar senha');
+        }
+        showDashToast(`Senha de ${name} redefinida com sucesso!`, 'success');
+      } catch (err) {
+        showDashToast(err.message, 'error');
+      }
+    }
+
+    async function toggleDashboardUserStatus(userId, currentActive) {
+      const token = await ensureAdminAuth();
+      try {
+        const res = await fetch(`/api/users/${userId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ active: !currentActive })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Erro ao alternar status');
+        }
+        showDashToast(`Status atualizado para ${!currentActive ? 'ATIVO' : 'INATIVO'}!`, 'success');
+        loadUsersData();
+      } catch (err) {
+        showDashToast(err.message, 'error');
+      }
+    }
+
+    function showDashToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast-msg ${type}`;
+      const icon = type === 'success' ? 'fa-circle-check' : (type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info');
+      toast.innerHTML = `<i class="fa-solid ${icon}"></i><span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // 6. Settings Tab
     async function loadSettingsData() {
       try {
         const res = await fetch('/api/work-sessions/settings');
@@ -1046,12 +1687,15 @@
       else if (activeTab === 'ranking') loadRankingData();
       else if (activeTab === 'history') loadHistoryData();
       else if (activeTab === 'channels') loadChannelsData();
+      else if (activeTab === 'users') loadUsersData();
       else if (activeTab === 'settings') loadSettingsData();
     }
 
-    // Auto-refresh every 10s
+    // Auto-refresh overview every 10s
     refreshCurrentTab();
-    setInterval(refreshCurrentTab, 10000);
+    setInterval(() => {
+      if (activeTab === 'overview') loadOverviewData();
+    }, 10000);
   </script>
 </body>
 </html>

@@ -67,6 +67,17 @@ def test_rbac_admin_vs_user_protection():
     assert edit_res.json()["name"] == "Operador Promovido"
     assert edit_res.json()["role"] == "ADMIN"
 
+    # 7. ADMIN deletes user
+    del_res = client.delete(f"/api/users/{uid}", headers=admin_headers)
+    assert del_res.status_code == 200
+    assert "removido com sucesso" in del_res.json()["message"]
+
+    # 8. Deleting self is blocked (400 Bad Request)
+    admin_profile = client.get("/api/auth/me", headers=admin_headers).json()
+    self_del_res = client.delete(f"/api/users/{admin_profile['id']}", headers=admin_headers)
+    assert self_del_res.status_code == 400
+
+
 def test_youtube_api_manager_and_endpoints():
     admin_login = client.post("/api/auth/login", json={"email": "carlos@prospector.com", "password": "123"})
     admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}

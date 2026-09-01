@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
-from backend.database.models import User
+from backend.database.models import User, Channel, CollectionEvent, WorkSession, WorkSessionEvent
 from backend.schemas.auth import UserAdminCreate, UserAdminUpdate, UserResponse
 from backend.security.auth import get_password_hash, get_current_admin_user
 
@@ -107,6 +107,16 @@ def delete_user_admin(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado.")
 
+    # Reatribui canais coletados para o admin ativo para manter o histórico integro
+    db.query(Channel).filter(Channel.first_collected_by_id == user.id).update(
+        {"first_collected_by_id": admin_user.id}, synchronize_session=False
+    )
+    # Remove eventos e sessões atrelados ao usuário
+    db.query(CollectionEvent).filter(CollectionEvent.user_id == user.id).delete(synchronize_session=False)
+    db.query(WorkSessionEvent).filter(WorkSessionEvent.user_id == user.id).delete(synchronize_session=False)
+    db.query(WorkSession).filter(WorkSession.user_id == user.id).delete(synchronize_session=False)
+
     db.delete(user)
     db.commit()
     return {"message": f"Usuário '{user.name}' ({user.email}) removido com sucesso."}
+
