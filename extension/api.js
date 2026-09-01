@@ -51,6 +51,10 @@ class ProspectorAPI {
     });
   }
 
+  async logout() {
+    return await this.clearAuth();
+  }
+
   async request(endpoint, options = {}) {
     const baseUrl = await this.getBaseUrl();
     const token = await this.getToken();
@@ -155,31 +159,65 @@ class ProspectorAPI {
   }
 
   // Work Sessions & Productivity
-  async startWorkSession(dailyTarget, targetHours, cycleType) {
+  async startWorkSession(dailyTargetOrObj = 160, targetHours = 8.0, cycleType = "8H") {
+    let dailyTarget = 160;
+    let hours = 8.0;
+    let cycle = "8H";
+
+    if (typeof dailyTargetOrObj === "object" && dailyTargetOrObj !== null) {
+      dailyTarget = dailyTargetOrObj.daily_target || 160;
+      hours = dailyTargetOrObj.target_hours || (dailyTargetOrObj.cycle_type === "6H" ? 6.0 : 8.0);
+      cycle = dailyTargetOrObj.cycle_type || "8H";
+    } else {
+      dailyTarget = typeof dailyTargetOrObj === "number" ? dailyTargetOrObj : 160;
+      hours = typeof targetHours === "number" ? targetHours : 8.0;
+      cycle = cycleType || "8H";
+    }
+
     return await this.request("/work-sessions/start", {
       method: "POST",
       body: JSON.stringify({
         daily_target: dailyTarget,
-        target_hours: targetHours,
-        cycle_type: cycleType
+        target_hours: hours,
+        cycle_type: cycle
       })
     });
+  }
+
+  async startSession(dailyTargetOrObj, targetHours, cycleType) {
+    return await this.startWorkSession(dailyTargetOrObj, targetHours, cycleType);
   }
 
   async pauseWorkSession() {
     return await this.request("/work-sessions/pause", { method: "POST" });
   }
 
+  async pauseSession() {
+    return await this.pauseWorkSession();
+  }
+
   async resumeWorkSession() {
     return await this.request("/work-sessions/resume", { method: "POST" });
+  }
+
+  async resumeSession() {
+    return await this.resumeWorkSession();
   }
 
   async finishWorkSession() {
     return await this.request("/work-sessions/finish", { method: "POST" });
   }
 
+  async finishSession() {
+    return await this.finishWorkSession();
+  }
+
   async getCurrentWorkSession() {
     return await this.request("/work-sessions/current", { method: "GET" });
+  }
+
+  async getCurrentSession() {
+    return await this.getCurrentWorkSession();
   }
 
   async getWorkSessionSettings() {
@@ -188,4 +226,3 @@ class ProspectorAPI {
 }
 
 window.prospectorAPI = new ProspectorAPI();
-

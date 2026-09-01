@@ -40,7 +40,7 @@
       <form id="form-login" class="sp-form">
         <div class="sp-input-group">
           <label for="login-email">E-mail / Login</label>
-          <input type="email" id="login-email" required placeholder="seu@prospector.com" />
+          <input type="email" id="login-email" required placeholder="carlos@prospector.com" />
         </div>
 
         <div class="sp-input-group">
@@ -67,7 +67,7 @@
             <div class="sp-user-name" id="user-display-name">Carregando...</div>
             <div class="sp-user-role-container">
               <span class="sp-role-badge" id="user-role-badge">USER</span>
-              <span class="sp-user-subtext">● Conectado</span>
+              <span class="sp-user-subtext" id="user-status-text">● Operador Ativo</span>
             </div>
           </div>
         </div>
@@ -82,6 +82,10 @@
         <div class="sp-card-header">
           <span class="sp-card-title">⏱️ Sessão de Trabalho</span>
           <span id="session-status-badge" class="sp-badge sp-badge-active">● ATIVA</span>
+        </div>
+
+        <div id="session-cycle-label" style="font-size: 11px; color: #94a3b8; margin-bottom: 8px; font-weight: 600;">
+          Ciclo: <span id="session-cycle-name" style="color: #f59e0b;">Ciclo 8h</span>
         </div>
 
         <!-- Timer & Rhythm -->
@@ -108,8 +112,8 @@
           </div>
         </div>
 
-        <!-- Session Controls -->
-        <div class="sp-session-actions">
+        <!-- Session Controls (Active / Paused) -->
+        <div class="sp-session-actions" id="session-actions-container">
           <button id="btn-toggle-pause" class="sp-btn sp-btn-secondary">
             <span id="btn-pause-text">⏸️ Pausar</span>
           </button>
@@ -118,10 +122,27 @@
           </button>
         </div>
 
-        <!-- Start New Session Button (if no session active) -->
-        <button id="btn-start-session" class="sp-btn sp-btn-success hidden">
-          <span>▶️ INICIAR TURNO DE 8H</span>
-        </button>
+        <!-- Start New Session Container (if no session active) -->
+        <div id="session-start-container" class="hidden" style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px;">
+            <button type="button" class="sp-btn sp-btn-secondary cycle-selector-btn active" data-cycle="8H" data-hours="8.0" data-target="160">8 Horas</button>
+            <button type="button" class="sp-btn sp-btn-secondary cycle-selector-btn" data-cycle="6H" data-hours="6.0" data-target="160">6 Horas</button>
+            <button type="button" class="sp-btn sp-btn-secondary cycle-selector-btn" data-cycle="CUSTOM" data-hours="8.0" data-target="160">Custom</button>
+          </div>
+          <div id="custom-target-container" class="hidden" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <div class="sp-input-group">
+              <label>Meta (Canais)</label>
+              <input type="number" id="input-daily-target" value="160" min="1" max="5000">
+            </div>
+            <div class="sp-input-group">
+              <label>Horas</label>
+              <input type="number" id="input-target-hours" value="8.0" min="0.5" max="24" step="0.5">
+            </div>
+          </div>
+          <button id="btn-start-session" class="sp-btn sp-btn-success" style="margin-top: 4px;">
+            <span>▶️ INICIAR TURNO DE TRABALHO</span>
+          </button>
+        </div>
       </div>
 
       <!-- CURRENT YOUTUBE PAGE SUMMARY -->

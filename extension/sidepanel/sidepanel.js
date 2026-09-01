@@ -1,6 +1,6 @@
 /**
  * YouTube Prospector - Side Panel Controller
- * Gerencia autenticação, cronômetro de trabalho, detecção de canais na aba ativa e atalhos ADMIN.
+ * Gerencia autenticação, cronômetro de trabalho, ciclos de produção, detecção de canais e atalhos ADMIN.
  */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -16,19 +16,27 @@ document.addEventListener("DOMContentLoaded", async () => {
   const userDisplayName = document.getElementById("user-display-name");
   const userAvatarInitial = document.getElementById("user-avatar-initial");
   const userRoleBadge = document.getElementById("user-role-badge");
+  const userStatusText = document.getElementById("user-status-text");
   const btnLogout = document.getElementById("btn-logout");
 
   const sessionStatusBadge = document.getElementById("session-status-badge");
+  const sessionCycleName = document.getElementById("session-cycle-name");
   const sessionTimer = document.getElementById("session-timer");
   const sessionPace = document.getElementById("session-pace");
   const sessionCollected = document.getElementById("session-collected");
   const sessionTarget = document.getElementById("session-target");
   const sessionProgressFill = document.getElementById("session-progress-fill");
 
+  const sessionActionsContainer = document.getElementById("session-actions-container");
+  const sessionStartContainer = document.getElementById("session-start-container");
   const btnTogglePause = document.getElementById("btn-toggle-pause");
   const btnPauseText = document.getElementById("btn-pause-text");
   const btnFinishSession = document.getElementById("btn-finish-session");
   const btnStartSession = document.getElementById("btn-start-session");
+
+  const customTargetContainer = document.getElementById("custom-target-container");
+  const inputDailyTarget = document.getElementById("input-daily-target");
+  const inputTargetHours = document.getElementById("input-target-hours");
 
   const pageNewCount = document.getElementById("page-new-count");
   const pageExistsCount = document.getElementById("page-exists-count");
@@ -46,6 +54,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   let currentSession = null;
   let timerInterval = null;
   let pollInterval = null;
+  let selectedCycleType = "8H";
+  let selectedTargetHours = 8.0;
+  let selectedDailyTarget = 160;
 
   // Initialize
   await checkAuth();
@@ -57,7 +68,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   async function checkAuth() {
     try {
       const user = await window.prospectorAPI.getMe();
-      if (user) {
+      if (user && user.id) {
         currentUser = user;
         showWorkspaceView();
       } else {
@@ -86,6 +97,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       
       const role = currentUser.role || "USER";
       userRoleBadge.textContent = role;
+
+      if (userStatusText) {
+        userStatusText.textContent = "● Operador Ativo";
+      }
 
       // Show Admin Shortcuts only for ADMIN
       if (role === "ADMIN") {
@@ -138,6 +153,33 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // --------------------------------------------------------------------------
+  // CYCLE SELECTION
+  // --------------------------------------------------------------------------
+
+  document.querySelectorAll(".cycle-selector-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".cycle-selector-btn").forEach((b) => {
+        b.style.backgroundColor = "#1e293b";
+        b.style.color = "#e2e8f0";
+      });
+      btn.style.backgroundColor = "#f59e0b";
+      btn.style.color = "#0b0f17";
+
+      selectedCycleType = btn.dataset.cycle;
+      selectedTargetHours = parseFloat(btn.dataset.hours) || 8.0;
+      selectedDailyTarget = parseInt(btn.dataset.target, 10) || 160;
+
+      if (selectedCycleType === "CUSTOM") {
+        customTargetContainer.classList.remove("hidden");
+      } else {
+        customTargetContainer.classList.add("hidden");
+        inputDailyTarget.value = selectedDailyTarget;
+        inputTargetHours.value = selectedTargetHours;
+      }
+    });
+  });
+
+  // --------------------------------------------------------------------------
   // WORK SESSION MANAGEMENT
   // --------------------------------------------------------------------------
 
@@ -154,50 +196,66 @@ document.addEventListener("DOMContentLoaded", async () => {
     currentSession = session;
     clearInterval(timerInterval);
 
-    const sessionActions = document.querySelector(".sp-session-actions");
-
     if (!session || session.status === "FINISHED") {
       sessionStatusBadge.textContent = "● SEM SESSÃO";
       sessionStatusBadge.className = "sp-badge sp-badge-paused";
+      sessionCycleName.textContent = "Nenhum ciclo ativo";
       sessionTimer.textContent = "00:00:00";
       sessionPace.textContent = "0,0/h";
       sessionCollected.textContent = "0";
       sessionTarget.textContent = "160";
       sessionProgressFill.style.width = "0%";
 
-      if (sessionActions) sessionActions.classList.add("hidden");
-      btnStartSession.classList.remove("hidden");
+      if (userStatusText) userStatusText.textContent = "● Conectado (Parado)";
+      if (sessionActionsContainer) sessionActionsContainer.classList.add("hidden");
+      if (sessionStartContainer) sessionStartContainer.classList.remove("hidden");
       return;
     }
 
-    if (sessionActions) sessionActions.classList.remove("hidden");
-    btnStartSession.classList.add("hidden");
+    if (sessionActionsContainer) sessionActionsContainer.classList.remove("hidden");
+    if (sessionStartContainer) sessionStartContainer.classList.add("hidden");
 
     const isActive = session.status === "ACTIVE";
     sessionStatusBadge.textContent = isActive ? "● ATIVA" : "● PAUSADA";
     sessionStatusBadge.className = isActive ? "sp-badge sp-badge-active" : "sp-badge sp-badge-paused";
     btnPauseText.textContent = isActive ? "⏸️ Pausar" : "▶️ Continuar";
 
-    sessionCollected.textContent = session.collected_count;
-    sessionTarget.textContent = session.daily_target;
-    sessionPace.textContent = `${session.current_pace_per_hour.toFixed(1).replace(".", ",")}/h`;
+    if (userStatusText) {
+      userStatusText.textContent = isActive ? "● Coletando no YouTube" : "● Sessão Pausada";
+    }
 
-    const pct = Math.min(100, (session.collected_count / session.daily_target) * 100);
+    // Cycle name
+    let cycleTitle = "Ciclo 8h";
+    if (session.cycle_type === "6H") cycleTitle = "Ciclo 6h";
+    else if (session.cycle_type === "CUSTOM") cycleTitle = `Ciclo Personalizado (${session.target_hours}h)`;
+    sessionCycleName.textContent = `${cycleTitle} (Meta: ${session.daily_target})`;
+
+    sessionCollected.textContent = session.collected_count || 0;
+    sessionTarget.textContent = session.daily_target || 160;
+
+    const pace = session.current_rate != null ? session.current_rate : (session.target_per_hour_display || 0);
+    sessionPace.textContent = `${Number(pace).toFixed(1).replace(".", ",")}/h`;
+
+    const pct = session.progress_percentage != null 
+      ? Math.min(100, session.progress_percentage)
+      : Math.min(100, ((session.collected_count || 0) / (session.daily_target || 160)) * 100);
     sessionProgressFill.style.width = `${pct}%`;
 
     // Local live timer
-    let activeSecs = session.active_seconds;
+    let activeSecs = session.current_active_seconds != null ? session.current_active_seconds : (session.active_seconds || 0);
     sessionTimer.textContent = formatSeconds(activeSecs);
 
     if (isActive) {
+      const startTime = Date.now();
       timerInterval = setInterval(() => {
-        activeSecs++;
-        sessionTimer.textContent = formatSeconds(activeSecs);
+        const elapsedSinceRender = Math.floor((Date.now() - startTime) / 1000);
+        sessionTimer.textContent = formatSeconds(activeSecs + elapsedSinceRender);
       }, 1000);
     }
   }
 
   function formatSeconds(secs) {
+    if (!secs || secs < 0) secs = 0;
     const h = String(Math.floor(secs / 3600)).padStart(2, "0");
     const m = String(Math.floor((secs % 3600) / 60)).padStart(2, "0");
     const s = String(secs % 60).padStart(2, "0");
@@ -205,17 +263,37 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   btnStartSession.addEventListener("click", async () => {
+    let target = selectedDailyTarget;
+    let hours = selectedTargetHours;
+
+    if (selectedCycleType === "CUSTOM") {
+      target = parseInt(inputDailyTarget.value, 10) || 160;
+      hours = parseFloat(inputTargetHours.value) || 8.0;
+    }
+
+    btnStartSession.disabled = true;
+    btnStartSession.textContent = "INICIANDO...";
+
     try {
-      const session = await window.prospectorAPI.startSession({ cycle_type: "8H" });
+      const session = await window.prospectorAPI.startSession({
+        daily_target: target,
+        target_hours: hours,
+        cycle_type: selectedCycleType
+      });
       renderSession(session);
-      showToast("Turno de 8h iniciado com sucesso!");
+      showToast(`Turno de ${hours}h iniciado com sucesso!`);
     } catch (err) {
-      showToast(err.message, "error");
+      showToast(err.message || "Erro ao iniciar turno.", "error");
+    } finally {
+      btnStartSession.disabled = false;
+      btnStartSession.innerHTML = "<span>▶️ INICIAR TURNO DE TRABALHO</span>";
     }
   });
 
   btnTogglePause.addEventListener("click", async () => {
     if (!currentSession) return;
+    btnTogglePause.disabled = true;
+
     try {
       let updated;
       if (currentSession.status === "ACTIVE") {
@@ -228,17 +306,23 @@ document.addEventListener("DOMContentLoaded", async () => {
       renderSession(updated);
     } catch (err) {
       showToast(err.message, "error");
+    } finally {
+      btnTogglePause.disabled = false;
     }
   });
 
   btnFinishSession.addEventListener("click", async () => {
     if (!confirm("Deseja realmente finalizar a sessão de trabalho atual?")) return;
+    btnFinishSession.disabled = true;
+
     try {
       await window.prospectorAPI.finishSession();
       renderSession(null);
-      showToast("Sessão finalizada!");
+      showToast("Sessão finalizada com sucesso!");
     } catch (err) {
       showToast(err.message, "error");
+    } finally {
+      btnFinishSession.disabled = false;
     }
   });
 
@@ -335,6 +419,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function showToast(msg, type = "info") {
     const toast = document.getElementById("sp-toast");
+    if (!toast) return;
     toast.textContent = msg;
     toast.style.borderColor = type === "error" ? "#f43f5e" : "#475569";
     toast.classList.remove("hidden");
