@@ -10,6 +10,7 @@
   ],
   "host_permissions": [
     "*://*.youtube.com/*",
+    "*://open.spotify.com/*",
     "http://*/*",
     "https://*/*"
   ],
@@ -45,6 +46,17 @@
       ],
       "css": [
         "styles/youtube-overlay.css"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://music.youtube.com/*",
+        "*://open.spotify.com/*"
+      ],
+      "js": [
+        "api.js",
+        "music-tracker.js"
       ],
       "run_at": "document_idle"
     }

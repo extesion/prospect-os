@@ -1143,23 +1143,8 @@
       </button>
     </nav>
 
-    <!-- Header Right (Admin tools, Notifications, User) -->
+    <!-- Header Right (Notifications, User) -->
     <div class="header-right">
-      <div id="adminQuickLinks" class="admin-only hidden" style="display: flex; gap: 6px;">
-        <a href="/qualifier" class="btn btn-secondary" style="font-size: 11px;">
-          <i class="fa-solid fa-bolt"></i>
-          <span>Qualificador</span>
-        </a>
-        <a href="/users" class="btn btn-secondary" style="font-size: 11px;">
-          <i class="fa-solid fa-users"></i>
-          <span>Gestão</span>
-        </a>
-        <a href="/youtube-apis" class="btn btn-secondary" style="font-size: 11px;">
-          <i class="fa-solid fa-key"></i>
-          <span>APIs</span>
-        </a>
-      </div>
-
       <!-- Notification Bell -->
       <button class="notif-bell-btn" id="btnNotifBell" title="Central de Notificações">
         <i class="fa-regular fa-bell"></i>
@@ -1723,6 +1708,23 @@
                   <div class="progress-bar-fill" style="width: ${progressVal}%;"></div>
                 </div>
               </div>
+
+              ${m.now_playing && m.now_playing.track_name ? `
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 6px 8px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px;">
+                  <div style="width: 22px; height: 22px; border-radius: 4px; background: #171822; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; ${m.now_playing.album_art ? `background-image: url('${m.now_playing.album_art}');` : ''}">
+                    ${m.now_playing.album_art ? '' : '🎵'}
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 10px; font-weight: 700; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                      ${m.now_playing.track_name}
+                    </div>
+                    <div style="font-size: 9px; color: var(--silver-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                      ${m.now_playing.artist || 'Música ao vivo'}
+                    </div>
+                  </div>
+                  <span style="font-size: 8px; font-weight: 800; color: #10b981; text-transform: uppercase;">${(m.now_playing.provider || 'SPOTIFY').toUpperCase()}</span>
+                </div>
+              ` : ''}
             </div>
           </div>
         `;
@@ -1872,6 +1874,8 @@
       }
     }
 
+    let dashboardUsersList = [];
+
     function renderDashboardUsersTable(users) {
       const tbody = document.getElementById('dashUsersTableBody');
       tbody.innerHTML = users.map(u => `
@@ -1886,6 +1890,87 @@
           </td>
         </tr>
       `).join('');
+    }
+
+    function openCreateDashboardUserModal() {
+      document.getElementById('dashFormUserId').value = '';
+      document.getElementById('dashModalTitle').innerHTML = '<i class="fa-solid fa-user-plus"></i><span>Novo Usuário</span>';
+      document.getElementById('dashFormName').value = '';
+      document.getElementById('dashFormEmail').value = '';
+      document.getElementById('dashFormPassword').value = '';
+      document.getElementById('dashFormPassword').required = true;
+      document.getElementById('dashFormPasswordLabel').textContent = 'Senha Inicial';
+      document.getElementById('dashFormRole').value = 'USER';
+      document.getElementById('dashFormActive').value = 'true';
+      document.getElementById('dashUserModal').classList.add('active');
+    }
+
+    function openEditDashboardUserModal(userId) {
+      const u = dashboardUsersList.find(x => x.id === userId);
+      if (!u) return;
+      document.getElementById('dashFormUserId').value = u.id;
+      document.getElementById('dashModalTitle').innerHTML = '<i class="fa-solid fa-user-pen"></i><span>Editar Usuário & Senha</span>';
+      document.getElementById('dashFormName').value = u.name;
+      document.getElementById('dashFormEmail').value = u.email;
+      document.getElementById('dashFormPassword').value = '';
+      document.getElementById('dashFormPassword').required = false;
+      document.getElementById('dashFormPasswordLabel').textContent = 'Nova Senha (deixe em branco para manter)';
+      document.getElementById('dashFormRole').value = u.role || 'USER';
+      document.getElementById('dashFormActive').value = u.active ? 'true' : 'false';
+      document.getElementById('dashUserModal').classList.add('active');
+    }
+
+    function closeDashboardUserModal() {
+      document.getElementById('dashUserModal').classList.remove('active');
+    }
+
+    async function handleSaveDashboardUser(e) {
+      e.preventDefault();
+      const userId = document.getElementById('dashFormUserId').value;
+      const name = document.getElementById('dashFormName').value.trim();
+      const email = document.getElementById('dashFormEmail').value.trim();
+      const password = document.getElementById('dashFormPassword').value;
+      const role = document.getElementById('dashFormRole').value;
+      const active = document.getElementById('dashFormActive').value === 'true';
+
+      const isEdit = Boolean(userId);
+      const url = isEdit ? `/api/users/${userId}` : '/api/users';
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const payload = { name, email, role, active };
+      if (!isEdit) {
+        if (!password) {
+          showToast('A senha inicial é obrigatória para novo usuário.', 'error');
+          return;
+        }
+        payload.password = password;
+      } else {
+        if (password && password.trim()) {
+          payload.password = password.trim();
+        }
+      }
+
+      try {
+        const res = await fetch(url, {
+          method: method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getToken()}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || 'Erro ao salvar usuário.');
+        }
+
+        showToast(isEdit ? 'Usuário e senha atualizados!' : 'Novo usuário criado com sucesso!', 'success');
+        closeDashboardUserModal();
+        loadUsersData();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
     }
 
     // 6. Member Profile Modal

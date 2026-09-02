@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 class WorkSessionStart(BaseModel):
     daily_target: int = Field(160, ge=1, le=5000)
@@ -63,6 +63,7 @@ class TeamStatusItem(BaseModel):
     current_rate: float
     required_rate: float = 0.0
     progress_percentage: float
+    now_playing: Optional[Dict[str, Any]] = None
 
 class TeamSummaryResponse(BaseModel):
     users_working_count: int

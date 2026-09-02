@@ -5,7 +5,7 @@ from sqlalchemy import func, and_, or_
 import json
 import logging
 
-from backend.database.models import User, UserProfile, WorkSession, WorkSessionEvent, CycleSetting, utc_now
+from backend.database.models import User, UserProfile, UserMusicConnection, WorkSession, WorkSessionEvent, CycleSetting, utc_now
 from backend.schemas.work_session import (
     WorkSessionStart, WorkSessionResponse, UserRankingItem,
     TeamStatusItem, TeamSummaryResponse, CyclePresetItem,
@@ -526,6 +526,9 @@ class WorkSessionService:
         profiles = db.query(UserProfile).all()
         profile_map = {p.user_id: p for p in profiles}
 
+        music_conns = db.query(UserMusicConnection).filter(UserMusicConnection.is_connected == True).all()
+        music_map = {m.user_id: m for m in music_conns}
+
         # Busca sessões ativas/pausadas
         current_sessions = (
             db.query(WorkSession)
@@ -559,8 +562,20 @@ class WorkSessionService:
         for u in all_users:
             sess = current_session_map.get(u.id)
             p = profile_map.get(u.id)
+            m_conn = music_map.get(u.id)
             avatar_url = p.avatar_url if p else None
             banner_url = p.banner_url if p else None
+
+            # Music payload
+            now_playing = None
+            if m_conn and (p is None or p.show_music_to_team) and m_conn.current_track_name:
+                now_playing = {
+                    "provider": m_conn.provider,
+                    "track_name": m_conn.current_track_name,
+                    "artist": m_conn.current_artist,
+                    "album_art": m_conn.current_album_art,
+                    "is_playing": m_conn.is_playing
+                }
 
             if sess:
                 if sess.status == "ACTIVE":
@@ -582,7 +597,8 @@ class WorkSessionService:
                     daily_target=sess.daily_target,
                     current_rate=res.current_rate,
                     required_rate=res.required_rate,
-                    progress_percentage=res.progress_percentage
+                    progress_percentage=res.progress_percentage,
+                    now_playing=now_playing
                 ))
             else:
                 members.append(TeamStatusItem(
@@ -599,7 +615,8 @@ class WorkSessionService:
                     daily_target=160,
                     current_rate=0.0,
                     required_rate=0.0,
-                    progress_percentage=0.0
+                    progress_percentage=0.0,
+                    now_playing=now_playing
                 ))
 
         # Calcula média da equipe (canais/h)
