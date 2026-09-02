@@ -257,18 +257,28 @@
     const alertBox = document.getElementById('loginAlert');
     const alertText = document.getElementById('loginAlertText');
 
-    // If already logged in, redirect
+    // Only auto-redirect if we have a valid token and we are not being forced to login
     const existingToken = localStorage.getItem('token');
-    if (existingToken) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const forceLogin = urlParams.has('force');
+
+    if (existingToken && !forceLogin) {
       fetch('/api/auth/me', {
         headers: { 'Authorization': `Bearer ${existingToken}` }
       }).then(res => {
         if (res.ok) {
-          const urlParams = new URLSearchParams(window.location.search);
           const nextUrl = urlParams.get('next') || '/dashboard';
-          window.location.href = nextUrl;
+          if (nextUrl !== '/login' && !nextUrl.startsWith('/login')) {
+            window.location.href = nextUrl;
+          }
+        } else {
+          // Token is expired or invalid -> clean it up
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
         }
-      }).catch(() => {});
+      }).catch(() => {
+        // Network error -> stay on login page
+      });
     }
 
     form.addEventListener('submit', async (e) => {
