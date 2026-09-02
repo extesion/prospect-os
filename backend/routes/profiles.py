@@ -14,7 +14,10 @@ router = APIRouter(prefix="/profiles", tags=["User Profiles & Productivity"])
 
 # Upload directory
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "static", "uploads")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+try:
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+except Exception:
+    pass
 
 # Allowed file types & max size (5 MB)
 ALLOWED_MIME_TYPES = {

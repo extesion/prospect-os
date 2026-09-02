@@ -16,8 +16,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger("youtube_prospector")
 
-# Auto-create tables if not exists
-Base.metadata.create_all(bind=engine)
+# Auto-create tables safely (ignore on read-only serverless if connection fails at startup)
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    logger.warning(f"Could not run create_all on startup (normal on cold start if remote db): {e}")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -43,8 +46,14 @@ app.add_middleware(
 from fastapi.staticfiles import StaticFiles
 import os
 static_dir = os.path.join(os.path.dirname(__file__), "static")
-os.makedirs(os.path.join(static_dir, "uploads"), exist_ok=True)
-app.mount("/static", StaticFiles(directory=static_dir), name="static")
+uploads_dir = os.path.join(static_dir, "uploads")
+try:
+    os.makedirs(uploads_dir, exist_ok=True)
+except Exception:
+    pass
+
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Register routes with /api prefix
 app.include_router(auth.router, prefix=settings.API_V1_STR)
