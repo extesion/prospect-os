@@ -1548,57 +1548,83 @@
         return;
       }
 
+      // Fast initial paint with cached user
+      try {
+        const cached = localStorage.getItem('user');
+        if (cached) {
+          currentUser = JSON.parse(cached);
+          setupUserInterface();
+        }
+      } catch (e) {}
+
       try {
         const res = await fetch('/api/auth/me', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (!res.ok) {
-          localStorage.removeItem('token');
-          window.location.href = '/login?next=/dashboard';
-          return;
+          if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login?next=/dashboard';
+            return;
+          }
+        } else {
+          currentUser = await res.json();
+          localStorage.setItem('user', JSON.stringify(currentUser));
+          setupUserInterface();
         }
-
-        currentUser = await res.json();
-        setupUserInterface();
       } catch (e) {
-        window.location.href = '/login?next=/dashboard';
+        console.warn('Network error checking auth:', e);
+        if (!currentUser) {
+          setupUserInterface();
+        }
       }
     }
 
     async function setupUserInterface() {
-      if (!currentUser) return;
+      if (!currentUser) {
+        // Fallback default
+        currentUser = { name: 'Operador', role: 'USER' };
+      }
 
       const name = currentUser.name || 'Operador';
       const role = currentUser.role || 'USER';
       const initial = name.charAt(0).toUpperCase();
 
-      document.getElementById('myPillName').textContent = name;
-      document.getElementById('myPillRole').textContent = role;
-      
+      const nameEl = document.getElementById('myPillName');
+      const roleEl = document.getElementById('myPillRole');
       const pillAvatar = document.getElementById('myPillAvatar');
-      pillAvatar.textContent = initial;
-      pillAvatar.style.backgroundImage = 'none';
 
-      // Load avatar image for current user
-      try {
-        const pRes = await fetch('/api/profiles/me', {
-          headers: { 'Authorization': `Bearer ${getToken()}` }
-        });
-        if (pRes.ok) {
-          const pStats = await pRes.json();
-          if (pStats.avatar_url) {
-            pillAvatar.style.backgroundImage = `url('${pStats.avatar_url}')`;
-            pillAvatar.textContent = '';
-          }
-        }
-      } catch (e) {}
+      if (nameEl) nameEl.textContent = name;
+      if (roleEl) roleEl.textContent = role;
+      if (pillAvatar) {
+        pillAvatar.textContent = initial;
+        pillAvatar.style.backgroundImage = 'none';
+      }
 
       // Handle RBAC visibility (ADMIN vs USER)
       if (role === 'ADMIN') {
         document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
       } else {
         document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+      }
+
+      // Load avatar image for current user in background
+      const token = getToken();
+      if (token) {
+        try {
+          const pRes = await fetch('/api/profiles/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (pRes.ok) {
+            const pStats = await pRes.json();
+            if (pStats.avatar_url && pillAvatar) {
+              pillAvatar.style.backgroundImage = `url('${pStats.avatar_url}')`;
+              pillAvatar.textContent = '';
+            }
+          }
+        } catch (e) {}
       }
 
       refreshCurrentTab();
