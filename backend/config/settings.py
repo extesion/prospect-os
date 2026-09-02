@@ -27,10 +27,10 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api"
     
     # Database
-    # Default to PostgreSQL, with fallback capability
+    # Default to production Supabase PostgreSQL pooler, or environment variable if set
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL", 
-        "postgresql://postgres:postgres@localhost:5432/youtube_prospector"
+        "postgresql://postgres.lgiyzhksiqerlzyzfocl:%40Dexter883800@aws-0-us-east-2.pooler.supabase.com:5432/postgres"
     )
     
     # JWT & Security
