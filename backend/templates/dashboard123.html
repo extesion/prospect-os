@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PROSPECT OS — Team Prospecting Operating System</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
@@ -282,8 +285,13 @@
       background: var(--silver-gradient);
     }
 
-    .metric-card.success::after { background: var(--success); }
-    .metric-card.warning::after { background: var(--warning); }
+    .metric-card.success::after {
+      background: var(--success);
+    }
+
+    .metric-card.warning::after {
+      background: var(--warning);
+    }
 
     .metric-label {
       font-size: 11px;
@@ -378,7 +386,7 @@
       color: var(--silver-light);
       background-size: cover;
       background-position: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
     }
 
     .presence-dot {
@@ -427,7 +435,8 @@
       border: 1px solid rgba(245, 158, 11, 0.3);
     }
 
-    .status-tag.finished, .status-tag.idle {
+    .status-tag.finished,
+    .status-tag.idle {
       background: rgba(148, 163, 184, 0.1);
       color: var(--silver-muted);
       border: 1px solid rgba(148, 163, 184, 0.2);
@@ -546,9 +555,23 @@
       color: var(--silver);
     }
 
-    .rank-num.top1 { background: #f8fafc; color: #000; font-weight: 900; }
-    .rank-num.top2 { background: #94a3b8; color: #000; font-weight: 900; }
-    .rank-num.top3 { background: #475569; color: #fff; font-weight: 900; }
+    .rank-num.top1 {
+      background: #f8fafc;
+      color: #000;
+      font-weight: 900;
+    }
+
+    .rank-num.top2 {
+      background: #94a3b8;
+      color: #000;
+      font-weight: 900;
+    }
+
+    .rank-num.top3 {
+      background: #475569;
+      color: #fff;
+      font-weight: 900;
+    }
 
     .rank-hours {
       font-family: 'JetBrains Mono', monospace;
@@ -805,7 +828,9 @@
       letter-spacing: 0.5px;
     }
 
-    .form-group input, .form-group select, .form-group textarea {
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
       background: var(--card-inner);
       border: 1px solid var(--card-border);
       color: var(--silver);
@@ -816,7 +841,9 @@
       font-family: inherit;
     }
 
-    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
       border-color: rgba(255, 255, 255, 0.25);
     }
 
@@ -829,7 +856,7 @@
       background: #0f1016;
       border: 1px solid var(--card-border);
       border-radius: 14px;
-      box-shadow: 0 16px 36px rgba(0,0,0,0.7);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7);
       z-index: 90;
       display: none;
       flex-direction: column;
@@ -931,7 +958,7 @@
       color: #ffffff;
       background-size: cover;
       background-position: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     }
 
     .profile-info-header {
@@ -1091,16 +1118,24 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       background: #12141c;
       color: var(--silver);
     }
 
-    .toast-msg.success { border-color: rgba(16, 185, 129, 0.4); color: #a7f3d0; }
-    .toast-msg.error { border-color: rgba(239, 68, 68, 0.4); color: #fca5a5; }
+    .toast-msg.success {
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #a7f3d0;
+    }
+
+    .toast-msg.error {
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
   </style>
 </head>
+
 <body>
 
   <!-- TOP HEADER -->
@@ -1168,7 +1203,8 @@
   <div id="notifPanel">
     <div class="notif-header">
       <span style="font-size: 13px; font-weight: 700; color: var(--silver-light);">🔔 Notificações da Equipe</span>
-      <button class="btn-icon" style="font-size: 10px;" onclick="markAllNotificationsRead()">Marcar todas como lidas</button>
+      <button class="btn-icon" style="font-size: 10px;" onclick="markAllNotificationsRead()">Marcar todas como
+        lidas</button>
     </div>
     <div class="notif-list" id="notifListContainer">
       <div style="padding: 24px; text-align: center; color: var(--silver-muted); font-size: 12px;">
@@ -1209,7 +1245,8 @@
             <i class="fa-solid fa-users"></i>
             <span>Status em Tempo Real dos Membros</span>
           </div>
-          <div style="font-size: 11px; color: var(--silver-muted);">Clique no card de qualquer membro para abrir o perfil</div>
+          <div style="font-size: 11px; color: var(--silver-muted);">Clique no card de qualquer membro para abrir o
+            perfil</div>
         </div>
         <div class="team-grid" id="teamMembersGrid">
           <!-- Live cards injected here -->
@@ -1351,7 +1388,8 @@
             <input type="number" id="cfgDefaultTarget" min="1" max="5000" value="160" required>
           </div>
           <button type="submit" class="btn" style="align-self: flex-start;">Salvar Alterações</button>
-          <div id="cfgFeedback" style="font-size: 12px; color: var(--success); display: none;">Configurações salvas!</div>
+          <div id="cfgFeedback" style="font-size: 12px; color: var(--success); display: none;">Configurações salvas!
+          </div>
         </form>
       </div>
     </div>
@@ -1363,7 +1401,8 @@
   <div id="memberProfileModal" class="modal-overlay">
     <div class="modal-card large">
       <div class="profile-banner" id="pModalBanner">
-        <button class="modal-close" onclick="closeMemberProfileModal()" style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); color: #fff;">&times;</button>
+        <button class="modal-close" onclick="closeMemberProfileModal()"
+          style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); color: #fff;">&times;</button>
         <div class="profile-avatar-container">
           <div class="profile-avatar-img" id="pModalAvatar">U</div>
         </div>
@@ -1383,7 +1422,9 @@
         <div class="spotify-card">
           <div class="spotify-art" id="pModalSpotifyArt">🎵</div>
           <div class="spotify-info">
-            <div id="pModalMusicProviderLabel" style="font-size: 9px; font-weight: 800; color: var(--success); text-transform: uppercase; letter-spacing: 0.5px;">Ouvindo Agora</div>
+            <div id="pModalMusicProviderLabel"
+              style="font-size: 9px; font-weight: 800; color: var(--success); text-transform: uppercase; letter-spacing: 0.5px;">
+              Ouvindo Agora</div>
             <div class="spotify-title" id="pModalSpotifyTitle">-</div>
             <div class="spotify-artist" id="pModalSpotifyArtist">-</div>
           </div>
@@ -1413,7 +1454,9 @@
       <!-- Mini Chart Activity (7 Days) -->
       <div class="activity-chart-container">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 11px; font-weight: 700; color: var(--silver-light); text-transform: uppercase;">Atividade nos Últimos 7 Dias (Horas)</span>
+          <span
+            style="font-size: 11px; font-weight: 700; color: var(--silver-light); text-transform: uppercase;">Atividade
+            nos Últimos 7 Dias (Horas)</span>
           <span style="font-size: 10px; color: var(--silver-muted);" id="pStatBestDay">Melhor dia: -</span>
         </div>
         <div class="chart-bars" id="pModalChartBars">
@@ -1422,7 +1465,8 @@
       </div>
 
       <div class="modal-footer" style="justify-content: space-between;">
-        <button type="button" class="btn btn-secondary" id="btnEditMyProfileTrigger" style="display: none;" onclick="openEditProfileFormModal()">
+        <button type="button" class="btn btn-secondary" id="btnEditMyProfileTrigger" style="display: none;"
+          onclick="openEditProfileFormModal()">
           <i class="fa-solid fa-pen"></i>
           <span>Editar Meu Perfil</span>
         </button>
@@ -1456,19 +1500,24 @@
           <label>Banner de Fundo (JPG, PNG, GIF)</label>
           <input type="file" id="editBannerFile" accept="image/jpeg,image/png,image/webp,image/gif">
         </div>
-        
-        <div style="background: var(--card-inner); padding: 12px; border-radius: 10px; border: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 8px;">
-          <div style="font-size: 11px; font-weight: 700; color: var(--silver-light); text-transform: uppercase;">Integrações de Música</div>
-          <div style="font-size: 11px; color: var(--silver-muted);">Músicas reproduzidas no Spotify ou YouTube Music aparecem no seu card para a equipe.</div>
+
+        <div
+          style="background: var(--card-inner); padding: 12px; border-radius: 10px; border: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 8px;">
+          <div style="font-size: 11px; font-weight: 700; color: var(--silver-light); text-transform: uppercase;">
+            Integrações de Música</div>
+          <div style="font-size: 11px; color: var(--silver-muted);">Músicas reproduzidas no Spotify ou YouTube Music
+            aparecem no seu card para a equipe.</div>
           <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px; margin-top: 4px;">
             <input type="checkbox" id="editShowMusicCheck" style="width: auto;">
-            <label for="editShowMusicCheck" style="margin: 0; text-transform: none; cursor: pointer;">Mostrar música ao vivo no meu card da equipe</label>
+            <label for="editShowMusicCheck" style="margin: 0; text-transform: none; cursor: pointer;">Mostrar música ao
+              vivo no meu card da equipe</label>
           </div>
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="closeEditProfileModal()">Cancelar</button>
-        <button type="button" id="btnSaveProfileChanges" class="btn" onclick="saveProfileChanges()">Salvar Alterações</button>
+        <button type="button" id="btnSaveProfileChanges" class="btn" onclick="saveProfileChanges()">Salvar
+          Alterações</button>
       </div>
     </div>
   </div>
@@ -1555,7 +1604,7 @@
           currentUser = JSON.parse(cached);
           setupUserInterface();
         }
-      } catch (e) {}
+      } catch (e) { }
 
       try {
         const res = await fetch('/api/auth/me', {
@@ -1624,7 +1673,7 @@
               pillAvatar.textContent = '';
             }
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       refreshCurrentTab();
@@ -1900,6 +1949,8 @@
       }
     }
 
+
+
     function renderDashboardUsersTable(users) {
       const tbody = document.getElementById('dashUsersTableBody');
       tbody.innerHTML = users.map(u => `
@@ -2106,7 +2157,7 @@
             badge.style.display = 'none';
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     document.getElementById('btnNotifBell').addEventListener('click', async () => {
@@ -2136,7 +2187,7 @@
               </div>
             `).join('');
           }
-        } catch (e) {}
+        } catch (e) { }
       }
     });
 
@@ -2148,7 +2199,7 @@
         });
         loadUnreadNotifications();
         document.querySelectorAll('.notif-item').forEach(el => el.classList.remove('unread'));
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // Edit Profile Modal
@@ -2162,7 +2213,7 @@
           document.getElementById('editBioInput').value = stats.bio || '';
           document.getElementById('editShowMusicCheck').checked = stats.show_music_to_team !== false;
         }
-      } catch (e) {}
+      } catch (e) { }
       document.getElementById('editAvatarFile').value = '';
       document.getElementById('editBannerFile').value = '';
       document.getElementById('editProfileModal').classList.add('active');
@@ -2298,4 +2349,5 @@
     setInterval(loadUnreadNotifications, 15000);
   </script>
 </body>
+
 </html>
