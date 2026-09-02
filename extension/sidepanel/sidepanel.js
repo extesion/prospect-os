@@ -4,9 +4,6 @@
  */
 
 document.addEventListener("DOMContentLoaded", async () => {
-    console.log('[SidePanel] DOMContentLoaded event fired');
-    // Elements
-    const viewLogin = document.getElementById("view-login");
   // Elements
   const viewLogin = document.getElementById("view-login");
   const viewWorkspace = document.getElementById("view-workspace");
