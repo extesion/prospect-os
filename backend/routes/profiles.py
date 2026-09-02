@@ -101,21 +101,27 @@ async def upload_profile_media(
     if not is_valid_magic:
         raise HTTPException(status_code=400, detail="Arquivo corrompido ou formato de imagem inválido.")
 
+    # If file can be written to disk, write it; also create Data URL for guaranteed persistence on serverless
+    import base64
+    b64_str = base64.b64encode(content).decode("utf-8")
+    data_url = f"data:{content_type};base64,{b64_str}"
+
     ext = ALLOWED_MIME_TYPES[content_type]
     safe_filename = f"{current_user.id}_{asset_type}_{uuid.uuid4().hex[:8]}{ext}"
     file_path = os.path.join(UPLOAD_DIR, safe_filename)
 
-    with open(file_path, "wb") as f:
-        f.write(content)
+    try:
+        with open(file_path, "wb") as f:
+            f.write(content)
+    except Exception:
+        pass
 
-    file_url = f"/static/uploads/{safe_filename}"
-
-    # Update profile record
+    # Update profile record with persistent data url
     profile = ProfileService.get_or_create_profile(db, current_user.id)
     if asset_type == "avatar":
-        profile.avatar_url = file_url
+        profile.avatar_url = data_url
     else:
-        profile.banner_url = file_url
+        profile.banner_url = data_url
 
     db.commit()
     db.refresh(profile)
@@ -123,5 +129,5 @@ async def upload_profile_media(
     return {
         "success": True,
         "asset_type": asset_type,
-        "url": file_url
+        "url": data_url
     }

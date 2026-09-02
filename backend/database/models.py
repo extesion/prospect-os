@@ -189,8 +189,8 @@ class UserProfile(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
-    avatar_url = Column(String(500), nullable=True)
-    banner_url = Column(String(500), nullable=True)
+    avatar_url = Column(Text, nullable=True)
+    banner_url = Column(Text, nullable=True)
     bio = Column(String(250), nullable=True)
     custom_status = Column(String(100), nullable=True)
     show_music_to_team = Column(Boolean, default=True, nullable=False)

@@ -1956,7 +1956,19 @@
     }
 
     // Edit Profile Modal
-    function openEditProfileFormModal() {
+    async function openEditProfileFormModal() {
+      try {
+        const res = await fetch('/api/profiles/me', {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        if (res.ok) {
+          const stats = await res.json();
+          document.getElementById('editBioInput').value = stats.bio || '';
+          document.getElementById('editShowMusicCheck').checked = stats.show_music_to_team !== false;
+        }
+      } catch (e) {}
+      document.getElementById('editAvatarFile').value = '';
+      document.getElementById('editBannerFile').value = '';
       document.getElementById('editProfileModal').classList.add('active');
     }
 
@@ -1970,32 +1982,45 @@
       const avatarFile = document.getElementById('editAvatarFile').files[0];
       const bannerFile = document.getElementById('editBannerFile').files[0];
       const token = getToken();
+      const saveBtn = document.getElementById('btnSaveProfileChanges');
+      const originalText = saveBtn.textContent;
 
       try {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Salvando...';
+
         // Upload Avatar if selected
         if (avatarFile) {
           const fd = new FormData();
           fd.append('file', avatarFile);
-          await fetch('/api/profiles/upload/avatar', {
+          const avRes = await fetch('/api/profiles/upload/avatar', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` },
             body: fd
           });
+          if (!avRes.ok) {
+            const errData = await avRes.json().catch(() => ({}));
+            throw new Error(errData.detail || 'Erro ao enviar foto de perfil (avatar).');
+          }
         }
 
         // Upload Banner if selected
         if (bannerFile) {
           const fd = new FormData();
           fd.append('file', bannerFile);
-          await fetch('/api/profiles/upload/banner', {
+          const bnRes = await fetch('/api/profiles/upload/banner', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` },
             body: fd
           });
+          if (!bnRes.ok) {
+            const errData = await bnRes.json().catch(() => ({}));
+            throw new Error(errData.detail || 'Erro ao enviar banner de fundo.');
+          }
         }
 
         // Update bio & privacy
-        await fetch('/api/profiles/me', {
+        const updateRes = await fetch('/api/profiles/me', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -2003,12 +2028,21 @@
           },
           body: JSON.stringify({ bio, show_music_to_team: showMusic })
         });
+        if (!updateRes.ok) {
+          const errData = await updateRes.json().catch(() => ({}));
+          throw new Error(errData.detail || 'Erro ao atualizar dados do perfil.');
+        }
 
-        showToast('Perfil atualizado com sucesso!', 'success');
+        showToast('Perfil e fotos atualizados com sucesso!', 'success');
         closeEditProfileModal();
-        openMemberProfileModal(currentUser.id);
+        if (currentUser && currentUser.id) {
+          openMemberProfileModal(currentUser.id);
+        }
       } catch (err) {
         showToast(err.message, 'error');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = originalText;
       }
     }
 

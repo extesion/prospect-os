@@ -105,10 +105,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       // Show Admin Shortcuts only for ADMIN
       if (role === "ADMIN") {
         adminShortcuts.classList.remove("hidden");
-        userRoleBadge.style.backgroundColor = "#312e81";
-        userRoleBadge.style.color = "#c7d2fe";
+        userRoleBadge.style.backgroundColor = "#27272a";
+        userRoleBadge.style.color = "#ffffff";
+        userRoleBadge.style.border = "1px solid #52525b";
       } else {
         adminShortcuts.classList.add("hidden");
+        userRoleBadge.style.backgroundColor = "#18181b";
+        userRoleBadge.style.color = "#a1a1aa";
+        userRoleBadge.style.border = "1px solid #27272a";
       }
     }
 

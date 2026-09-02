@@ -9,9 +9,9 @@
 body {
   width: 330px;
   min-height: 480px;
-  background-color: #0f0f12;
-  color: #f1f1f1;
-  font-family: "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-color: #070709;
+  color: #e2e8f0;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 13px;
   line-height: 1.4;
   overflow-x: hidden;
@@ -30,7 +30,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .brand {
@@ -41,7 +41,7 @@ body {
 
 .brand-icon {
   font-size: 16px;
-  color: #ff4e45;
+  color: #ffffff;
 }
 
 .brand-title {
@@ -103,7 +103,7 @@ body {
 
 /* Forms */
 .login-intro {
-  color: #a0a0a8;
+  color: #94a3b8;
   font-size: 12px;
   margin-bottom: 12px;
 }
@@ -123,14 +123,14 @@ body {
 .form-group label {
   font-size: 11px;
   font-weight: 600;
-  color: #b0b0b8;
+  color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
 
 .form-group input {
-  background: #1a1a22;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #101117;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: #ffffff;
   padding: 8px 10px;
   border-radius: 6px;
@@ -140,8 +140,7 @@ body {
 }
 
 .form-group input:focus {
-  border-color: #3ea6ff;
-  box-shadow: 0 0 0 2px rgba(62, 166, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .config-toggle {
@@ -152,13 +151,13 @@ body {
 }
 
 .config-toggle:hover {
-  color: #3ea6ff;
+  color: #ffffff;
 }
 
 /* Buttons */
 .btn-primary {
-  background: linear-gradient(135deg, #065fd4, #0b72ff);
-  color: #ffffff;
+  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+  color: #09090b;
   border: none;
   border-radius: 6px;
   padding: 10px;
@@ -167,30 +166,30 @@ body {
   letter-spacing: 0.4px;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(6, 95, 212, 0.4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #0b72ff, #2b85ff);
+  background: #ffffff;
   transform: translateY(-1px);
 }
 
 .btn-secondary {
   width: 100%;
-  background: #202028;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #f1f1f1;
+  background: #14161f;
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 9px;
   border-radius: 6px;
-  padding: 8px;
-  font-weight: 600;
-  font-size: 12px;
+  font-weight: 700;
+  font-size: 11px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
 }
 
 .btn-secondary:hover {
-  background: #2a2a34;
-  border-color: rgba(255, 255, 255, 0.25);
+  background: #1f2230;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .btn-link {

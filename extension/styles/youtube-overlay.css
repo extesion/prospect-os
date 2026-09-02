@@ -1,18 +1,18 @@
 /* YouTube Prospector - Overlay Styles */
 
 :root {
-  --yp-primary: #3ea6ff;
-  --yp-primary-hover: #65b8ff;
-  --yp-success: #2ba640;
-  --yp-success-bg: rgba(43, 166, 64, 0.15);
-  --yp-success-border: rgba(43, 166, 64, 0.4);
+  --yp-primary: #ffffff;
+  --yp-primary-hover: #e2e8f0;
+  --yp-success: #2ecc71;
+  --yp-success-bg: rgba(46, 204, 113, 0.15);
+  --yp-success-border: rgba(46, 204, 113, 0.4);
   --yp-warning: #f1c40f;
   --yp-danger: #e74c3c;
   --yp-danger-bg: rgba(231, 76, 60, 0.15);
-  --yp-dark-bg: rgba(18, 18, 20, 0.85);
+  --yp-dark-bg: rgba(10, 11, 16, 0.92);
   --yp-border: rgba(255, 255, 255, 0.12);
-  --yp-text: #f1f1f1;
-  --yp-text-muted: #aaaaaa;
+  --yp-text: #f8fafc;
+  --yp-text-muted: #94a3b8;
 }
 
 /* Badge Container injected next to channel names or video cards */
@@ -205,7 +205,7 @@
   font-weight: 700;
   font-size: 12px;
   letter-spacing: 0.3px;
-  color: #ff4e45;
+  color: #ffffff;
 }
 
 .yp-toolbar-stats {
@@ -232,12 +232,12 @@
 }
 
 .yp-stat-exists strong {
-  color: #5dade2;
+  color: #94a3b8;
 }
 
 .yp-toolbar-bulk-btn {
-  background: linear-gradient(135deg, #27ae60, #2ecc71);
-  color: #ffffff;
+  background: linear-gradient(135deg, #ffffff, #cbd5e1);
+  color: #09090b;
   border: none;
   border-radius: 20px;
   padding: 6px 14px;
@@ -247,14 +247,14 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   transition: all 0.2s ease;
 }
 
 .yp-toolbar-bulk-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(46, 204, 113, 0.6);
-  background: linear-gradient(135deg, #2ecc71, #3fe085);
+  box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+  background: #ffffff;
 }
 
 .yp-toolbar-bulk-btn:disabled {

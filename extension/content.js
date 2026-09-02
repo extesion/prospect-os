@@ -378,7 +378,7 @@
     pageState.toolbarElement.style.display = "flex";
     pageState.toolbarElement.innerHTML = `
       <div class="yp-toolbar-brand">
-        <span>⚡ PROSPECTOR</span>
+        <span>⚡ PROSPECT OS</span>
       </div>
       <div class="yp-toolbar-stats">
         <div class="yp-stat-item">Total: <strong>${total}</strong></div>
