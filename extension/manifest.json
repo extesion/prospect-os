@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "YouTube Prospector - Coletor de Canais",
-  "version": "1.1.0",
-  "description": "Extensão profissional para prospecção de canais no YouTube com Side Panel, detecção de duplicidades em tempo real e banco centralizado.",
+  "name": "PROSPECT OS — Coletor & Produtividade",
+  "version": "2.0.0",
+  "description": "PROSPECT OS — Team Prospecting Operating System com Side Panel, detecção em tempo real e gestão de produtividade.",
   "permissions": [
     "storage",
     "activeTab",

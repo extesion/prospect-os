@@ -7,7 +7,7 @@ from sqlalchemy import func, or_, and_, desc
 
 from backend.database.connection import get_db
 from backend.database.models import Channel, User
-from backend.security.auth import get_current_user
+from backend.security.auth import get_current_user, get_current_admin_user
 from qualifier.models.qualification_result import QualificationResult
 from qualifier.models.qualification_job import QualificationJob
 from qualifier.models.analyzed_video import AnalyzedVideo
@@ -26,7 +26,11 @@ from qualifier.services.qualification_service import QualificationService
 from qualifier.services.youtube_service import YouTubeService
 from qualifier.worker import QualificationWorker
 
-router = APIRouter(prefix="/qualification", tags=["Qualification"])
+router = APIRouter(
+    prefix="/qualification",
+    tags=["Qualification (Admin Only)"],
+    dependencies=[Depends(get_current_admin_user)]
+)
 
 # ----------------------------------------------------------------------------
 # 1. SERVE WEB INTERFACE

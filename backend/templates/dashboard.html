@@ -3,29 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube Prospector — Painel de Produtividade & Horas</title>
+  <title>PROSPECT OS — Team Prospecting Operating System</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      --bg: #090a0f;
-      --nav-bg: #10121a;
-      --card-bg: #12141c;
+      --bg: #070709;
+      --nav-bg: #0d0e12;
+      --card-bg: #101116;
+      --card-inner: #0a0b0e;
       --card-border: rgba(255, 255, 255, 0.08);
-      --card-hover: rgba(255, 255, 255, 0.15);
-      --primary: #3b82f6;
-      --primary-gradient: linear-gradient(135deg, #2563eb, #3b82f6);
-      --accent: #ff4e45;
-      --accent-gradient: linear-gradient(135deg, #ef4444, #f97316);
+      --card-hover: rgba(255, 255, 255, 0.18);
+      --silver: #e2e8f0;
+      --silver-light: #f8fafc;
+      --silver-muted: #94a3b8;
+      --silver-dark: #334155;
+      --silver-gradient: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+      --accent: #f8fafc;
       --success: #10b981;
       --warning: #f59e0b;
       --danger: #ef4444;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --table-header: #181b26;
-      --table-row-alt: #0e1017;
+      --table-header: #0d0e14;
+      --table-row-alt: #08090c;
     }
 
     * {
@@ -36,7 +37,7 @@
 
     body {
       background-color: var(--bg);
-      color: var(--text);
+      color: var(--silver);
       font-family: 'Plus Jakarta Sans', sans-serif;
       min-height: 100vh;
       display: flex;
@@ -45,16 +46,17 @@
 
     /* Top Navigation Bar */
     header {
-      background: rgba(18, 20, 28, 0.85);
+      background: rgba(13, 14, 18, 0.92);
       backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--card-border);
       position: sticky;
       top: 0;
       z-index: 50;
-      padding: 14px 32px;
+      padding: 12px 28px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 16px;
     }
 
     .brand-group {
@@ -64,9 +66,10 @@
     }
 
     .brand-icon {
-      background: var(--accent-gradient);
-      color: white;
-      font-size: 18px;
+      background: linear-gradient(135deg, #27272a, #09090b);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      font-size: 16px;
       font-weight: 800;
       width: 36px;
       height: 36px;
@@ -74,29 +77,30 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     }
 
     .brand-title {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 800;
       letter-spacing: -0.5px;
+      color: var(--silver-light);
     }
 
     .brand-subtitle {
-      font-size: 10px;
-      color: var(--text-muted);
-      font-weight: 600;
+      font-size: 9px;
+      color: var(--silver-muted);
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.8px;
     }
 
     /* Nav Tabs */
     .nav-tabs {
       display: flex;
       align-items: center;
-      gap: 6px;
-      background: #161822;
+      gap: 4px;
+      background: #090a0d;
       padding: 4px;
       border-radius: 12px;
       border: 1px solid var(--card-border);
@@ -105,10 +109,10 @@
     .nav-tab-btn {
       background: transparent;
       border: none;
-      color: var(--text-muted);
-      padding: 8px 16px;
+      color: var(--silver-muted);
+      padding: 7px 14px;
       border-radius: 8px;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       display: flex;
@@ -124,42 +128,101 @@
     }
 
     .nav-tab-btn.active {
-      background: var(--primary-gradient);
-      color: #ffffff;
-      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+      background: var(--silver-gradient);
+      color: #09090b;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(255, 255, 255, 0.12);
     }
 
     .header-right {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
-    .live-badge {
+    /* Notification Bell */
+    .notif-bell-btn {
+      position: relative;
+      background: #14161f;
+      border: 1px solid var(--card-border);
+      color: var(--silver);
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
-      gap: 6px;
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: var(--success);
-      padding: 6px 12px;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .notif-bell-btn:hover {
+      background: #1c202d;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .notif-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: var(--danger);
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 10px;
+      min-width: 18px;
+      text-align: center;
+      display: none;
+      border: 2px solid var(--bg);
+    }
+
+    /* Current User Profile Pill */
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #14161f;
+      border: 1px solid var(--card-border);
+      padding: 4px 10px 4px 4px;
       border-radius: 20px;
-      font-size: 11px;
-      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
     }
 
-    .live-dot {
-      width: 8px;
-      height: 8px;
+    .user-pill:hover {
+      background: #1c202d;
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .user-pill-avatar {
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
-      background: var(--success);
-      box-shadow: 0 0 8px var(--success);
-      animation: pulse 2s infinite;
+      background: #27272a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      color: #ffffff;
+      background-size: cover;
+      background-position: center;
     }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.85); }
+    .user-pill-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--silver-light);
+    }
+
+    .user-pill-role {
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 800;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--silver-muted);
     }
 
     /* Main Container */
@@ -168,41 +231,40 @@
       max-width: 1400px;
       width: 100%;
       margin: 0 auto;
-      padding: 28px 24px;
+      padding: 24px 20px;
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 20px;
     }
 
-    /* Tab Views */
     .tab-view {
       display: none;
       flex-direction: column;
-      gap: 24px;
+      gap: 20px;
     }
 
     .tab-view.active {
       display: flex;
     }
 
-    /* KPI Metrics Grid */
+    /* Metrics Grid */
     .metrics-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 18px;
+      gap: 16px;
     }
 
     .metric-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 22px 24px;
+      border-radius: 14px;
+      padding: 20px 22px;
       display: flex;
       flex-direction: column;
       gap: 6px;
       position: relative;
       overflow: hidden;
-      transition: border-color 0.2s, transform 0.2s;
+      transition: all 0.2s;
     }
 
     .metric-card:hover {
@@ -216,62 +278,57 @@
       top: 0;
       left: 0;
       right: 0;
-      height: 3px;
-      background: var(--primary-gradient);
+      height: 2px;
+      background: var(--silver-gradient);
     }
 
-    .metric-card.accent::after {
-      background: var(--accent-gradient);
-    }
-
-    .metric-card.success::after {
-      background: linear-gradient(135deg, #10b981, #34d399);
-    }
-
-    .metric-card.warning::after {
-      background: linear-gradient(135deg, #f59e0b, #fbbf24);
-    }
-
-    .metric-card.indigo::after {
-      background: linear-gradient(135deg, #6366f1, #818cf8);
-    }
+    .metric-card.success::after { background: var(--success); }
+    .metric-card.warning::after { background: var(--warning); }
 
     .metric-label {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
-      color: var(--text-muted);
+      color: var(--silver-muted);
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
 
     .metric-value {
-      font-size: 32px;
+      font-size: 28px;
       font-weight: 800;
-      color: var(--text);
-      letter-spacing: -1px;
+      color: var(--silver-light);
+      letter-spacing: -0.5px;
     }
 
     .metric-sub {
-      font-size: 12px;
-      color: var(--text-muted);
+      font-size: 11px;
+      color: var(--silver-muted);
     }
 
     /* Team Members Grid */
     .team-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 18px;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 16px;
     }
 
     .member-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 20px;
+      border-radius: 14px;
+      padding: 18px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
       position: relative;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .member-card:hover {
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     }
 
     .member-header {
@@ -283,111 +340,106 @@
     .member-info {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
     .member-avatar {
-      width: 42px;
-      height: 42px;
+      width: 40px;
+      height: 40px;
       border-radius: 12px;
-      background: #1e2230;
+      background: #171822;
       border: 1px solid var(--card-border);
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 800;
-      font-size: 16px;
-      color: var(--primary);
+      font-size: 15px;
+      color: var(--silver-light);
+      background-size: cover;
+      background-position: center;
     }
 
     .member-name {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 700;
+      color: var(--silver-light);
     }
 
     .status-tag {
       font-size: 10px;
       font-weight: 800;
-      padding: 4px 10px;
-      border-radius: 20px;
+      padding: 3px 8px;
+      border-radius: 12px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
 
     .status-tag.active {
-      background: rgba(16, 185, 129, 0.15);
+      background: rgba(16, 185, 129, 0.12);
       color: var(--success);
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      border: 1px solid rgba(16, 185, 129, 0.25);
     }
 
     .status-tag.paused {
-      background: rgba(245, 158, 11, 0.15);
+      background: rgba(245, 158, 11, 0.12);
       color: var(--warning);
-      border: 1px solid rgba(245, 158, 11, 0.3);
+      border: 1px solid rgba(245, 158, 11, 0.25);
     }
 
     .status-tag.finished {
-      background: rgba(148, 163, 184, 0.15);
-      color: var(--text-muted);
-      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: rgba(148, 163, 184, 0.1);
+      color: var(--silver-muted);
+      border: 1px solid rgba(148, 163, 184, 0.2);
     }
 
     .member-stats-row {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
-      background: #0f1118;
-      padding: 12px;
-      border-radius: 12px;
+      background: var(--card-inner);
+      padding: 10px;
+      border-radius: 10px;
       border: 1px solid rgba(255, 255, 255, 0.04);
       text-align: center;
     }
 
     .m-stat-val {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       font-family: 'JetBrains Mono', monospace;
-    }
-
-    .m-stat-val.highlight {
-      color: var(--primary);
+      color: var(--silver-light);
     }
 
     .m-stat-lbl {
-      font-size: 10px;
-      color: var(--text-muted);
+      font-size: 9px;
+      color: var(--silver-muted);
       font-weight: 600;
       margin-top: 2px;
-    }
-
-    .progress-wrapper {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+      text-transform: uppercase;
     }
 
     .progress-bar-bg {
-      height: 6px;
-      background: #1b1e2a;
-      border-radius: 10px;
+      height: 5px;
+      background: #171822;
+      border-radius: 6px;
       overflow: hidden;
     }
 
     .progress-bar-fill {
       height: 100%;
-      background: var(--primary-gradient);
-      border-radius: 10px;
+      background: var(--silver-gradient);
+      border-radius: 6px;
       transition: width 0.3s ease;
     }
 
-    /* Section & Content Cards */
+    /* Content Cards & Tables */
     .content-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 24px;
+      border-radius: 14px;
+      padding: 20px;
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 16px;
     }
 
     .content-header {
@@ -395,69 +447,74 @@
       align-items: center;
       justify-content: space-between;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 10px;
     }
 
     .section-title {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 800;
       letter-spacing: -0.3px;
       display: flex;
       align-items: center;
       gap: 8px;
+      color: var(--silver-light);
     }
 
-    /* Ranking Items */
     .ranking-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 24px;
+      border-radius: 14px;
+      padding: 20px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 10px;
     }
 
     .ranking-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 20px;
-      background: #141722;
+      padding: 14px 18px;
+      background: var(--card-inner);
       border: 1px solid var(--card-border);
-      border-radius: 12px;
+      border-radius: 10px;
+      transition: all 0.2s;
+    }
+
+    .ranking-item:hover {
+      border-color: rgba(255, 255, 255, 0.18);
     }
 
     .rank-left {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 14px;
     }
 
     .rank-num {
-      width: 32px;
-      height: 32px;
+      width: 28px;
+      height: 28px;
       border-radius: 8px;
-      background: #1c202e;
+      background: #171822;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 800;
-      font-size: 14px;
+      font-size: 13px;
+      color: var(--silver);
     }
 
-    .rank-num.top1 { background: #f59e0b; color: #000; }
-    .rank-num.top2 { background: #94a3b8; color: #000; }
-    .rank-num.top3 { background: #b45309; color: #fff; }
+    .rank-num.top1 { background: #f8fafc; color: #000; font-weight: 900; }
+    .rank-num.top2 { background: #94a3b8; color: #000; font-weight: 900; }
+    .rank-num.top3 { background: #475569; color: #fff; font-weight: 900; }
 
     .rank-hours {
       font-family: 'JetBrains Mono', monospace;
       font-weight: 700;
-      font-size: 16px;
-      color: var(--primary);
+      font-size: 15px;
+      color: var(--silver-light);
     }
 
-    /* Tables */
     .table-container {
       overflow-x: auto;
     }
@@ -471,9 +528,9 @@
 
     th {
       background: var(--table-header);
-      color: var(--text-muted);
+      color: var(--silver-muted);
       font-weight: 700;
-      padding: 14px 20px;
+      padding: 12px 16px;
       text-transform: uppercase;
       font-size: 11px;
       letter-spacing: 0.5px;
@@ -481,7 +538,7 @@
     }
 
     td {
-      padding: 14px 20px;
+      padding: 12px 16px;
       border-bottom: 1px solid var(--card-border);
       vertical-align: middle;
     }
@@ -495,13 +552,13 @@
     }
 
     .btn {
-      background: var(--primary-gradient);
-      color: white;
+      background: var(--silver-gradient);
+      color: #09090b;
       border: none;
-      padding: 8px 16px;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
@@ -512,65 +569,61 @@
     }
 
     .btn:hover {
-      opacity: 0.92;
+      background: #ffffff;
       transform: translateY(-1px);
     }
 
     .btn-secondary {
-      background: #1e2230;
+      background: #14161f;
       border: 1px solid var(--card-border);
-      color: var(--text);
+      color: var(--silver);
     }
 
     .btn-secondary:hover {
-      background: #282d40;
+      background: #1c202d;
+      border-color: rgba(255, 255, 255, 0.2);
     }
 
     .btn-danger {
-      background: linear-gradient(135deg, #dc2626, #ef4444);
-      color: white;
-      border: none;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
     }
 
     .btn-danger:hover {
-      background: linear-gradient(135deg, #b91c1c, #dc2626);
+      background: var(--danger);
+      color: #ffffff;
     }
 
     .btn-icon {
       padding: 6px 10px;
-      border-radius: 8px;
+      border-radius: 6px;
       font-size: 12px;
       cursor: pointer;
       border: 1px solid var(--card-border);
-      background: #1c202e;
-      color: var(--text-muted);
+      background: #14161f;
+      color: var(--silver-muted);
       transition: all 0.2s;
     }
 
     .btn-icon:hover {
       color: #fff;
-      background: #252a3d;
-    }
-
-    .btn-icon.delete:hover {
-      background: rgba(239, 68, 68, 0.2);
-      border-color: rgba(239, 68, 68, 0.4);
-      color: var(--danger);
+      background: #1c202d;
     }
 
     .search-input {
-      background: #181a24;
+      background: var(--card-inner);
       border: 1px solid var(--card-border);
-      color: var(--text);
-      padding: 8px 14px;
-      border-radius: 10px;
-      font-size: 13px;
+      color: var(--silver);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
       outline: none;
-      min-width: 240px;
+      min-width: 220px;
     }
 
     .search-input:focus {
-      border-color: var(--primary);
+      border-color: rgba(255, 255, 255, 0.25);
     }
 
     /* Badges */
@@ -578,78 +631,39 @@
       display: inline-block;
       padding: 3px 8px;
       border-radius: 6px;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
     }
 
     .badge-admin {
-      background: rgba(99, 102, 241, 0.15);
-      color: #818cf8;
-      border: 1px solid rgba(99, 102, 241, 0.3);
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
     .badge-user {
-      background: rgba(148, 163, 184, 0.15);
+      background: rgba(148, 163, 184, 0.1);
       color: #cbd5e1;
-      border: 1px solid rgba(148, 163, 184, 0.3);
+      border: 1px solid rgba(148, 163, 184, 0.2);
     }
 
     .badge-active {
-      background: rgba(16, 185, 129, 0.15);
+      background: rgba(16, 185, 129, 0.12);
       color: var(--success);
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      border: 1px solid rgba(16, 185, 129, 0.25);
     }
 
     .badge-inactive {
-      background: rgba(239, 68, 68, 0.15);
+      background: rgba(239, 68, 68, 0.12);
       color: var(--danger);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-    }
-
-    /* Config Tab Form */
-    .config-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 24px;
-      max-width: 600px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .form-group label {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-    }
-
-    .form-group input, .form-group select {
-      background: #181a24;
-      border: 1px solid var(--card-border);
-      color: var(--text);
-      padding: 10px 14px;
-      border-radius: 8px;
-      font-size: 14px;
-      outline: none;
-    }
-
-    .form-group input:focus, .form-group select:focus {
-      border-color: var(--primary);
+      border: 1px solid rgba(239, 68, 68, 0.25);
     }
 
     /* Modal Overlay & Card */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(5, 7, 12, 0.85);
+      background: rgba(5, 6, 8, 0.85);
       backdrop-filter: blur(8px);
       z-index: 100;
       display: none;
@@ -663,27 +677,26 @@
     }
 
     .modal-card {
-      background: #121520;
+      background: var(--card-bg);
       border: 1px solid var(--card-border);
       width: 100%;
-      max-width: 480px;
-      border-radius: 18px;
+      max-width: 520px;
+      border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.8);
       display: flex;
       flex-direction: column;
-      animation: modalFadeIn 0.2s ease-out;
+      max-height: 90vh;
     }
 
-    @keyframes modalFadeIn {
-      from { opacity: 0; transform: scale(0.96); }
-      to { opacity: 1; transform: scale(1); }
+    .modal-card.large {
+      max-width: 720px;
     }
 
     .modal-header {
-      background: #171b28;
+      background: #0e0f15;
       border-bottom: 1px solid var(--card-border);
-      padding: 16px 20px;
+      padding: 14px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -695,17 +708,18 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      color: var(--silver-light);
     }
 
     .modal-close {
       background: transparent;
       border: none;
-      color: var(--text-muted);
+      color: var(--silver-muted);
       font-size: 18px;
       cursor: pointer;
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -722,19 +736,301 @@
       display: flex;
       flex-direction: column;
       gap: 16px;
+      overflow-y: auto;
     }
 
     .modal-footer {
-      padding: 16px 20px;
+      padding: 14px 20px;
       border-top: 1px solid var(--card-border);
       display: flex;
       align-items: center;
       justify-content: flex-end;
       gap: 10px;
-      background: #141722;
+      background: #0e0f15;
     }
 
-    /* Toast */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--silver-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-group input, .form-group select, .form-group textarea {
+      background: var(--card-inner);
+      border: 1px solid var(--card-border);
+      color: var(--silver);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Notification Panel Drawer */
+    #notifPanel {
+      position: fixed;
+      top: 60px;
+      right: 28px;
+      width: 360px;
+      background: #0f1016;
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.7);
+      z-index: 90;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #notifPanel.active {
+      display: flex;
+    }
+
+    .notif-header {
+      padding: 14px 16px;
+      background: #13151f;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .notif-list {
+      max-height: 380px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .notif-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      display: flex;
+      gap: 12px;
+      font-size: 12px;
+      transition: background 0.2s;
+    }
+
+    .notif-item.unread {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .notif-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .notif-icon {
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .notif-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .notif-title {
+      font-weight: 700;
+      color: var(--silver-light);
+    }
+
+    .notif-msg {
+      color: var(--silver-muted);
+      line-height: 1.4;
+    }
+
+    .notif-time {
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    /* Member Profile Modern Modal (Dark & Silver) */
+    .profile-banner {
+      width: 100%;
+      height: 140px;
+      background: linear-gradient(135deg, #181924, #0b0c10);
+      background-size: cover;
+      background-position: center;
+      position: relative;
+    }
+
+    .profile-avatar-container {
+      position: absolute;
+      bottom: -32px;
+      left: 24px;
+    }
+
+    .profile-avatar-img {
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+      background: #1a1c26;
+      border: 4px solid var(--card-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 800;
+      color: #ffffff;
+      background-size: cover;
+      background-position: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    .profile-info-header {
+      padding: 40px 24px 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .profile-user-name {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--silver-light);
+    }
+
+    .profile-user-status {
+      font-size: 12px;
+      color: var(--silver-muted);
+      margin-top: 2px;
+    }
+
+    .profile-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      padding: 0 24px 16px 24px;
+    }
+
+    .profile-stat-box {
+      background: var(--card-inner);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .profile-stat-val {
+      font-size: 16px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--silver-light);
+    }
+
+    .profile-stat-lbl {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--silver-muted);
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    /* Spotify Now Playing Card */
+    .spotify-card {
+      margin: 0 24px 16px 24px;
+      background: #0b0c10;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .spotify-art {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      background: #1c1d27;
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: var(--success);
+    }
+
+    .spotify-info {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .spotify-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--silver-light);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .spotify-artist {
+      font-size: 11px;
+      color: var(--silver-muted);
+    }
+
+    /* Mini Activity Bars */
+    .activity-chart-container {
+      margin: 0 24px 20px 24px;
+      background: var(--card-inner);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .chart-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 80px;
+      padding-top: 10px;
+    }
+
+    .chart-bar-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+
+    .chart-bar {
+      width: 100%;
+      background: var(--silver-gradient);
+      border-radius: 4px 4px 0 0;
+      min-height: 4px;
+      transition: height 0.3s;
+    }
+
+    .chart-label {
+      font-size: 9px;
+      color: var(--silver-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Toast Container */
     #toastContainer {
       position: fixed;
       bottom: 24px;
@@ -742,71 +1038,126 @@
       z-index: 120;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
     }
 
     .toast-msg {
-      padding: 12px 18px;
-      border-radius: 12px;
-      font-size: 13px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 12px;
       font-weight: 600;
       display: flex;
       align-items: center;
       gap: 10px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
       border: 1px solid rgba(255,255,255,0.1);
-      animation: toastIn 0.3s ease-out;
+      background: #12141c;
+      color: var(--silver);
     }
 
-    @keyframes toastIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .toast-msg.success { background: #064e3b; color: #a7f3d0; border-color: #059669; }
-    .toast-msg.error { background: #7f1d1d; color: #fecaca; border-color: #dc2626; }
-    .toast-msg.info { background: #1e293b; color: #e2e8f0; border-color: #475569; }
+    .toast-msg.success { border-color: rgba(16, 185, 129, 0.4); color: #a7f3d0; }
+    .toast-msg.error { border-color: rgba(239, 68, 68, 0.4); color: #fca5a5; }
   </style>
 </head>
 <body>
+
+  <!-- TOP HEADER -->
   <header>
     <div class="brand-group">
-      <div class="brand-icon">⚡</div>
+      <div class="brand-icon">
+        <i class="fa-solid fa-cube"></i>
+      </div>
       <div>
-        <div class="brand-title">YouTube Prospector</div>
-        <div class="brand-subtitle">Central Team & Hours Dashboard</div>
+        <div class="brand-title">PROSPECT OS</div>
+        <div class="brand-subtitle">TEAM PROSPECTING OPERATING SYSTEM</div>
       </div>
     </div>
 
     <!-- Navigation Tabs -->
-    <nav class="nav-tabs">
-      <button class="nav-tab-btn active" data-tab="overview">📊 Visão Geral</button>
-      <button class="nav-tab-btn" data-tab="ranking">🏆 Ranking de Horas</button>
-      <button class="nav-tab-btn" data-tab="history">📜 Histórico</button>
-      <button class="nav-tab-btn" data-tab="channels">📺 Canais Coletados</button>
-      <button class="nav-tab-btn" data-tab="users">👥 Usuários</button>
-      <button class="nav-tab-btn" data-tab="settings">⚙️ Configurações</button>
+    <nav class="nav-tabs" id="mainNavTabs">
+      <button class="nav-tab-btn active" data-tab="overview">
+        <i class="fa-solid fa-chart-pie"></i>
+        <span>Visão Geral</span>
+      </button>
+      <button class="nav-tab-btn" data-tab="ranking">
+        <i class="fa-solid fa-trophy"></i>
+        <span>Ranking de Horas</span>
+      </button>
+      <button class="nav-tab-btn" data-tab="history">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        <span>Histórico</span>
+      </button>
+      <button class="nav-tab-btn admin-only hidden" data-tab="channels">
+        <i class="fa-solid fa-tv"></i>
+        <span>Canais Coletados</span>
+      </button>
+      <button class="nav-tab-btn admin-only hidden" data-tab="users">
+        <i class="fa-solid fa-users-gear"></i>
+        <span>Usuários</span>
+      </button>
+      <button class="nav-tab-btn admin-only hidden" data-tab="settings">
+        <i class="fa-solid fa-sliders"></i>
+        <span>Configurações</span>
+      </button>
     </nav>
 
+    <!-- Header Right (Admin tools, Notifications, User) -->
     <div class="header-right">
-      <a href="/qualifier" class="btn btn-secondary" style="font-size: 12px; text-decoration: none;">⚡ Qualificador</a>
-      <a href="/users" class="btn btn-secondary" style="font-size: 12px; text-decoration: none;">👥 Gestão Completa</a>
-      <a href="/youtube-apis" class="btn btn-secondary" style="font-size: 12px; text-decoration: none;">🔑 APIs</a>
-      <div class="live-badge">
-        <span class="live-dot"></span>
-        <span>SISTEMA ATIVO</span>
+      <div id="adminQuickLinks" class="admin-only hidden" style="display: flex; gap: 6px;">
+        <a href="/qualifier" class="btn btn-secondary" style="font-size: 11px;">
+          <i class="fa-solid fa-bolt"></i>
+          <span>Qualificador</span>
+        </a>
+        <a href="/users" class="btn btn-secondary" style="font-size: 11px;">
+          <i class="fa-solid fa-users"></i>
+          <span>Gestão</span>
+        </a>
+        <a href="/youtube-apis" class="btn btn-secondary" style="font-size: 11px;">
+          <i class="fa-solid fa-key"></i>
+          <span>APIs</span>
+        </a>
       </div>
+
+      <!-- Notification Bell -->
+      <button class="notif-bell-btn" id="btnNotifBell" title="Central de Notificações">
+        <i class="fa-regular fa-bell"></i>
+        <span class="notif-badge" id="notifBadgeCount">0</span>
+      </button>
+
+      <!-- User Profile Pill -->
+      <div class="user-pill" id="btnMyProfile" title="Ver Meu Perfil">
+        <div class="user-pill-avatar" id="myPillAvatar">U</div>
+        <span class="user-pill-name" id="myPillName">Carregando...</span>
+        <span class="user-pill-role" id="myPillRole">USER</span>
+      </div>
+
+      <button class="btn-icon" id="btnLogout" title="Sair do PROSPECT OS">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      </button>
     </div>
   </header>
+
+  <!-- NOTIFICATION PANEL DRAWER -->
+  <div id="notifPanel">
+    <div class="notif-header">
+      <span style="font-size: 13px; font-weight: 700; color: var(--silver-light);">🔔 Notificações da Equipe</span>
+      <button class="btn-icon" style="font-size: 10px;" onclick="markAllNotificationsRead()">Marcar todas como lidas</button>
+    </div>
+    <div class="notif-list" id="notifListContainer">
+      <div style="padding: 24px; text-align: center; color: var(--silver-muted); font-size: 12px;">
+        Nenhuma notificação recente.
+      </div>
+    </div>
+  </div>
 
   <main>
     <!-- TAB 1: VISÃO GERAL -->
     <div id="tabOverview" class="tab-view active">
       <div class="metrics-grid">
-        <div class="metric-card accent">
+        <div class="metric-card">
           <div class="metric-label">Membros Trabalhando Agora</div>
           <div class="metric-value" id="kpiWorkingNow">0</div>
-          <div class="metric-sub">Prospectores com sessão ativa</div>
+          <div class="metric-sub">Operadores com turno ativo</div>
         </div>
         <div class="metric-card success">
           <div class="metric-label">Horas Trabalhadas Hoje</div>
@@ -816,19 +1167,22 @@
         <div class="metric-card warning">
           <div class="metric-label">Canais Coletados Hoje</div>
           <div class="metric-value" id="kpiChannelsToday">0</div>
-          <div class="metric-sub">Total de canais novos hoje</div>
+          <div class="metric-sub">Canais novos inseridos no banco</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Média da Equipe</div>
-          <div class="metric-value" id="kpiTeamRate">0.0</div>
-          <div class="metric-sub">Canais por hora / prospector</div>
+          <div class="metric-value" id="kpiTeamRate">0.0/h</div>
+          <div class="metric-sub">Ritmo consolidado de prospecção</div>
         </div>
       </div>
 
       <div class="content-card">
         <div class="content-header">
-          <div class="section-title">Status em Tempo Real dos Membros</div>
-          <div style="font-size: 12px; color: var(--text-muted);">Atualizado a cada 10 segundos</div>
+          <div class="section-title">
+            <i class="fa-solid fa-users"></i>
+            <span>Status em Tempo Real dos Membros</span>
+          </div>
+          <div style="font-size: 11px; color: var(--silver-muted);">Clique no card de qualquer membro para abrir o perfil</div>
         </div>
         <div class="team-grid" id="teamMembersGrid">
           <!-- Live cards injected here -->
@@ -839,12 +1193,14 @@
     <!-- TAB 2: RANKING DE HORAS -->
     <div id="tabRanking" class="tab-view">
       <div class="content-header">
-        <div class="section-title">Classificação por Horas & Produção</div>
-        <div style="display: flex; gap: 8px;">
+        <div class="section-title">
+          <i class="fa-solid fa-trophy"></i>
+          <span>Ranking de Horas Trabalhadas</span>
+        </div>
+        <div style="display: flex; gap: 6px;">
           <button class="nav-tab-btn active filter-pill" data-period="today">Hoje</button>
           <button class="nav-tab-btn filter-pill" data-period="week">Esta Semana</button>
           <button class="nav-tab-btn filter-pill" data-period="month">Este Mês</button>
-          <button class="nav-tab-btn filter-pill" data-period="all">Geral</button>
         </div>
       </div>
 
@@ -857,20 +1213,26 @@
     <div id="tabHistory" class="tab-view">
       <div class="content-card">
         <div class="content-header">
-          <div class="section-title">Histórico de Sessões de Trabalho</div>
-          <button class="btn btn-secondary" onclick="loadHistoryData()">🔄 Atualizar</button>
+          <div class="section-title">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>Histórico de Turnos e Sessões</span>
+          </div>
+          <button class="btn btn-secondary" onclick="loadHistoryData()">
+            <i class="fa-solid fa-rotate"></i>
+            <span>Atualizar</span>
+          </button>
         </div>
         <div class="table-container">
           <table>
             <thead>
               <tr>
                 <th>Data</th>
-                <th>Prospector</th>
-                <th>Ciclo / Meta</th>
+                <th>Operador</th>
+                <th>Ciclo</th>
                 <th>Início / Fim</th>
                 <th>Tempo Ativo</th>
-                <th>Canais Coletados</th>
-                <th>Média Final</th>
+                <th>Canais</th>
+                <th>Ritmo Final</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -882,14 +1244,20 @@
       </div>
     </div>
 
-    <!-- TAB 4: CANAIS COLETADOS -->
+    <!-- TAB 4: CANAIS COLETADOS (ADMIN ONLY) -->
     <div id="tabChannels" class="tab-view">
       <div class="content-card">
         <div class="content-header">
-          <div class="section-title">Canais Prospeccionados pela Equipe</div>
-          <div style="display: flex; gap: 10px;">
-            <input type="text" id="channelSearch" class="search-input" placeholder="🔍 Buscar por canal, handle ou termo...">
-            <button id="btnExportCsv" class="btn">📥 Exportar CSV</button>
+          <div class="section-title">
+            <i class="fa-solid fa-tv"></i>
+            <span>Canais Coletados pela Equipe</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="channelSearch" class="search-input" placeholder="🔍 Buscar canal, handle...">
+            <button id="btnExportCsv" class="btn">
+              <i class="fa-solid fa-file-csv"></i>
+              <span>Exportar CSV</span>
+            </button>
           </div>
         </div>
         <div class="table-container">
@@ -899,8 +1267,8 @@
                 <th>Canal</th>
                 <th>Channel ID</th>
                 <th>Coletado Por</th>
-                <th>Origem / Termo</th>
-                <th>Data & Hora</th>
+                <th>Origem</th>
+                <th>Data de Coleta</th>
               </tr>
             </thead>
             <tbody id="channelsTableBody">
@@ -911,92 +1279,176 @@
       </div>
     </div>
 
-    <!-- TAB 5: USUÁRIOS & EQUIPE -->
+    <!-- TAB 5: USUÁRIOS (ADMIN ONLY) -->
     <div id="tabUsers" class="tab-view">
-      <div class="metrics-grid">
-        <div class="metric-card">
-          <div class="metric-label">Total de Usuários</div>
-          <div class="metric-value" id="dashStatTotal">0</div>
-          <div class="metric-sub">Contas cadastradas</div>
-        </div>
-        <div class="metric-card indigo">
-          <div class="metric-label">Administradores</div>
-          <div class="metric-value" id="dashStatAdmins" style="color: #818cf8;">0</div>
-          <div class="metric-sub">Acesso total</div>
-        </div>
-        <div class="metric-card success">
-          <div class="metric-label">Usuários Ativos</div>
-          <div class="metric-value" id="dashStatActive" style="color: var(--success);">0</div>
-          <div class="metric-sub">Com acesso liberado</div>
-        </div>
-        <div class="metric-card accent">
-          <div class="metric-label">Usuários Inativos</div>
-          <div class="metric-value" id="dashStatInactive" style="color: var(--danger);">0</div>
-          <div class="metric-sub">Bloqueados</div>
-        </div>
-      </div>
-
       <div class="content-card">
         <div class="content-header">
-          <div>
-            <div class="section-title">👥 Gestão de Usuários da Equipe</div>
-            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Crie novos acessos, altere permissões e exclua usuários</div>
+          <div class="section-title">
+            <i class="fa-solid fa-users-gear"></i>
+            <span>Gestão de Usuários do PROSPECT OS</span>
           </div>
-          <div style="display: flex; gap: 10px; align-items: center;">
-            <input type="text" id="dashUserSearch" class="search-input" oninput="filterDashboardUsers()" placeholder="🔍 Buscar usuário por nome ou e-mail...">
-            <button class="btn" onclick="openCreateDashboardUserModal()">
-              <i class="fa-solid fa-user-plus"></i>
-              <span>+ Novo Usuário</span>
-            </button>
-          </div>
+          <button class="btn" onclick="openCreateDashboardUserModal()">
+            <i class="fa-solid fa-user-plus"></i>
+            <span>Novo Usuário</span>
+          </button>
         </div>
-
         <div class="table-container">
           <table>
             <thead>
               <tr>
                 <th>Nome</th>
-                <th>E-mail / Login</th>
+                <th>E-mail</th>
                 <th style="text-align: center;">Nível</th>
                 <th style="text-align: center;">Status</th>
-                <th style="text-align: center;">Data de Cadastro</th>
                 <th style="text-align: right;">Ações</th>
               </tr>
             </thead>
             <tbody id="dashUsersTableBody">
-              <tr>
-                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">Carregando usuários...</td>
-              </tr>
+              <!-- Users rows injected here -->
             </tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- TAB 6: CONFIGURAÇÕES -->
+    <!-- TAB 6: CONFIGURAÇÕES (ADMIN ONLY) -->
     <div id="tabSettings" class="tab-view">
-      <div class="config-card">
-        <div class="section-title">Configurações de Metas & Ciclos</div>
+      <div class="content-card" style="max-width: 500px;">
+        <div class="section-title">
+          <i class="fa-solid fa-sliders"></i>
+          <span>Metas e Parâmetros da Equipe</span>
+        </div>
         <form id="settingsForm" style="display: flex; flex-direction: column; gap: 14px;">
           <div class="form-group">
             <label>Meta Diária Padrão (Canais)</label>
             <input type="number" id="cfgDefaultTarget" min="1" max="5000" value="160" required>
           </div>
-          <button type="submit" class="btn" style="align-self: flex-start;">Salvar Configurações</button>
-          <div id="cfgFeedback" style="font-size: 12px; color: var(--success); display: none;">Configurações salvas com sucesso!</div>
+          <button type="submit" class="btn" style="align-self: flex-start;">Salvar Alterações</button>
+          <div id="cfgFeedback" style="font-size: 12px; color: var(--success); display: none;">Configurações salvas!</div>
         </form>
       </div>
     </div>
   </main>
 
   <!-- ===================================================================== -->
-  <!-- MODAL: CRIAR / EDITAR USUÁRIO (DASHBOARD)                             -->
+  <!-- MODAL: PERFIL COMPLETO DO MEMBRO (ESTILO DISCORD MODERN DARK & SILVER) -->
+  <!-- ===================================================================== -->
+  <div id="memberProfileModal" class="modal-overlay">
+    <div class="modal-card large">
+      <div class="profile-banner" id="pModalBanner">
+        <button class="modal-close" onclick="closeMemberProfileModal()" style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); color: #fff;">&times;</button>
+        <div class="profile-avatar-container">
+          <div class="profile-avatar-img" id="pModalAvatar">U</div>
+        </div>
+      </div>
+
+      <div class="profile-info-header">
+        <div>
+          <div class="profile-user-name" id="pModalName">Carlos Silva</div>
+          <div class="profile-user-status" id="pModalStatus">● Trabalhando agora</div>
+          <p id="pModalBio" style="font-size: 12px; color: var(--silver-muted); margin-top: 6px; max-width: 440px;"></p>
+        </div>
+        <div id="pModalRoleBadge" class="badge badge-admin">ADMIN</div>
+      </div>
+
+      <!-- Spotify Now Playing / Most Played -->
+      <div id="pModalSpotifySection" style="display: none;">
+        <div class="spotify-card">
+          <div class="spotify-art" id="pModalSpotifyArt">🎵</div>
+          <div class="spotify-info">
+            <div style="font-size: 9px; font-weight: 800; color: var(--success); text-transform: uppercase; letter-spacing: 0.5px;">Ouvindo Agora no Spotify</div>
+            <div class="spotify-title" id="pModalSpotifyTitle">-</div>
+            <div class="spotify-artist" id="pModalSpotifyArtist">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="profile-stats-grid">
+        <div class="profile-stat-box">
+          <div class="profile-stat-val" id="pStatHoursToday">0h 00m</div>
+          <div class="profile-stat-lbl">Horas Hoje</div>
+        </div>
+        <div class="profile-stat-box">
+          <div class="profile-stat-val" id="pStatChannelsToday">0</div>
+          <div class="profile-stat-lbl">Canais Hoje</div>
+        </div>
+        <div class="profile-stat-box">
+          <div class="profile-stat-val" id="pStatAvgRate">0.0/h</div>
+          <div class="profile-stat-lbl">Média Canais/h</div>
+        </div>
+        <div class="profile-stat-box">
+          <div class="profile-stat-val" id="pStatTotalHours">0h</div>
+          <div class="profile-stat-lbl">Horas Totais</div>
+        </div>
+      </div>
+
+      <!-- Mini Chart Activity (7 Days) -->
+      <div class="activity-chart-container">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 11px; font-weight: 700; color: var(--silver-light); text-transform: uppercase;">Atividade nos Últimos 7 Dias (Horas)</span>
+          <span style="font-size: 10px; color: var(--silver-muted);" id="pStatBestDay">Melhor dia: -</span>
+        </div>
+        <div class="chart-bars" id="pModalChartBars">
+          <!-- Injected bar columns -->
+        </div>
+      </div>
+
+      <div class="modal-footer" style="justify-content: space-between;">
+        <button type="button" class="btn btn-secondary" id="btnEditMyProfileTrigger" style="display: none;" onclick="openEditProfileFormModal()">
+          <i class="fa-solid fa-pen"></i>
+          <span>Editar Meu Perfil</span>
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="closeMemberProfileModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: EDITAR MEU PERFIL & UPLOAD (BANNER / AVATAR)                   -->
+  <!-- ===================================================================== -->
+  <div id="editProfileModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-user-pen"></i>
+          <span>Personalizar Meu Perfil</span>
+        </div>
+        <button class="modal-close" onclick="closeEditProfileModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Biografia / Recado</label>
+          <input type="text" id="editBioInput" maxlength="150" placeholder="Ex: Focado em prospecção outbound...">
+        </div>
+        <div class="form-group">
+          <label>Foto de Perfil (Avatar - JPG, PNG, GIF)</label>
+          <input type="file" id="editAvatarFile" accept="image/jpeg,image/png,image/webp,image/gif">
+        </div>
+        <div class="form-group">
+          <label>Banner de Fundo (JPG, PNG, GIF)</label>
+          <input type="file" id="editBannerFile" accept="image/jpeg,image/png,image/webp,image/gif">
+        </div>
+        <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px;">
+          <input type="checkbox" id="editShowMusicCheck" style="width: auto;">
+          <label for="editShowMusicCheck" style="margin: 0; text-transform: none; cursor: pointer;">Mostrar o que estou ouvindo no Spotify para a equipe</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeEditProfileModal()">Cancelar</button>
+        <button type="button" id="btnSaveProfileChanges" class="btn" onclick="saveProfileChanges()">Salvar Alterações</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: CRIAR / EDITAR USUÁRIO (ADMIN)                                 -->
   <!-- ===================================================================== -->
   <div id="dashUserModal" class="modal-overlay">
     <div class="modal-card">
       <div class="modal-header">
         <div class="modal-title" id="dashModalTitle">
-          <i class="fa-solid fa-user-plus" style="color: var(--primary);"></i>
+          <i class="fa-solid fa-user-plus"></i>
           <span>Novo Usuário</span>
         </div>
         <button class="modal-close" onclick="closeDashboardUserModal()">&times;</button>
@@ -1006,27 +1458,26 @@
         <div class="modal-body">
           <div class="form-group">
             <label>Nome Completo</label>
-            <input type="text" id="dashFormName" required placeholder="Ex: Roberto Carlos">
+            <input type="text" id="dashFormName" required placeholder="Ex: Roberto Silva">
           </div>
           <div class="form-group">
             <label>E-mail / Login</label>
             <input type="email" id="dashFormEmail" required placeholder="Ex: roberto@prospector.com">
           </div>
           <div class="form-group">
-            <label id="dashFormPasswordLabel">Senha Inicial</label>
-            <input type="password" id="dashFormPassword" placeholder="Mínimo 3 caracteres">
-            <small id="dashFormPasswordHint" style="font-size: 11px; color: var(--text-muted); display: none;">Deixe em branco para manter a senha atual.</small>
+            <label id="dashFormPasswordLabel">Senha</label>
+            <input type="password" id="dashFormPassword" placeholder="Senha do usuário">
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group">
-              <label>Nível de Acesso</label>
+              <label>Nível</label>
               <select id="dashFormRole">
-                <option value="USER">USER (Operador)</option>
-                <option value="ADMIN">ADMIN (Completo)</option>
+                <option value="USER">USER</option>
+                <option value="ADMIN">ADMIN</option>
               </select>
             </div>
             <div class="form-group">
-              <label>Status da Conta</label>
+              <label>Status</label>
               <select id="dashFormActive">
                 <option value="true">ATIVO</option>
                 <option value="false">INATIVO</option>
@@ -1036,40 +1487,9 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" onclick="closeDashboardUserModal()">Cancelar</button>
-          <button type="submit" id="btnSaveDashUser" class="btn">Salvar Usuário</button>
+          <button type="submit" class="btn">Salvar</button>
         </div>
       </form>
-    </div>
-  </div>
-
-  <!-- ===================================================================== -->
-  <!-- MODAL: CONFIRMAÇÃO DE EXCLUSÃO DE USUÁRIO (DASHBOARD)                 -->
-  <!-- ===================================================================== -->
-  <div id="dashDeleteModal" class="modal-overlay">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div class="modal-title" style="color: var(--danger);">
-          <i class="fa-solid fa-triangle-exclamation"></i>
-          <span>Excluir Usuário?</span>
-        </div>
-        <button class="modal-close" onclick="closeDashboardDeleteModal()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p style="font-size: 13px; line-height: 1.5; color: var(--text);">
-          Tem certeza que deseja excluir permanentemente o usuário <strong id="dashDeleteUserName" style="color: var(--danger);"></strong> (<span id="dashDeleteUserEmail" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted);"></span>)?
-        </p>
-        <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); padding: 12px; border-radius: 8px; font-size: 11px; color: #fca5a5;">
-          ⚠️ O histórico de canais coletados por esta conta será preservado e reatribuído ao administrador com segurança.
-        </div>
-        <input type="hidden" id="dashDeleteUserId">
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="closeDashboardDeleteModal()">Cancelar</button>
-        <button type="button" id="btnConfirmDeleteDashUser" class="btn btn-danger" onclick="executeDeleteDashboardUser()">
-          <i class="fa-solid fa-trash-can"></i>
-          <span>Excluir Definitivamente</span>
-        </button>
-      </div>
     </div>
   </div>
 
@@ -1077,38 +1497,66 @@
   <div id="toastContainer"></div>
 
   <script>
+    let currentUser = null;
     let activeTab = 'overview';
     let currentPeriod = 'today';
     let allChannels = [];
     let liveMembers = [];
     let dashboardUsersList = [];
 
-    function getAuthToken() {
+    function getToken() {
       return localStorage.getItem('token') || '';
     }
 
-    async function ensureAdminAuth() {
-      if (getAuthToken()) return getAuthToken();
-      try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: 'carlos@prospector.com', password: '123' })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.access_token) {
-            localStorage.setItem('token', data.access_token);
-            return data.access_token;
-          }
-        }
-      } catch (e) {
-        console.warn('Auth fallback:', e);
+    // Check mandatory authentication
+    async function checkAuthentication() {
+      const token = getToken();
+      if (!token) {
+        window.location.href = '/login?next=/dashboard';
+        return;
       }
-      return '';
+
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!res.ok) {
+          localStorage.removeItem('token');
+          window.location.href = '/login?next=/dashboard';
+          return;
+        }
+
+        currentUser = await res.json();
+        setupUserInterface();
+      } catch (e) {
+        window.location.href = '/login?next=/dashboard';
+      }
     }
 
-    // Tab navigation
+    function setupUserInterface() {
+      if (!currentUser) return;
+
+      const name = currentUser.name || 'Operador';
+      const role = currentUser.role || 'USER';
+      const initial = name.charAt(0).toUpperCase();
+
+      document.getElementById('myPillName').textContent = name;
+      document.getElementById('myPillRole').textContent = role;
+      document.getElementById('myPillAvatar').textContent = initial;
+
+      // Handle RBAC visibility (ADMIN vs USER)
+      if (role === 'ADMIN') {
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+      } else {
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+      }
+
+      refreshCurrentTab();
+      loadUnreadNotifications();
+    }
+
+    // Tab Navigation
     document.querySelectorAll('.nav-tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         if (btn.classList.contains('filter-pill')) return;
@@ -1122,7 +1570,7 @@
       });
     });
 
-    // Ranking period filters
+    // Ranking Period Filter
     document.querySelectorAll('.filter-pill').forEach(pill => {
       pill.addEventListener('click', () => {
         document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
@@ -1132,28 +1580,13 @@
       });
     });
 
-    function formatSeconds(sec) {
-      if (!sec || sec < 0) return "00:00:00";
-      const h = Math.floor(sec / 3600);
-      const m = Math.floor((sec % 3600) / 60);
-      const s = sec % 60;
-      return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-    }
-
-    function formatDate(isoString) {
-      if (!isoString) return "-";
-      try {
-        const d = new Date(isoString);
-        return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-      } catch {
-        return isoString;
-      }
-    }
-
     // 1. Overview Tab
     async function loadOverviewData() {
       try {
-        const res = await fetch('/api/work-sessions/team/status');
+        const res = await fetch('/api/work-sessions/team/status', {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        if (!res.ok) return;
         const data = await res.json();
 
         document.getElementById('kpiWorkingNow').textContent = data.users_working_count;
@@ -1171,22 +1604,23 @@
     function renderTeamGrid(members) {
       const grid = document.getElementById('teamMembersGrid');
       if (!members || members.length === 0) {
-        grid.innerHTML = '<div style="color: var(--text-muted); padding: 16px;">Nenhum usuário cadastrado.</div>';
+        grid.innerHTML = '<div style="color: var(--silver-muted); padding: 16px;">Nenhum usuário cadastrado.</div>';
         return;
       }
 
       grid.innerHTML = members.map(m => {
         const statusClass = m.session_status.toLowerCase();
-        const statusLabel = m.session_status === 'ACTIVE' ? '● ATIVO' : (m.session_status === 'PAUSED' ? '⏸ PAUSADO' : '○ PARADO');
+        const statusLabel = m.session_status === 'ACTIVE' ? '● TRABALHANDO' : (m.session_status === 'PAUSED' ? '⏸ PAUSADO' : '○ PARADO');
         const initial = (m.user_name || 'U').charAt(0).toUpperCase();
 
         return `
-          <div class="member-card">
+          <div class="member-card" onclick="openMemberProfileModal(${m.user_id})">
             <div class="member-header">
               <div class="member-info">
                 <div class="member-avatar">${initial}</div>
                 <div>
                   <div class="member-name">${m.user_name}</div>
+                  <div style="font-size: 10px; color: var(--silver-muted);">${m.cycle_type ? `Ciclo ${m.cycle_type}` : 'Disponível'}</div>
                 </div>
               </div>
               <span class="status-tag ${statusClass}">${statusLabel}</span>
@@ -1194,26 +1628,22 @@
 
             <div class="member-stats-row">
               <div>
-                <div class="m-stat-val highlight" data-user-id="${m.user_id}" data-status="${m.session_status}">${m.formatted_time}</div>
+                <div class="m-stat-val">${m.formatted_time}</div>
                 <div class="m-stat-lbl">Tempo Ativo</div>
               </div>
               <div>
-                <div class="m-stat-val">${m.collected_count} / ${m.daily_target}</div>
-                <div class="m-stat-lbl">Produção</div>
+                <div class="m-stat-val">${m.collected_today}</div>
+                <div class="m-stat-lbl">Canais</div>
               </div>
               <div>
                 <div class="m-stat-val">${m.current_rate.toFixed(1)}/h</div>
-                <div class="m-stat-lbl">Ritmo Atual</div>
+                <div class="m-stat-lbl">Ritmo</div>
               </div>
             </div>
 
-            <div class="progress-wrapper">
-              <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted);">
-                <span>Progresso da Meta</span>
-                <strong>${m.progress_percentage.toFixed(1)}%</strong>
-              </div>
+            <div>
               <div class="progress-bar-bg">
-                <div class="progress-bar-fill" style="width: ${Math.min(100, m.progress_percentage)}%;"></div>
+                <div class="progress-bar-fill" style="width: ${Math.min(100, m.progress_percentage || 0)}%;"></div>
               </div>
             </div>
           </div>
@@ -1224,28 +1654,31 @@
     // 2. Ranking Tab
     async function loadRankingData() {
       try {
-        const res = await fetch(`/api/work-sessions/ranking?period=${currentPeriod}`);
-        const data = await res.json();
+        const res = await fetch(`/api/work-sessions/ranking?period=${currentPeriod}`, {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        if (!res.ok) return;
+        const ranking = await res.json();
         const container = document.getElementById('rankingListContainer');
 
-        if (!data || data.length === 0) {
-          container.innerHTML = '<div style="padding: 24px; color: var(--text-muted); text-align: center;">Nenhuma sessão registrada para este período.</div>';
+        if (!ranking || ranking.length === 0) {
+          container.innerHTML = '<div style="color: var(--silver-muted); padding: 20px;">Nenhum dado registrado para este período.</div>';
           return;
         }
 
-        container.innerHTML = data.map((item, idx) => {
-          let topClass = '';
-          if (idx === 0) topClass = 'top1';
-          else if (idx === 1) topClass = 'top2';
-          else if (idx === 2) topClass = 'top3';
+        container.innerHTML = ranking.map((item, idx) => {
+          let rankClass = '';
+          if (idx === 0) rankClass = 'top1';
+          else if (idx === 1) rankClass = 'top2';
+          else if (idx === 2) rankClass = 'top3';
 
           return `
-            <div class="ranking-item">
+            <div class="ranking-item" onclick="openMemberProfileModal(${item.user_id})" style="cursor: pointer;">
               <div class="rank-left">
-                <div class="rank-num ${topClass}">#${item.rank_position}</div>
+                <div class="rank-num ${rankClass}">${item.rank}</div>
                 <div>
-                  <div style="font-weight: 700; font-size: 15px;">${item.user_name}</div>
-                  <div style="font-size: 12px; color: var(--text-muted);">Canais coletados: <strong>${item.channels_collected}</strong></div>
+                  <strong style="color: var(--silver-light); font-size: 14px;">${item.user_name}</strong>
+                  <div style="font-size: 11px; color: var(--silver-muted);">${item.channels_collected} canais coletados</div>
                 </div>
               </div>
               <div class="rank-hours">${item.formatted_hours}</div>
@@ -1259,393 +1692,348 @@
 
     // 3. History Tab
     async function loadHistoryData() {
-      try {
-        const res = await fetch('/api/work-sessions/history?limit=50');
-        const data = await res.json();
-        const tbody = document.getElementById('historyTableBody');
+      const tbody = document.getElementById('historyTableBody');
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--silver-muted); padding: 20px;">Carregando histórico...</td></tr>';
 
-        if (!data || data.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">Nenhum histórico disponível.</td></tr>';
+      try {
+        const res = await fetch('/api/work-sessions/history', {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        if (!res.ok) throw new Error('Erro ao carregar');
+        const history = await res.json();
+
+        if (!history || history.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--silver-muted); padding: 20px;">Nenhum turno registrado.</td></tr>';
           return;
         }
 
-        tbody.innerHTML = data.map(s => `
+        tbody.innerHTML = history.map(h => `
           <tr>
-            <td><strong>${s.date_str}</strong></td>
-            <td>👤 ${s.user_name}</td>
-            <td><span class="status-tag active">${s.cycle_type}</span> (Meta: ${s.daily_target})</td>
-            <td>${formatDate(s.started_at).slice(11)} às ${s.ended_at ? formatDate(s.ended_at).slice(11) : 'Em aberto'}</td>
-            <td style="font-family: 'JetBrains Mono', monospace; color: var(--primary);"><strong>${s.formatted_active_time}</strong></td>
-            <td><strong>${s.collected_count}</strong> canais</td>
-            <td>${s.average_rate.toFixed(1)}/h</td>
-            <td><span class="status-tag ${s.status.toLowerCase()}">${s.status}</span></td>
+            <td style="font-weight: 700;">${h.date_str}</td>
+            <td>👤 ${h.user_name}</td>
+            <td>Ciclo ${h.cycle_type} (Meta: ${h.daily_target})</td>
+            <td style="font-size: 11px; color: var(--silver-muted);">${formatTime(h.started_at)} - ${h.ended_at ? formatTime(h.ended_at) : 'Em andamento'}</td>
+            <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700;">${h.formatted_active_time}</td>
+            <td style="font-family: 'JetBrains Mono', monospace;">${h.collected_count}</td>
+            <td style="font-family: 'JetBrains Mono', monospace;">${h.average_rate.toFixed(1)}/h</td>
+            <td><span class="status-tag ${h.status.toLowerCase()}">${h.status}</span></td>
           </tr>
         `).join('');
       } catch (err) {
-        console.error('Erro history:', err);
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--danger); padding: 20px;">${err.message}</td></tr>`;
       }
     }
 
-    // 4. Channels Tab
+    // 4. Channels Tab (Admin Only)
     async function loadChannelsData() {
+      if (currentUser.role !== 'ADMIN') return;
+      const tbody = document.getElementById('channelsTableBody');
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--silver-muted); padding: 20px;">Carregando canais...</td></tr>';
+
       try {
-        const res = await fetch('/api/channels/list');
+        const res = await fetch('/api/channels/list', {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        if (res.status === 403) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--danger); padding: 20px;">403 FORBIDDEN: Acesso exclusivo para administradores.</td></tr>';
+          return;
+        }
         const data = await res.json();
         allChannels = data.channels || [];
         renderChannelsTable(allChannels);
       } catch (err) {
-        console.error('Erro canais:', err);
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger); padding: 20px;">Erro: ${err.message}</td></tr>`;
       }
     }
 
     function renderChannelsTable(channels) {
       const tbody = document.getElementById('channelsTableBody');
       if (!channels || channels.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">Nenhum canal coletado.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--silver-muted); padding: 20px;">Nenhum canal encontrado.</td></tr>';
         return;
       }
 
       tbody.innerHTML = channels.map(ch => `
         <tr>
           <td>
-            <a href="${ch.channel_url}" target="_blank" style="color: inherit; text-decoration: none; font-weight: 700;">
+            <a href="${ch.channel_url}" target="_blank" style="color: var(--silver-light); text-decoration: none; font-weight: 700;">
               ${ch.channel_name}
             </a>
-            <div style="font-size: 12px; color: var(--primary); font-family: 'JetBrains Mono', monospace;">${ch.channel_handle || '-'}</div>
+            <div style="font-size: 11px; color: var(--silver-muted); font-family: 'JetBrains Mono', monospace;">${ch.channel_handle || '-'}</div>
           </td>
-          <td><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; background: rgba(255,255,255,0.06); padding: 3px 6px; border-radius: 4px;">${ch.channel_id}</span></td>
+          <td><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">${ch.channel_id}</span></td>
           <td>👤 ${ch.first_collected_by ? ch.first_collected_by.name : 'Equipe'}</td>
-          <td>${ch.source} ${ch.search_term ? `("<em>${ch.search_term}</em>")` : ''}</td>
-          <td>${formatDate(ch.first_collected_at)}</td>
+          <td style="font-size: 11px; color: var(--silver-muted);">${ch.source}</td>
+          <td style="font-size: 12px; color: var(--silver-muted);">${formatDate(ch.first_collected_at)}</td>
         </tr>
       `).join('');
     }
 
-    document.getElementById('channelSearch').addEventListener('input', (e) => {
-      const q = e.target.value.toLowerCase().trim();
-      if (!q) { renderChannelsTable(allChannels); return; }
-      const filtered = allChannels.filter(c => 
-        (c.channel_name && c.channel_name.toLowerCase().includes(q)) ||
-        (c.channel_handle && c.channel_handle.toLowerCase().includes(q)) ||
-        (c.channel_id && c.channel_id.toLowerCase().includes(q)) ||
-        (c.first_collected_by && c.first_collected_by.name.toLowerCase().includes(q))
-      );
-      renderChannelsTable(filtered);
-    });
-
-    document.getElementById('btnExportCsv').addEventListener('click', () => {
-      if (!allChannels || allChannels.length === 0) { alert('Nenhum dado para exportar.'); return; }
-      const headers = ['Channel ID', 'Nome', 'Handle', 'URL', 'Coletado Por', 'Origem', 'Data'];
-      const rows = allChannels.map(ch => [
-        `"${ch.channel_id}"`, `"${ch.channel_name}"`, `"${ch.channel_handle || ''}"`, `"${ch.channel_url}"`,
-        `"${ch.first_collected_by ? ch.first_collected_by.name : ''}"`, `"${ch.source}"`, `"${ch.first_collected_at}"`
-      ]);
-      const csv = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-      const link = document.createElement('a');
-      link.href = encodeURI(csv);
-      link.download = `prospector_canais_${new Date().toISOString().slice(0,10)}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    });
-
-    // 5. Users Tab (Dashboard Management)
+    // 5. Users Tab (Admin Only)
     async function loadUsersData() {
+      if (currentUser.role !== 'ADMIN') return;
       const tbody = document.getElementById('dashUsersTableBody');
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">Carregando usuários...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--silver-muted); padding: 20px;">Carregando usuários...</td></tr>';
 
       try {
-        let token = await ensureAdminAuth();
-        let res = await fetch('/api/users', {
-          headers: { 'Authorization': `Bearer ${token}` }
+        const res = await fetch('/api/users', {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
         });
-
-        if (res.status === 401 || res.status === 403) {
-          localStorage.removeItem('token');
-          token = await ensureAdminAuth();
-          res = await fetch('/api/users', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
+        if (res.status === 403) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--danger); padding: 20px;">403 FORBIDDEN</td></tr>';
+          return;
         }
-
-        if (!res.ok) {
-          throw new Error('Falha ao carregar lista de usuários');
-        }
-
         dashboardUsersList = await res.json();
         renderDashboardUsersTable(dashboardUsersList);
-        updateDashboardUserStats(dashboardUsersList);
-
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger); padding: 24px;">Erro ao carregar usuários: ${err.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger); padding: 20px;">${err.message}</td></tr>`;
       }
     }
 
     function renderDashboardUsersTable(users) {
       const tbody = document.getElementById('dashUsersTableBody');
-      if (!users || users.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">Nenhum usuário cadastrado.</td></tr>';
-        return;
-      }
-
-      tbody.innerHTML = users.map(u => {
-        const roleBadge = u.role === 'ADMIN'
-          ? '<span class="badge badge-admin">ADMIN</span>'
-          : '<span class="badge badge-user">USER</span>';
-
-        const statusBadge = u.active
-          ? '<span class="badge badge-active">ATIVO</span>'
-          : '<span class="badge badge-inactive">INATIVO</span>';
-
-        const createdDate = u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '—';
-        const escapedName = (u.name || '').replace(/'/g, "\\'");
-        const escapedEmail = (u.email || '').replace(/'/g, "\\'");
-
-        return `
-          <tr>
-            <td>
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <div class="member-avatar" style="width: 32px; height: 32px; font-size: 13px;">${(u.name || 'U').charAt(0).toUpperCase()}</div>
-                <strong>${u.name}</strong>
-              </div>
-            </td>
-            <td style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted);">${u.email}</td>
-            <td style="text-align: center;">${roleBadge}</td>
-            <td style="text-align: center;">${statusBadge}</td>
-            <td style="text-align: center; font-size: 12px; color: var(--text-muted);">${createdDate}</td>
-            <td style="text-align: right;">
-              <div style="display: inline-flex; gap: 6px;">
-                <button class="btn-icon" title="Editar Usuário" onclick="openEditDashboardUserModal(${u.id})">
-                  <i class="fa-solid fa-pen-to-square"></i>
-                </button>
-                <button class="btn-icon" title="Redefinir Senha" style="color: #fbbf24;" onclick="promptResetDashboardUserPassword(${u.id}, '${escapedName}')">
-                  <i class="fa-solid fa-key"></i>
-                </button>
-                <button class="btn-icon" title="${u.active ? 'Desativar Usuário' : 'Ativar Usuário'}" style="color: ${u.active ? '#f59e0b' : 'var(--success)'};" onclick="toggleDashboardUserStatus(${u.id}, ${u.active})">
-                  <i class="fa-solid ${u.active ? 'fa-user-slash' : 'fa-user-check'}"></i>
-                </button>
-                <button class="btn-icon delete" title="Excluir Usuário" onclick="openDashboardDeleteModal(${u.id}, '${escapedName}', '${escapedEmail}')">
-                  <i class="fa-solid fa-trash-can"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join('');
+      tbody.innerHTML = users.map(u => `
+        <tr>
+          <td><strong>${u.name}</strong></td>
+          <td style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--silver-muted);">${u.email}</td>
+          <td style="text-align: center;"><span class="badge ${u.role === 'ADMIN' ? 'badge-admin' : 'badge-user'}">${u.role}</span></td>
+          <td style="text-align: center;"><span class="badge ${u.active ? 'badge-active' : 'badge-inactive'}">${u.active ? 'ATIVO' : 'INATIVO'}</span></td>
+          <td style="text-align: right;">
+            <button class="btn-icon" onclick="openMemberProfileModal(${u.id})" title="Ver Perfil"><i class="fa-solid fa-id-card"></i></button>
+            <button class="btn-icon" onclick="openEditDashboardUserModal(${u.id})" title="Editar"><i class="fa-solid fa-pen"></i></button>
+          </td>
+        </tr>
+      `).join('');
     }
 
-    function filterDashboardUsers() {
-      const q = document.getElementById('dashUserSearch').value.toLowerCase().trim();
-      if (!q) {
-        renderDashboardUsersTable(dashboardUsersList);
-        return;
-      }
-      const filtered = dashboardUsersList.filter(u =>
-        (u.name && u.name.toLowerCase().includes(q)) ||
-        (u.email && u.email.toLowerCase().includes(q)) ||
-        (u.role && u.role.toLowerCase().includes(q))
-      );
-      renderDashboardUsersTable(filtered);
-    }
-
-    function updateDashboardUserStats(users) {
-      document.getElementById('dashStatTotal').textContent = users.length;
-      document.getElementById('dashStatAdmins').textContent = users.filter(u => u.role === 'ADMIN').length;
-      document.getElementById('dashStatActive').textContent = users.filter(u => u.active).length;
-      document.getElementById('dashStatInactive').textContent = users.filter(u => !u.active).length;
-    }
-
-    function openCreateDashboardUserModal() {
-      document.getElementById('dashFormUserId').value = '';
-      document.getElementById('dashModalTitle').innerHTML = '<i class="fa-solid fa-user-plus" style="color: var(--primary);"></i><span>Novo Usuário</span>';
-      document.getElementById('dashFormName').value = '';
-      document.getElementById('dashFormEmail').value = '';
-      document.getElementById('dashFormPassword').value = '';
-      document.getElementById('dashFormPassword').required = true;
-      document.getElementById('dashFormPasswordLabel').textContent = 'Senha Inicial';
-      document.getElementById('dashFormPasswordHint').style.display = 'none';
-      document.getElementById('dashFormRole').value = 'USER';
-      document.getElementById('dashFormActive').value = 'true';
-      document.getElementById('dashUserModal').classList.add('active');
-    }
-
-    function openEditDashboardUserModal(userId) {
-      const u = dashboardUsersList.find(x => x.id === userId);
-      if (!u) return;
-
-      document.getElementById('dashFormUserId').value = u.id;
-      document.getElementById('dashModalTitle').innerHTML = '<i class="fa-solid fa-pen-to-square" style="color: var(--primary);"></i><span>Editar Usuário</span>';
-      document.getElementById('dashFormName').value = u.name;
-      document.getElementById('dashFormEmail').value = u.email;
-      document.getElementById('dashFormPassword').value = '';
-      document.getElementById('dashFormPassword').required = false;
-      document.getElementById('dashFormPasswordLabel').textContent = 'Nova Senha (Opcional)';
-      document.getElementById('dashFormPasswordHint').style.display = 'block';
-      document.getElementById('dashFormRole').value = u.role || 'USER';
-      document.getElementById('dashFormActive').value = u.active ? 'true' : 'false';
-      document.getElementById('dashUserModal').classList.add('active');
-    }
-
-    function closeDashboardUserModal() {
-      document.getElementById('dashUserModal').classList.remove('active');
-    }
-
-    function openDashboardDeleteModal(userId, name, email) {
-      document.getElementById('dashDeleteUserId').value = userId;
-      document.getElementById('dashDeleteUserName').textContent = name;
-      document.getElementById('dashDeleteUserEmail').textContent = email;
-      document.getElementById('dashDeleteModal').classList.add('active');
-    }
-
-    function closeDashboardDeleteModal() {
-      document.getElementById('dashDeleteModal').classList.remove('active');
-    }
-
-    async function executeDeleteDashboardUser() {
-      const userId = document.getElementById('dashDeleteUserId').value;
-      if (!userId) return;
-
-      const token = await ensureAdminAuth();
-      const btn = document.getElementById('btnConfirmDeleteDashUser');
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i><span>Excluindo...</span>';
+    // 6. Member Profile Modal
+    async function openMemberProfileModal(userId) {
+      const modal = document.getElementById('memberProfileModal');
+      modal.classList.add('active');
 
       try {
-        const res = await fetch(`/api/users/${userId}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` }
+        const res = await fetch(`/api/profiles/${userId}`, {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
         });
+        if (!res.ok) throw new Error('Erro ao carregar perfil');
+        const stats = await res.json();
 
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.detail || 'Erro ao excluir usuário');
-        }
+        document.getElementById('pModalName').textContent = stats.name;
+        document.getElementById('pModalRoleBadge').textContent = stats.role;
+        document.getElementById('pModalBio').textContent = stats.bio || 'Operador de prospecção do PROSPECT OS.';
 
-        const data = await res.json();
-        showDashToast(data.message || 'Usuário excluído com sucesso!', 'success');
-        closeDashboardDeleteModal();
-        loadUsersData();
-        loadOverviewData();
-      } catch (err) {
-        showDashToast(err.message, 'error');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-trash-can"></i><span>Excluir Definitivamente</span>';
-      }
-    }
+        const isWorking = stats.work_session_status === 'ACTIVE';
+        document.getElementById('pModalStatus').textContent = isWorking ? '● Trabalhando agora' : (stats.work_session_status === 'PAUSED' ? '⏸ Turno pausado' : '○ Offline / Parado');
+        document.getElementById('pModalStatus').style.color = isWorking ? 'var(--success)' : (stats.work_session_status === 'PAUSED' ? 'var(--warning)' : 'var(--silver-muted)');
 
-    async function handleSaveDashboardUser(e) {
-      e.preventDefault();
-      const userId = document.getElementById('dashFormUserId').value;
-      const name = document.getElementById('dashFormName').value.trim();
-      const email = document.getElementById('dashFormEmail').value.trim();
-      const password = document.getElementById('dashFormPassword').value.trim();
-      const role = document.getElementById('dashFormRole').value;
-      const active = document.getElementById('dashFormActive').value === 'true';
-
-      const token = await ensureAdminAuth();
-      const btn = document.getElementById('btnSaveDashUser');
-      btn.disabled = true;
-
-      try {
-        if (!userId) {
-          // Criar novo usuário
-          if (!password) throw new Error('A senha inicial é obrigatória');
-          const res = await fetch('/api/users', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ name, email, password, role, active })
-          });
-          if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.detail || 'Erro ao criar usuário');
-          }
-          showDashToast(`Usuário '${name}' criado com sucesso!`, 'success');
+        // Avatar & Banner
+        const avatarEl = document.getElementById('pModalAvatar');
+        if (stats.avatar_url) {
+          avatarEl.style.backgroundImage = `url('${stats.avatar_url}')`;
+          avatarEl.textContent = '';
         } else {
-          // Atualizar usuário
-          const bodyData = { name, email, role, active };
-          if (password) bodyData.password = password;
+          avatarEl.style.backgroundImage = 'none';
+          avatarEl.textContent = stats.name.charAt(0).toUpperCase();
+        }
 
-          const res = await fetch(`/api/users/${userId}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(bodyData)
-          });
-          if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.detail || 'Erro ao atualizar usuário');
+        const bannerEl = document.getElementById('pModalBanner');
+        if (stats.banner_url) {
+          bannerEl.style.backgroundImage = `url('${stats.banner_url}')`;
+        } else {
+          bannerEl.style.backgroundImage = 'linear-gradient(135deg, #181924, #0b0c10)';
+        }
+
+        // Stats
+        document.getElementById('pStatHoursToday').textContent = stats.formatted_hours_today;
+        document.getElementById('pStatChannelsToday').textContent = stats.channels_today;
+        document.getElementById('pStatAvgRate').textContent = stats.avg_channels_per_hour.toFixed(1) + '/h';
+        document.getElementById('pStatTotalHours').textContent = stats.formatted_total_hours;
+        document.getElementById('pStatBestDay').textContent = stats.best_day_channels > 0 ? `Melhor dia: ${stats.best_day_channels} canais` : 'Melhor dia: -';
+
+        // Spotify
+        const spotifySec = document.getElementById('pModalSpotifySection');
+        if (stats.now_playing && stats.show_music_to_team) {
+          spotifySec.style.display = 'block';
+          document.getElementById('pModalSpotifyTitle').textContent = stats.now_playing.track_name;
+          document.getElementById('pModalSpotifyArtist').textContent = stats.now_playing.artist;
+          if (stats.now_playing.album_art) {
+            document.getElementById('pModalSpotifyArt').style.backgroundImage = `url('${stats.now_playing.album_art}')`;
+            document.getElementById('pModalSpotifyArt').textContent = '';
           }
-          showDashToast(`Usuário '${name}' atualizado com sucesso!`, 'success');
+        } else {
+          spotifySec.style.display = 'none';
         }
 
-        closeDashboardUserModal();
-        loadUsersData();
-        loadOverviewData();
+        // Mini Chart (7 days)
+        const chartContainer = document.getElementById('pModalChartBars');
+        const maxHours = Math.max(1, ...(stats.chart_7d || []).map(d => d.hours));
+        chartContainer.innerHTML = (stats.chart_7d || []).map(d => {
+          const heightPct = Math.max(8, Math.round((d.hours / maxHours) * 100));
+          return `
+            <div class="chart-bar-col" title="${d.label}: ${d.hours}h (${d.channels} canais)">
+              <div class="chart-bar" style="height: ${heightPct}%;"></div>
+              <span class="chart-label">${d.label}</span>
+            </div>
+          `;
+        }).join('');
+
+        // Edit Profile Button (Visible only on own profile)
+        const editTrigger = document.getElementById('btnEditMyProfileTrigger');
+        if (currentUser && currentUser.id === userId) {
+          editTrigger.style.display = 'inline-flex';
+        } else {
+          editTrigger.style.display = 'none';
+        }
+
       } catch (err) {
-        showDashToast(err.message, 'error');
-      } finally {
-        btn.disabled = false;
+        showToast(err.message, 'error');
       }
     }
 
-    async function promptResetDashboardUserPassword(userId, name) {
-      const newPass = prompt(`Digite a nova senha para ${name}:`);
-      if (!newPass || !newPass.trim()) return;
+    function closeMemberProfileModal() {
+      document.getElementById('memberProfileModal').classList.remove('active');
+    }
 
-      const token = await ensureAdminAuth();
+    // Notifications & SSE / Polling
+    async function loadUnreadNotifications() {
       try {
-        const res = await fetch(`/api/users/${userId}`, {
+        const countRes = await fetch('/api/notifications/unread-count', {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        if (countRes.ok) {
+          const data = await countRes.json();
+          const badge = document.getElementById('notifBadgeCount');
+          if (data.unread_count > 0) {
+            badge.textContent = data.unread_count;
+            badge.style.display = 'block';
+          } else {
+            badge.style.display = 'none';
+          }
+        }
+      } catch (e) {}
+    }
+
+    document.getElementById('btnNotifBell').addEventListener('click', async () => {
+      const panel = document.getElementById('notifPanel');
+      panel.classList.toggle('active');
+
+      if (panel.classList.contains('active')) {
+        try {
+          const res = await fetch('/api/notifications?limit=20', {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+          });
+          if (res.ok) {
+            const notifs = await res.json();
+            const container = document.getElementById('notifListContainer');
+            if (!notifs || notifs.length === 0) {
+              container.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--silver-muted); font-size: 12px;">Nenhuma notificação recente.</div>';
+              return;
+            }
+            container.innerHTML = notifs.map(n => `
+              <div class="notif-item ${!n.is_read ? 'unread' : ''}">
+                <div class="notif-icon">${n.type === 'USER_REACHED_GOAL' ? '🎯' : (n.type === 'USER_COMPLETE_CYCLE' ? '🏁' : '⚡')}</div>
+                <div class="notif-content">
+                  <div class="notif-title">${n.title}</div>
+                  <div class="notif-msg">${n.message}</div>
+                  <div class="notif-time">${formatDate(n.created_at)}</div>
+                </div>
+              </div>
+            `).join('');
+          }
+        } catch (e) {}
+      }
+    });
+
+    async function markAllNotificationsRead() {
+      try {
+        await fetch('/api/notifications/read-all', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        loadUnreadNotifications();
+        document.querySelectorAll('.notif-item').forEach(el => el.classList.remove('unread'));
+      } catch (e) {}
+    }
+
+    // Edit Profile Modal
+    function openEditProfileFormModal() {
+      document.getElementById('editProfileModal').classList.add('active');
+    }
+
+    function closeEditProfileModal() {
+      document.getElementById('editProfileModal').classList.remove('active');
+    }
+
+    async function saveProfileChanges() {
+      const bio = document.getElementById('editBioInput').value.trim();
+      const showMusic = document.getElementById('editShowMusicCheck').checked;
+      const avatarFile = document.getElementById('editAvatarFile').files[0];
+      const bannerFile = document.getElementById('editBannerFile').files[0];
+      const token = getToken();
+
+      try {
+        // Upload Avatar if selected
+        if (avatarFile) {
+          const fd = new FormData();
+          fd.append('file', avatarFile);
+          await fetch('/api/profiles/upload/avatar', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: fd
+          });
+        }
+
+        // Upload Banner if selected
+        if (bannerFile) {
+          const fd = new FormData();
+          fd.append('file', bannerFile);
+          await fetch('/api/profiles/upload/banner', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: fd
+          });
+        }
+
+        // Update bio & privacy
+        await fetch('/api/profiles/me', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ password: newPass.trim() })
+          body: JSON.stringify({ bio, show_music_to_team: showMusic })
         });
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.detail || 'Erro ao alterar senha');
-        }
-        showDashToast(`Senha de ${name} redefinida com sucesso!`, 'success');
+
+        showToast('Perfil atualizado com sucesso!', 'success');
+        closeEditProfileModal();
+        openMemberProfileModal(currentUser.id);
       } catch (err) {
-        showDashToast(err.message, 'error');
+        showToast(err.message, 'error');
       }
     }
 
-    async function toggleDashboardUserStatus(userId, currentActive) {
-      const token = await ensureAdminAuth();
+    // Utilities
+    function formatDate(iso) {
+      if (!iso) return '-';
       try {
-        const res = await fetch(`/api/users/${userId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ active: !currentActive })
-        });
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.detail || 'Erro ao alternar status');
-        }
-        showDashToast(`Status atualizado para ${!currentActive ? 'ATIVO' : 'INATIVO'}!`, 'success');
-        loadUsersData();
-      } catch (err) {
-        showDashToast(err.message, 'error');
-      }
+        const d = new Date(iso);
+        return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      } catch { return iso; }
     }
 
-    function showDashToast(message, type = 'info') {
+    function formatTime(iso) {
+      if (!iso) return '-';
+      try {
+        const d = new Date(iso);
+        return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      } catch { return iso; }
+    }
+
+    function showToast(msg, type = 'info') {
       const container = document.getElementById('toastContainer');
       const toast = document.createElement('div');
       toast.className = `toast-msg ${type}`;
-      const icon = type === 'success' ? 'fa-circle-check' : (type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info');
-      toast.innerHTML = `<i class="fa-solid ${icon}"></i><span>${message}</span>`;
+      toast.textContent = msg;
       container.appendChild(toast);
       setTimeout(() => {
         toast.style.opacity = '0';
@@ -1654,48 +2042,30 @@
       }, 3000);
     }
 
-    // 6. Settings Tab
-    async function loadSettingsData() {
-      try {
-        const res = await fetch('/api/work-sessions/settings');
-        const data = await res.json();
-        document.getElementById('cfgDefaultTarget').value = data.default_daily_target || 160;
-      } catch (err) {
-        console.error('Erro settings:', err);
-      }
-    }
-
-    document.getElementById('settingsForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const val = parseInt(document.getElementById('cfgDefaultTarget').value, 10);
-      try {
-        await fetch('/api/work-sessions/settings', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ default_daily_target: val })
-        });
-        const fb = document.getElementById('cfgFeedback');
-        fb.style.display = 'block';
-        setTimeout(() => fb.style.display = 'none', 3000);
-      } catch (err) {
-        alert('Erro ao salvar configurações.');
-      }
-    });
-
     function refreshCurrentTab() {
       if (activeTab === 'overview') loadOverviewData();
       else if (activeTab === 'ranking') loadRankingData();
       else if (activeTab === 'history') loadHistoryData();
       else if (activeTab === 'channels') loadChannelsData();
       else if (activeTab === 'users') loadUsersData();
-      else if (activeTab === 'settings') loadSettingsData();
     }
 
-    // Auto-refresh overview every 10s
-    refreshCurrentTab();
-    setInterval(() => {
-      if (activeTab === 'overview') loadOverviewData();
-    }, 10000);
+    // User Profile Pill click
+    document.getElementById('btnMyProfile').addEventListener('click', () => {
+      if (currentUser) openMemberProfileModal(currentUser.id);
+    });
+
+    document.getElementById('btnLogout').addEventListener('click', () => {
+      if (confirm('Deseja realmente sair do PROSPECT OS?')) {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
+    });
+
+    // Initialize Application
+    checkAuthentication();
+    setInterval(loadOverviewData, 10000);
+    setInterval(loadUnreadNotifications, 15000);
   </script>
 </body>
 </html>

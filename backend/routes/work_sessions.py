@@ -110,12 +110,18 @@ def get_sessions_history(
     user_id: Optional[int] = Query(None),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Histórico detalhado de sessões finalizadas para auditoria e acompanhamento.
+    ADMIN pode visualizar histórico da equipe toda ou filtrar.
+    USER visualiza exclusivamente seu próprio histórico.
     """
-    return WorkSessionService.get_history(db, user_id=user_id, limit=limit, offset=offset)
+    effective_user_id = user_id
+    if (current_user.role or "USER").upper() != "ADMIN":
+        effective_user_id = current_user.id
+    return WorkSessionService.get_history(db, user_id=effective_user_id, limit=limit, offset=offset)
 
 @router.get("/settings", response_model=CycleSettingsResponse)
 def get_cycle_settings(

@@ -22,8 +22,8 @@ def _load_env_to_environ():
 _load_env_to_environ()
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "YouTube Prospector API"
-    VERSION: str = "1.0.0"
+    PROJECT_NAME: str = "PROSPECT OS"
+    VERSION: str = "2.0.0"
     API_V1_STR: str = "/api"
     
     # Database

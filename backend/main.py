@@ -27,7 +27,7 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-from backend.routes import auth, channels, stats, work_sessions, users, youtube_apis
+from backend.routes import auth, channels, stats, work_sessions, users, youtube_apis, notifications, profiles, music
 from qualifier.routes.qualification import router as qualification_router
 
 # Configure CORS
@@ -39,7 +39,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register routes
+# Static files for uploads (avatars, banners)
+from fastapi.staticfiles import StaticFiles
+import os
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+os.makedirs(os.path.join(static_dir, "uploads"), exist_ok=True)
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+# Register routes with /api prefix
 app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(channels.router, prefix=settings.API_V1_STR)
 app.include_router(stats.router, prefix=settings.API_V1_STR)
@@ -47,6 +54,9 @@ app.include_router(work_sessions.router, prefix=settings.API_V1_STR)
 app.include_router(qualification_router, prefix=settings.API_V1_STR)
 app.include_router(users.router, prefix=settings.API_V1_STR)
 app.include_router(youtube_apis.router, prefix=settings.API_V1_STR)
+app.include_router(notifications.router, prefix=settings.API_V1_STR)
+app.include_router(profiles.router, prefix=settings.API_V1_STR)
+app.include_router(music.router, prefix=settings.API_V1_STR)
 
 # Also expose without /api prefix for convenience
 app.include_router(auth.router)
@@ -56,6 +66,9 @@ app.include_router(work_sessions.router)
 app.include_router(qualification_router)
 app.include_router(users.router)
 app.include_router(youtube_apis.router)
+app.include_router(notifications.router)
+app.include_router(profiles.router)
+app.include_router(music.router)
 
 
 @app.get("/health", tags=["Health"])
@@ -112,11 +125,21 @@ def get_youtube_apis_page():
         return FileResponse(template_path)
     return {"message": "Template youtube_apis.html não encontrado."}
 
+@app.get("/login", tags=["Authentication"])
+def get_login_page():
+    """Retorna a Interface de Autenticação Obrigatória do PROSPECT OS."""
+    template_path = os.path.join(os.path.dirname(__file__), "templates", "login.html")
+    if os.path.exists(template_path):
+        return FileResponse(template_path)
+    return {"message": "Template login.html não encontrado."}
+
 @app.get("/", tags=["Root"])
 def root():
     return {
-        "message": "YouTube Prospector API Central is running.",
+        "message": "PROSPECT OS API Central is running.",
+        "system": "PROSPECT OS — Team Prospecting Operating System",
         "documentation": "/docs",
+        "login": "/login",
         "dashboard": "/dashboard",
         "health": "/health"
     }

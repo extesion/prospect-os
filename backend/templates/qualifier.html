@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Qualificador de Leads — YouTube Prospector</title>
+  <title>PROSPECT OS — Qualificador de Leads</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -604,8 +604,35 @@
     let isProcessingBatch = false;
     let searchDebounceTimer = null;
 
+    function getAuthToken() {
+      return localStorage.getItem('token') || '';
+    }
+
+    const _originalFetch = window.fetch;
+    window.fetch = async function(url, options = {}) {
+      options.headers = options.headers || {};
+      const token = getAuthToken();
+      if (token && typeof options.headers.set === 'function') {
+        options.headers.set('Authorization', `Bearer ${token}`);
+      } else if (token) {
+        options.headers['Authorization'] = `Bearer ${token}`;
+      }
+      const response = await _originalFetch(url, options);
+      if (response.status === 401 || response.status === 403) {
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+        }
+      }
+      return response;
+    };
+
     // On Load
     document.addEventListener('DOMContentLoaded', () => {
+      const token = getAuthToken();
+      if (!token) {
+        window.location.href = '/login?next=/qualifier';
+        return;
+      }
       loadStatusOverview();
       loadLeads();
     });

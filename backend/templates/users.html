@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestão de Usuários — YouTube Prospector</title>
+  <title>PROSPECT OS — Gestão de Usuários</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -294,31 +294,13 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      // Auto-login fallback if token is missing (uses default admin credentials for smooth experience)
-      if (!getAuthToken()) {
-        autoAuthenticateAdmin().then(() => loadUsers());
-      } else {
-        loadUsers();
+      const token = getAuthToken();
+      if (!token) {
+        window.location.href = '/login?next=/users';
+        return;
       }
+      loadUsers();
     });
-
-    async function autoAuthenticateAdmin() {
-      try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: 'carlos@prospector.com', password: '123' })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.access_token) {
-            localStorage.setItem('token', data.access_token);
-          }
-        }
-      } catch (err) {
-        console.warn('Auto-auth:', err);
-      }
-    }
 
     async function loadUsers() {
       const tbody = document.getElementById('users-tbody');
@@ -336,15 +318,6 @@
         let res = await fetch('/api/users', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-
-        // If unauthorized, retry auto-auth once
-        if (res.status === 401 || res.status === 403) {
-          await autoAuthenticateAdmin();
-          token = getAuthToken();
-          res = await fetch('/api/users', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-        }
 
         if (res.status === 401 || res.status === 403) {
           tbody.innerHTML = `

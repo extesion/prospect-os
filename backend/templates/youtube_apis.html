@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube APIs & Quota — YouTube Prospector</title>
+  <title>PROSPECT OS — YouTube APIs & Quota</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -232,6 +232,11 @@
     let apisData = [];
 
     document.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/login?next=/youtube-apis';
+        return;
+      }
       loadApis();
     });
 

@@ -230,26 +230,33 @@ document.addEventListener("DOMContentLoaded", async () => {
     else if (session.cycle_type === "CUSTOM") cycleTitle = `Ciclo Personalizado (${session.target_hours}h)`;
     sessionCycleName.textContent = `${cycleTitle} (Meta: ${session.daily_target})`;
 
-    sessionCollected.textContent = session.collected_count || 0;
-    sessionTarget.textContent = session.daily_target || 160;
+    const collected = session.collected_count || 0;
+    const target = session.daily_target || 160;
+    sessionCollected.textContent = collected;
+    sessionTarget.textContent = target;
 
-    const pace = session.current_rate != null ? session.current_rate : (session.target_per_hour_display || 0);
-    sessionPace.textContent = `${Number(pace).toFixed(1).replace(".", ",")}/h`;
+    // Single source of truth formula for current pace (channels / active_hours)
+    let activeSecs = session.current_active_seconds != null ? session.current_active_seconds : (session.active_seconds || 0);
+    const activeHours = activeSecs / 3600.0;
+    const currentRate = activeHours > 0.001 ? (collected / activeHours) : 0.0;
+    sessionPace.textContent = `${currentRate.toFixed(1).replace(".", ",")}/h`;
 
-    const pct = session.progress_percentage != null 
-      ? Math.min(100, session.progress_percentage)
-      : Math.min(100, ((session.collected_count || 0) / (session.daily_target || 160)) * 100);
+    const pct = target > 0 ? Math.min(100, Math.round((collected / target) * 100)) : 0;
     sessionProgressFill.style.width = `${pct}%`;
 
-    // Local live timer
-    let activeSecs = session.current_active_seconds != null ? session.current_active_seconds : (session.active_seconds || 0);
     sessionTimer.textContent = formatSeconds(activeSecs);
 
     if (isActive) {
       const startTime = Date.now();
       timerInterval = setInterval(() => {
         const elapsedSinceRender = Math.floor((Date.now() - startTime) / 1000);
-        sessionTimer.textContent = formatSeconds(activeSecs + elapsedSinceRender);
+        const liveSecs = activeSecs + elapsedSinceRender;
+        sessionTimer.textContent = formatSeconds(liveSecs);
+        
+        // Recalculate live pace continuously as active seconds advance
+        const liveHours = liveSecs / 3600.0;
+        const liveRate = liveHours > 0.001 ? (collected / liveHours) : 0.0;
+        sessionPace.textContent = `${liveRate.toFixed(1).replace(".", ",")}/h`;
       }, 1000);
     }
   }

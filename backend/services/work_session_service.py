@@ -197,6 +197,22 @@ class WorkSessionService:
             created_at=now
         )
         db.add(event)
+
+        # Disparar notificação interna de início de turno
+        try:
+            from backend.services.notification_service import NotificationService
+            start_time_str = now.strftime("%H:%M")
+            NotificationService.create_notification(
+                db=db,
+                notification_type="USER_START_SESSION",
+                actor_user_id=user.id,
+                title="Turno Iniciado",
+                message=f"{user.name} iniciou um turno de trabalho às {start_time_str}.",
+                metadata={"session_id": new_session.id, "cycle_type": new_session.cycle_type, "target": new_session.daily_target}
+            )
+        except Exception as e:
+            logger.warning(f"Erro ao disparar notificação de início de turno: {e}")
+
         db.commit()
         db.refresh(new_session)
 
@@ -324,6 +340,29 @@ class WorkSessionService:
             created_at=now
         )
         db.add(event)
+
+        # Disparar notificação de ciclo finalizado
+        try:
+            from backend.services.notification_service import NotificationService
+            active_hours = session.active_seconds / 3600.0
+            avg_rate = round(session.collected_count / active_hours, 1) if active_hours > 0.01 else 0.0
+            time_str = format_seconds_hours_mins(session.active_seconds)
+            NotificationService.create_notification(
+                db=db,
+                notification_type="USER_COMPLETE_CYCLE",
+                actor_user_id=user.id,
+                title="Ciclo Finalizado",
+                message=f"🏁 {user.name} finalizou seu ciclo: {session.collected_count} canais em {time_str} ({avg_rate} canais/h).",
+                metadata={
+                    "session_id": session.id,
+                    "collected_count": session.collected_count,
+                    "active_seconds": session.active_seconds,
+                    "average_rate": avg_rate
+                }
+            )
+        except Exception as e:
+            logger.warning(f"Erro ao disparar notificação de fim de ciclo: {e}")
+
         db.commit()
         db.refresh(session)
 
@@ -349,6 +388,7 @@ class WorkSessionService:
     def register_channel_collection(db: Session, user_id: int, channel_id: str) -> Optional[int]:
         """
         Incrementa a contagem da sessão ativa do usuário se houver uma em andamento.
+        Dispara notificação quando o usuário atinge a meta diária configurada (1x por ciclo).
         Retorna o work_session_id associado.
         """
         session = (
@@ -359,9 +399,32 @@ class WorkSessionService:
         )
 
         if session:
+            prev_count = session.collected_count
             session.collected_count += 1
             session.updated_at = utc_now()
             db.flush()
+
+            # Checar se bateu a meta agora
+            if prev_count < session.daily_target and session.collected_count >= session.daily_target:
+                try:
+                    from backend.services.notification_service import NotificationService
+                    user = db.query(User).filter(User.id == user_id).first()
+                    u_name = user.name if user else "Operador"
+                    NotificationService.create_notification(
+                        db=db,
+                        notification_type="USER_REACHED_GOAL",
+                        actor_user_id=user_id,
+                        title="Meta Atingida! 🎯",
+                        message=f"🎯 {u_name} atingiu a meta de {session.daily_target} canais!",
+                        metadata={
+                            "session_id": session.id,
+                            "daily_target": session.daily_target,
+                            "collected_count": session.collected_count
+                        }
+                    )
+                except Exception as e:
+                    logger.warning(f"Erro ao disparar notificação de meta atingida: {e}")
+
             return session.id
         return None
 

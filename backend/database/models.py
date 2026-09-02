@@ -160,3 +160,81 @@ class YouTubeApiUsage(Base):
         Index("idx_yt_usage_requested_at", "requested_at"),
         Index("idx_yt_usage_config", "api_config_id"),
     )
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    type = Column(String(50), nullable=False)  # 'USER_START_SESSION', 'USER_REACHED_GOAL', 'USER_COMPLETE_CYCLE', 'USER_END_SESSION', 'SYSTEM'
+    actor_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    target_user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True) # None = Broadcast to all team
+    title = Column(String(200), nullable=False)
+    message = Column(Text, nullable=False)
+    metadata_json = Column(Text, nullable=True) # JSON with extra payload (channels, rate, cycle_type, etc.)
+    read_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+
+    actor = relationship("User", foreign_keys=[actor_user_id])
+    target = relationship("User", foreign_keys=[target_user_id])
+
+    __table_args__ = (
+        Index("idx_notifications_created", "created_at"),
+        Index("idx_notifications_target", "target_user_id"),
+    )
+
+
+class UserProfile(Base):
+    __tablename__ = "user_profiles"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    avatar_url = Column(String(500), nullable=True)
+    banner_url = Column(String(500), nullable=True)
+    bio = Column(String(250), nullable=True)
+    custom_status = Column(String(100), nullable=True)
+    show_music_to_team = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    user = relationship("User", backref="profile", uselist=False)
+
+
+class UserMusicConnection(Base):
+    __tablename__ = "user_music_connections"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    provider = Column(String(50), default="spotify", nullable=False) # 'spotify', 'youtube_music'
+    is_connected = Column(Boolean, default=False, nullable=False)
+    access_token = Column(Text, nullable=True)
+    refresh_token = Column(Text, nullable=True)
+    token_expires_at = Column(DateTime(timezone=True), nullable=True)
+    current_track_name = Column(String(255), nullable=True)
+    current_artist = Column(String(255), nullable=True)
+    current_album_art = Column(String(500), nullable=True)
+    current_track_url = Column(String(500), nullable=True)
+    is_playing = Column(Boolean, default=False, nullable=False)
+    session_tracks_json = Column(Text, nullable=True) # Track history counter during session
+    most_played_track = Column(String(255), nullable=True)
+    most_played_artist = Column(String(255), nullable=True)
+    most_played_count = Column(Integer, default=0, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    user = relationship("User", backref="music_connection", uselist=False)
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    actor_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    action = Column(String(100), nullable=False) # 'CREATE_USER', 'UPDATE_USER', 'CHANGE_ROLE', 'RESET_PASSWORD', 'DEACTIVATE_USER'
+    target_resource = Column(String(100), nullable=False)
+    target_id = Column(String(100), nullable=True)
+    details_json = Column(Text, nullable=True)
+    ip_address = Column(String(50), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+
+    actor = relationship("User", foreign_keys=[actor_user_id])
+

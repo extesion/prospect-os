@@ -8,7 +8,7 @@ from backend.schemas.channel import (
     ChannelCollectResult, ChannelBulkResponse
 )
 from backend.services.channel_service import ChannelService
-from backend.security.auth import get_current_user
+from backend.security.auth import get_current_user, get_current_admin_user
 
 router = APIRouter(prefix="/channels", tags=["Channels"])
 
@@ -52,7 +52,8 @@ def collect_channels_bulk(
 def list_collected_channels(
     limit: int = 200,
     offset: int = 0,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(get_current_admin_user)
 ):
     """
     Lista os canais coletados para a visualização na Dashboard da equipe.

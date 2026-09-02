@@ -365,21 +365,21 @@ def test_qualification_api_endpoints():
     assert "QUALIFICADOR DE LEADS" in ui_resp.text
 
     # 9. Status Overview Endpoint
-    overview_resp = client.get("/api/qualification/status-overview")
+    overview_resp = client.get("/api/qualification/status-overview", headers=headers)
     assert overview_resp.status_code == 200
     ov_data = overview_resp.json()
     assert ov_data["connections"]["local_processor"] == "online"
     assert "stats" in ov_data
 
     # 10. Leads List with Filters
-    leads_resp = client.get("/api/qualification/leads?page=1&page_size=50")
+    leads_resp = client.get("/api/qualification/leads?page=1&page_size=50", headers=headers)
     assert leads_resp.status_code == 200
     l_data = leads_resp.json()
     assert l_data["total"] >= 1
     assert len(l_data["leads"]) >= 1
 
     # 11. Modal Detail Endpoint
-    detail_resp = client.get("/api/qualification/leads/UC_QUAL_TEST_01/detail")
+    detail_resp = client.get("/api/qualification/leads/UC_QUAL_TEST_01/detail", headers=headers)
     assert detail_resp.status_code == 200
     d_data = detail_resp.json()
     assert d_data["channel"]["channel_name"] == "Tech e Negócios Pro"
