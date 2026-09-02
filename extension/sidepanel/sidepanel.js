@@ -4,6 +4,9 @@
  */
 
 document.addEventListener("DOMContentLoaded", async () => {
+    console.log('[SidePanel] DOMContentLoaded event fired');
+    // Elements
+    const viewLogin = document.getElementById("view-login");
   // Elements
   const viewLogin = document.getElementById("view-login");
   const viewWorkspace = document.getElementById("view-workspace");
@@ -86,7 +89,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     viewWorkspace.classList.add("hidden");
   }
 
-  function showWorkspaceView() {
+  async function showWorkspaceView() {
     viewLogin.classList.add("hidden");
     viewWorkspace.classList.remove("hidden");
 
@@ -94,6 +97,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (currentUser) {
       userDisplayName.textContent = currentUser.name || "Operador";
       userAvatarInitial.textContent = (currentUser.name || "U").charAt(0).toUpperCase();
+      userAvatarInitial.style.backgroundImage = 'none';
+
+      // Load avatar from profile
+      try {
+        const prof = await window.prospectorAPI.getMyProfile();
+        if (prof && prof.avatar_url) {
+          userAvatarInitial.style.backgroundImage = `url('${prof.avatar_url}')`;
+          userAvatarInitial.textContent = '';
+        }
+      } catch (e) {
+        // Fallback to initial
+      }
       
       const role = currentUser.role || "USER";
       userRoleBadge.textContent = role;
@@ -344,8 +359,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   async function updatePageChannelsStats() {
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      console.log('[SidePanel] Active tab query result:', tab);
       if (!tab || !tab.id) return;
-
+      console.log('[SidePanel] Active tab URL:', tab.url);
       chrome.tabs.sendMessage(tab.id, { action: "GET_PAGE_STATS" }, (response) => {
         if (chrome.runtime.lastError || !response) {
           pageNewCount.textContent = "0";

@@ -5,7 +5,7 @@ from sqlalchemy import func, and_, or_
 import json
 import logging
 
-from backend.database.models import User, WorkSession, WorkSessionEvent, CycleSetting, utc_now
+from backend.database.models import User, UserProfile, WorkSession, WorkSessionEvent, CycleSetting, utc_now
 from backend.schemas.work_session import (
     WorkSessionStart, WorkSessionResponse, UserRankingItem,
     TeamStatusItem, TeamSummaryResponse, CyclePresetItem,
@@ -454,10 +454,16 @@ class WorkSessionService:
         # Agrupa por usuário somando active_seconds e canais coletados
         user_totals: Dict[int, Dict] = {}
         all_users = db.query(User).filter(User.active == True).all()
+        profiles = db.query(UserProfile).all()
+        profile_map = {p.user_id: p for p in profiles}
+
         for u in all_users:
+            p = profile_map.get(u.id)
             user_totals[u.id] = {
                 "user_id": u.id,
                 "user_name": u.name,
+                "avatar_url": p.avatar_url if p else None,
+                "banner_url": p.banner_url if p else None,
                 "total_active_seconds": 0,
                 "channels_collected": 0
             }
@@ -465,9 +471,12 @@ class WorkSessionService:
         for s in sessions:
             uid = s.user_id
             if uid not in user_totals:
+                p = profile_map.get(uid)
                 user_totals[uid] = {
                     "user_id": uid,
                     "user_name": s.user.name if s.user else "Usuário",
+                    "avatar_url": p.avatar_url if p else None,
+                    "banner_url": p.banner_url if p else None,
                     "total_active_seconds": 0,
                     "channels_collected": 0
                 }
@@ -496,6 +505,8 @@ class WorkSessionService:
                 rank_position=rank,
                 user_id=item["user_id"],
                 user_name=item["user_name"],
+                avatar_url=item["avatar_url"],
+                banner_url=item["banner_url"],
                 total_active_seconds=item["total_active_seconds"],
                 formatted_hours=format_seconds_hours_mins(item["total_active_seconds"]),
                 channels_collected=item["channels_collected"]
@@ -512,6 +523,8 @@ class WorkSessionService:
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
         all_users = db.query(User).filter(User.active == True).all()
+        profiles = db.query(UserProfile).all()
+        profile_map = {p.user_id: p for p in profiles}
 
         # Busca sessões ativas/pausadas
         current_sessions = (
@@ -545,14 +558,22 @@ class WorkSessionService:
         members: List[TeamStatusItem] = []
         for u in all_users:
             sess = current_session_map.get(u.id)
+            p = profile_map.get(u.id)
+            avatar_url = p.avatar_url if p else None
+            banner_url = p.banner_url if p else None
+
             if sess:
                 if sess.status == "ACTIVE":
                     users_working_count += 1
 
                 res = WorkSessionService.compute_session_response(sess, u.name)
+                presence = "online" if sess.status in ["ACTIVE", "PAUSED"] else "offline"
                 members.append(TeamStatusItem(
                     user_id=u.id,
                     user_name=u.name,
+                    avatar_url=avatar_url,
+                    banner_url=banner_url,
+                    presence=presence,
                     session_id=sess.id,
                     session_status=sess.status,
                     active_seconds=res.current_active_seconds,
@@ -560,12 +581,16 @@ class WorkSessionService:
                     collected_count=sess.collected_count,
                     daily_target=sess.daily_target,
                     current_rate=res.current_rate,
+                    required_rate=res.required_rate,
                     progress_percentage=res.progress_percentage
                 ))
             else:
                 members.append(TeamStatusItem(
                     user_id=u.id,
                     user_name=u.name,
+                    avatar_url=avatar_url,
+                    banner_url=banner_url,
+                    presence="offline",
                     session_id=None,
                     session_status="IDLE",
                     active_seconds=0,
@@ -573,6 +598,7 @@ class WorkSessionService:
                     collected_count=0,
                     daily_target=160,
                     current_rate=0.0,
+                    required_rate=0.0,
                     progress_percentage=0.0
                 ))
 

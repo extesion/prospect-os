@@ -1,7 +1,7 @@
 import os
 import uuid
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+import logging
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
@@ -61,6 +61,8 @@ def update_my_profile(
     ProfileService.update_profile(db, current_user.id, data)
     return ProfileService.get_user_full_stats(db, current_user.id)
 
+logger = logging.getLogger(__name__)
+
 @router.post("/upload/{asset_type}")
 async def upload_profile_media(
     asset_type: str, # 'avatar' or 'banner'
@@ -69,6 +71,7 @@ async def upload_profile_media(
     current_user: User = Depends(get_current_user)
 ):
     """Upload seguro de Avatar ou Banner (JPG, PNG, WEBP, GIF animado)."""
+    logger.info(f"Upload request: user_id={current_user.id}, asset_type={asset_type}, filename={file.filename}, content_type={file.content_type}")
     if asset_type not in ("avatar", "banner"):
         raise HTTPException(status_code=400, detail="asset_type deve ser 'avatar' ou 'banner'")
 
@@ -81,6 +84,7 @@ async def upload_profile_media(
 
     # Read content and validate size
     content = await file.read()
+    logger.debug(f"Received file size: {len(content)} bytes")
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=400,
@@ -103,37 +107,47 @@ async def upload_profile_media(
 
     # If file can be written to disk, write it; also create Data URL for guaranteed persistence on serverless
     import base64
-    b64_str = base64.b64encode(content).decode("utf-8")
-    data_url = f"data:{content_type};base64,{b64_str}"
-
+    # Store static URL relative path if saved to disk, with data_url as fallback
     ext = ALLOWED_MIME_TYPES[content_type]
     safe_filename = f"{current_user.id}_{asset_type}_{uuid.uuid4().hex[:8]}{ext}"
     file_path = os.path.join(UPLOAD_DIR, safe_filename)
+    public_url = f"/static/uploads/{safe_filename}"
 
+    disk_saved = False
     try:
         with open(file_path, "wb") as f:
             f.write(content)
-    except Exception:
-        pass
+        disk_saved = True
+        logger.info(f"Saved uploaded file to {file_path}")
+    except Exception as e:
+        logger.warning(f"Disk write not available: {e}. Using Data URL.")
 
-    # Update profile record with persistent data url
+    # Generate Data URL (guaranteed across ephemeral/serverless environments and local dev)
+    import base64
+    b64_str = base64.b64encode(content).decode("utf-8")
+    data_url = f"data:{content_type};base64,{b64_str}"
+
+    # Use data_url to guarantee persistent preview and animated GIFs
+    final_media_url = data_url
+
+    # Update profile record
     profile = ProfileService.get_or_create_profile(db, current_user.id)
     try:
         if asset_type == "avatar":
-            profile.avatar_url = data_url
+            profile.avatar_url = final_media_url
         else:
-            profile.banner_url = data_url
+            profile.banner_url = final_media_url
         db.commit()
         db.refresh(profile)
+        logger.info(f"Profile {asset_type} URL updated for user {current_user.id}")
     except Exception as e:
-        # Log the error for debugging
-        import traceback, logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error updating profile media: {e}\n{traceback.format_exc()}")
+        logger.error(f"Error updating profile media in DB: {e}", exc_info=True)
+        db.rollback()
         raise HTTPException(status_code=500, detail="Failed to update profile media.")
     
     return {
         "success": True,
         "asset_type": asset_type,
-        "url": data_url
+        "url": final_media_url,
+        "static_url": public_url if disk_saved else None
     }

@@ -42,6 +42,8 @@ class UserRankingItem(BaseModel):
     rank_position: int
     user_id: int
     user_name: str
+    avatar_url: Optional[str] = None
+    banner_url: Optional[str] = None
     total_active_seconds: int
     formatted_hours: str
     channels_collected: int
@@ -49,6 +51,9 @@ class UserRankingItem(BaseModel):
 class TeamStatusItem(BaseModel):
     user_id: int
     user_name: str
+    avatar_url: Optional[str] = None
+    banner_url: Optional[str] = None
+    presence: str = "offline"  # 'online', 'offline'
     session_id: Optional[int] = None
     session_status: str  # 'ACTIVE', 'PAUSED', 'IDLE', 'FINISHED'
     active_seconds: int
@@ -56,6 +61,7 @@ class TeamStatusItem(BaseModel):
     collected_count: int
     daily_target: int
     current_rate: float
+    required_rate: float = 0.0
     progress_percentage: float
 
 class TeamSummaryResponse(BaseModel):

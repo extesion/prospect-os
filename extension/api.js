@@ -223,6 +223,14 @@ class ProspectorAPI {
   async getWorkSessionSettings() {
     return await this.request("/work-sessions/settings", { method: "GET" });
   }
+
+  async getMyProfile() {
+    return await this.request("/profiles/me", { method: "GET" });
+  }
+
+  async getMemberProfile(userId) {
+    return await this.request(`/profiles/${userId}`, { method: "GET" });
+  }
 }
 
 window.prospectorAPI = new ProspectorAPI();

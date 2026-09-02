@@ -308,55 +308,96 @@
     /* Team Members Grid */
     .team-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 18px;
     }
 
     .member-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 18px;
+      border-radius: 16px;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
-      gap: 14px;
       position: relative;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
     }
 
     .member-card:hover {
-      border-color: rgba(255, 255, 255, 0.25);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
+    }
+
+    .member-card-banner {
+      width: 100%;
+      height: 52px;
+      background: linear-gradient(135deg, #181924, #0b0c10);
+      background-size: cover;
+      background-position: center;
+      position: relative;
+    }
+
+    .member-card-content {
+      padding: 0 16px 16px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: -24px;
     }
 
     .member-header {
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       justify-content: space-between;
     }
 
     .member-info {
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       gap: 10px;
     }
 
+    .member-avatar-wrapper {
+      position: relative;
+    }
+
     .member-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
       background: #171822;
-      border: 1px solid var(--card-border);
+      border: 3px solid var(--card-bg);
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 800;
-      font-size: 15px;
+      font-size: 16px;
       color: var(--silver-light);
       background-size: cover;
       background-position: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+
+    .presence-dot {
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      border: 2px solid var(--card-bg);
+    }
+
+    .presence-dot.online {
+      background: var(--success);
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+    }
+
+    .presence-dot.offline {
+      background: #64748b;
     }
 
     .member-name {
@@ -366,7 +407,7 @@
     }
 
     .status-tag {
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 800;
       padding: 3px 8px;
       border-radius: 12px;
@@ -375,18 +416,18 @@
     }
 
     .status-tag.active {
-      background: rgba(16, 185, 129, 0.12);
+      background: rgba(16, 185, 129, 0.15);
       color: var(--success);
-      border: 1px solid rgba(16, 185, 129, 0.25);
+      border: 1px solid rgba(16, 185, 129, 0.3);
     }
 
     .status-tag.paused {
-      background: rgba(245, 158, 11, 0.12);
+      background: rgba(245, 158, 11, 0.15);
       color: var(--warning);
-      border: 1px solid rgba(245, 158, 11, 0.25);
+      border: 1px solid rgba(245, 158, 11, 0.3);
     }
 
-    .status-tag.finished {
+    .status-tag.finished, .status-tag.idle {
       background: rgba(148, 163, 184, 0.1);
       color: var(--silver-muted);
       border: 1px solid rgba(148, 163, 184, 0.2);
@@ -400,6 +441,7 @@
       border-radius: 10px;
       border: 1px solid rgba(255, 255, 255, 0.04);
       text-align: center;
+      gap: 4px;
     }
 
     .m-stat-val {
@@ -1534,7 +1576,7 @@
       }
     }
 
-    function setupUserInterface() {
+    async function setupUserInterface() {
       if (!currentUser) return;
 
       const name = currentUser.name || 'Operador';
@@ -1543,7 +1585,24 @@
 
       document.getElementById('myPillName').textContent = name;
       document.getElementById('myPillRole').textContent = role;
-      document.getElementById('myPillAvatar').textContent = initial;
+      
+      const pillAvatar = document.getElementById('myPillAvatar');
+      pillAvatar.textContent = initial;
+      pillAvatar.style.backgroundImage = 'none';
+
+      // Load avatar image for current user
+      try {
+        const pRes = await fetch('/api/profiles/me', {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        if (pRes.ok) {
+          const pStats = await pRes.json();
+          if (pStats.avatar_url) {
+            pillAvatar.style.backgroundImage = `url('${pStats.avatar_url}')`;
+            pillAvatar.textContent = '';
+          }
+        }
+      } catch (e) {}
 
       // Handle RBAC visibility (ADMIN vs USER)
       if (role === 'ADMIN') {
@@ -1609,41 +1668,55 @@
       }
 
       grid.innerHTML = members.map(m => {
-        const statusClass = m.session_status.toLowerCase();
+        const statusClass = (m.session_status || 'idle').toLowerCase();
         const statusLabel = m.session_status === 'ACTIVE' ? '● TRABALHANDO' : (m.session_status === 'PAUSED' ? '⏸ PAUSADO' : '○ PARADO');
         const initial = (m.user_name || 'U').charAt(0).toUpperCase();
+        const presenceClass = m.presence === 'online' ? 'online' : 'offline';
+        const bannerStyle = m.banner_url ? `background-image: url('${m.banner_url}');` : `background: linear-gradient(135deg, #181924, #0b0c10);`;
+        const avatarStyle = m.avatar_url ? `background-image: url('${m.avatar_url}');` : ``;
+
+        const timeDisplay = m.formatted_time || '00:00:00';
+        const channelsDisplay = m.collected_count !== undefined && m.collected_count !== null ? m.collected_count : 0;
+        const rateDisplay = (m.current_rate || 0).toFixed(1) + '/h';
+        const progressVal = Math.min(100, Math.max(0, m.progress_percentage || 0));
 
         return `
           <div class="member-card" onclick="openMemberProfileModal(${m.user_id})">
-            <div class="member-header">
-              <div class="member-info">
-                <div class="member-avatar">${initial}</div>
+            <div class="member-card-banner" style="${bannerStyle}"></div>
+            <div class="member-card-content">
+              <div class="member-header">
+                <div class="member-info">
+                  <div class="member-avatar-wrapper">
+                    <div class="member-avatar" style="${avatarStyle}">${m.avatar_url ? '' : initial}</div>
+                    <div class="presence-dot ${presenceClass}"></div>
+                  </div>
+                  <div>
+                    <div class="member-name">${m.user_name}</div>
+                    <div style="font-size: 10px; color: var(--silver-muted);">${m.session_status === 'ACTIVE' ? 'Em produção' : (m.session_status === 'PAUSED' ? 'Em pausa' : 'Disponível')}</div>
+                  </div>
+                </div>
+                <span class="status-tag ${statusClass}">${statusLabel}</span>
+              </div>
+
+              <div class="member-stats-row">
                 <div>
-                  <div class="member-name">${m.user_name}</div>
-                  <div style="font-size: 10px; color: var(--silver-muted);">${m.cycle_type ? `Ciclo ${m.cycle_type}` : 'Disponível'}</div>
+                  <div class="m-stat-val">${timeDisplay}</div>
+                  <div class="m-stat-lbl">Tempo Ativo</div>
+                </div>
+                <div>
+                  <div class="m-stat-val">${channelsDisplay}</div>
+                  <div class="m-stat-lbl">Canais</div>
+                </div>
+                <div>
+                  <div class="m-stat-val">${rateDisplay}</div>
+                  <div class="m-stat-lbl">Ritmo</div>
                 </div>
               </div>
-              <span class="status-tag ${statusClass}">${statusLabel}</span>
-            </div>
 
-            <div class="member-stats-row">
               <div>
-                <div class="m-stat-val">${m.formatted_time}</div>
-                <div class="m-stat-lbl">Tempo Ativo</div>
-              </div>
-              <div>
-                <div class="m-stat-val">${m.collected_today}</div>
-                <div class="m-stat-lbl">Canais</div>
-              </div>
-              <div>
-                <div class="m-stat-val">${m.current_rate.toFixed(1)}/h</div>
-                <div class="m-stat-lbl">Ritmo</div>
-              </div>
-            </div>
-
-            <div>
-              <div class="progress-bar-bg">
-                <div class="progress-bar-fill" style="width: ${Math.min(100, m.progress_percentage || 0)}%;"></div>
+                <div class="progress-bar-bg">
+                  <div class="progress-bar-fill" style="width: ${progressVal}%;"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -1672,16 +1745,20 @@
           else if (idx === 1) rankClass = 'top2';
           else if (idx === 2) rankClass = 'top3';
 
+          const initial = (item.user_name || 'U').charAt(0).toUpperCase();
+          const avatarStyle = item.avatar_url ? `background-image: url('${item.avatar_url}');` : ``;
+
           return `
             <div class="ranking-item" onclick="openMemberProfileModal(${item.user_id})" style="cursor: pointer;">
               <div class="rank-left">
-                <div class="rank-num ${rankClass}">${item.rank}</div>
+                <div class="rank-num ${rankClass}">${item.rank_position || (idx + 1)}</div>
+                <div class="member-avatar" style="width: 32px; height: 32px; font-size: 12px; border-radius: 8px; ${avatarStyle}">${item.avatar_url ? '' : initial}</div>
                 <div>
                   <strong style="color: var(--silver-light); font-size: 14px;">${item.user_name}</strong>
-                  <div style="font-size: 11px; color: var(--silver-muted);">${item.channels_collected} canais coletados</div>
+                  <div style="font-size: 11px; color: var(--silver-muted);">${item.channels_collected || 0} canais coletados</div>
                 </div>
               </div>
-              <div class="rank-hours">${item.formatted_hours}</div>
+              <div class="rank-hours">${item.formatted_hours || '00h 00min'}</div>
             </div>
           `;
         }).join('');
