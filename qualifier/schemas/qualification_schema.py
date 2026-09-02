@@ -128,6 +128,8 @@ class LeadItemResponse(BaseModel):
     channel_handle: Optional[str] = None
     channel_url: str
     first_collected_at: Optional[datetime] = None
+    collector_id: Optional[int] = None
+    collector_name: Optional[str] = None
     
     status: str # NOT_ANALYZED, PENDING, PROCESSING, QUALIFIED, REVIEW, REJECTED, FAILED, RETRY
     score: Optional[int] = None
@@ -157,6 +159,7 @@ class LeadsPaginationResponse(BaseModel):
 
 class QualifyBatchRequest(BaseModel):
     channel_ids: Optional[List[str]] = None
+    collector_id: Optional[int] = None
     qualify_all_pending: Optional[bool] = False
     batch_size: Optional[int] = 50
 

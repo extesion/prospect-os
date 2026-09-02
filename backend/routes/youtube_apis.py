@@ -30,6 +30,34 @@ def get_youtube_apis_overview(
     """Retorna visão consolidada de quotas, status e configurações de APIs cadastradas (Exclusivo ADMIN)."""
     return YouTubeApiManager.get_dashboard_summary(db)
 
+@router.get("/logs")
+def get_youtube_api_logs(
+    limit: int = 40,
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(get_current_admin_user)
+):
+    """Retorna logs detalhados em tempo real de chamadas feitas à YouTube API para o terminal CLI."""
+    from backend.database.models import YouTubeApiUsage
+    usages = (
+        db.query(YouTubeApiUsage)
+        .order_by(YouTubeApiUsage.requested_at.desc())
+        .limit(min(100, max(5, limit)))
+        .all()
+    )
+    
+    log_items = []
+    for u in usages:
+        log_items.append({
+            "id": u.id,
+            "timestamp": u.requested_at.strftime("%H:%M:%S") if u.requested_at else "00:00:00",
+            "date": u.requested_at.strftime("%d/%m/%Y") if u.requested_at else "",
+            "endpoint": u.endpoint,
+            "units": u.units,
+            "success": u.success,
+            "error_message": u.error_message
+        })
+    return log_items
+
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_youtube_api_config(
     body: YouTubeApiCreateRequest,

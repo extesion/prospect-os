@@ -109,6 +109,7 @@ def list_leads(
     page_size: int = Query(50, le=200),
     status_filter: Optional[str] = Query(None, description="TODOS, NOT_ANALYZED, QUALIFIED, REVIEW, REJECTED, OUTREACH_READY, FAILED, PENDING"),
     q: Optional[str] = Query(None, description="Busca por nome, handle ou channel_id"),
+    collector_id: Optional[int] = Query(None, description="Isolar leads coletados por usuário específico"),
     has_email: Optional[bool] = Query(None),
     has_whatsapp: Optional[bool] = Query(None),
     has_website: Optional[bool] = Query(None),
@@ -119,10 +120,15 @@ def list_leads(
 ):
     """Retorna listagem consolidada de canais do banco com seus dados de qualificação e filtros."""
     query = (
-        db.query(Channel, QualificationResult, QualificationJob)
+        db.query(Channel, QualificationResult, QualificationJob, User)
         .outerjoin(QualificationResult, Channel.channel_id == QualificationResult.channel_id)
         .outerjoin(QualificationJob, Channel.channel_id == QualificationJob.channel_id)
+        .outerjoin(User, Channel.first_collected_by_id == User.id)
     )
+
+    # Collector isolation filter
+    if collector_id is not None:
+        query = query.filter(Channel.first_collected_by_id == collector_id)
 
     # Search filter
     if q and q.strip():
@@ -187,7 +193,7 @@ def list_leads(
     rows = query.order_by(Channel.created_at.desc()).offset(offset).limit(page_size).all()
 
     leads: List[LeadItemResponse] = []
-    for ch, qual, job in rows:
+    for ch, qual, job, usr in rows:
         lead_status = "NOT_ANALYZED"
         error_msg = None
 
@@ -208,6 +214,8 @@ def list_leads(
                 channel_handle=ch.channel_handle,
                 channel_url=ch.channel_url,
                 first_collected_at=ch.first_collected_at,
+                collector_id=ch.first_collected_by_id,
+                collector_name=usr.name if usr else "Desconhecido",
                 status=lead_status,
                 score=qual.score if qual else None,
                 detected_niche=qual.detected_niche if qual else None,
@@ -227,13 +235,26 @@ def list_leads(
             )
         )
 
-    # Stats for counter badges
-    total_channels = db.query(func.count(Channel.id)).scalar() or 0
-    total_qual = db.query(func.count(QualificationResult.id)).filter(QualificationResult.qualification_status == "QUALIFIED").scalar() or 0
-    total_rev = db.query(func.count(QualificationResult.id)).filter(QualificationResult.qualification_status == "REVIEW").scalar() or 0
-    total_rej = db.query(func.count(QualificationResult.id)).filter(QualificationResult.qualification_status == "REJECTED").scalar() or 0
-    total_analyzed = db.query(func.count(QualificationResult.id)).scalar() or 0
-    total_outreach = db.query(func.count(QualificationResult.id)).filter(QualificationResult.score >= qualification_config.SCORE_QUALIFIED_THRESHOLD, QualificationResult.email != None).scalar() or 0
+    # Base query for stats with collector isolation
+    base_ch = db.query(Channel)
+    if collector_id is not None:
+        base_ch = base_ch.filter(Channel.first_collected_by_id == collector_id)
+
+    total_channels = base_ch.count()
+    
+    # Analyzed channels for this collector scope
+    analyzed_query = (
+        db.query(QualificationResult)
+        .join(Channel, QualificationResult.channel_id == Channel.channel_id)
+    )
+    if collector_id is not None:
+        analyzed_query = analyzed_query.filter(Channel.first_collected_by_id == collector_id)
+
+    total_analyzed = analyzed_query.count()
+    total_qual = analyzed_query.filter(QualificationResult.qualification_status == "QUALIFIED").count()
+    total_rev = analyzed_query.filter(QualificationResult.qualification_status == "REVIEW").count()
+    total_rej = analyzed_query.filter(QualificationResult.qualification_status == "REJECTED").count()
+    total_outreach = analyzed_query.filter(QualificationResult.score >= qualification_config.SCORE_QUALIFIED_THRESHOLD, QualificationResult.email != None).count()
 
     stats_map = {
         "all": total_channels,
@@ -262,12 +283,12 @@ def qualify_batch_web(
     body: QualifyBatchRequest,
     db: Session = Depends(get_db)
 ):
-    """Executa qualificação de um conjunto selecionado de canais ou de todos os pendentes."""
+    """Executa qualificação de um conjunto selecionado de canais ou de todos os pendentes de um usuário."""
     channel_ids = body.channel_ids or []
     
     if body.qualify_all_pending or not channel_ids:
-        # Enqueue all unqualified
-        QualificationService.backfill_unqualified_channels(db)
+        # Enqueue all unqualified for this collector or globally
+        QualificationService.backfill_unqualified_channels(db, collector_id=body.collector_id)
     else:
         # Enqueue specific channel IDs
         for cid in channel_ids:

@@ -62,15 +62,18 @@ class QualificationService:
         return new_job
 
     @staticmethod
-    def backfill_unqualified_channels(db: Session) -> int:
-        """Enqueues all channels from the database that do not yet have a qualification result."""
+    def backfill_unqualified_channels(db: Session, collector_id: Optional[int] = None) -> int:
+        """Enqueues channels from the database that do not yet have a qualification result, optionally filtered by user."""
         # Find channels without qualification_result
-        unqualified_cids = (
+        query = (
             db.query(Channel.channel_id)
             .outerjoin(QualificationResult, Channel.channel_id == QualificationResult.channel_id)
             .filter(QualificationResult.id == None)
-            .all()
         )
+        if collector_id is not None:
+            query = query.filter(Channel.first_collected_by_id == collector_id)
+
+        unqualified_cids = query.all()
 
         count = 0
         now = utc_now()

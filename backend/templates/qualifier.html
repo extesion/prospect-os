@@ -1,370 +1,855 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PROSPECT OS — Qualificador de Leads</title>
   
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#fffbeb',
-              100: '#fef3c7',
-              400: '#fbbf24',
-              500: '#f59e0b',
-              600: '#d97706',
-              900: '#78350f',
-            },
-            dark: {
-              bg: '#0b0f17',
-              card: '#121826',
-              border: '#1f293d',
-              hover: '#1b2438'
-            }
-          },
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-          }
-        }
-      }
-    }
-  </script>
-  
-  <!-- Google Fonts & FontAwesome -->
+  <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #0b0f17;
-      color: #e2e8f0;
+    :root {
+      --bg: #070709;
+      --nav-bg: #0d0e12;
+      --card-bg: #101116;
+      --card-inner: #0a0b0e;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover: rgba(255, 255, 255, 0.16);
+      --silver: #e2e8f0;
+      --silver-light: #f8fafc;
+      --silver-muted: #94a3b8;
+      --silver-dark: #334155;
+      --silver-gradient: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+      --silver-btn: linear-gradient(180deg, #ffffff 0%, #94a3b8 100%);
+      --accent: #f8fafc;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --table-header: #0d0e14;
+      --table-row-alt: #08090c;
     }
-    .custom-scrollbar::-webkit-scrollbar {
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--silver);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
     }
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: #0f172a;
+    ::-webkit-scrollbar-track {
+      background: #090a0d;
     }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #334155;
-      border-radius: 3px;
+    ::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 4px;
     }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: #475569;
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3f3f46;
+    }
+
+    /* Header */
+    header {
+      background: rgba(13, 14, 18, 0.95);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 12px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      background: linear-gradient(135deg, #27272a, #09090b);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 800;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    }
+
+    .brand-title {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--silver-light);
+    }
+
+    .brand-subtitle {
+      font-size: 9px;
+      color: var(--silver-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      font-family: inherit;
+      border: none;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--silver-gradient);
+      color: #09090b;
+      box-shadow: 0 2px 10px rgba(255, 255, 255, 0.15);
+    }
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(255, 255, 255, 0.25);
+    }
+
+    .btn-secondary {
+      background: #181920;
+      border: 1px solid var(--card-border);
+      color: var(--silver);
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: #232530;
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.25);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Metric Cards Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .metric-card:hover {
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-2px);
+    }
+
+    .metric-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--silver-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .metric-value {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--silver-light);
+      margin: 8px 0 2px 0;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .metric-sub {
+      font-size: 10px;
+      color: var(--silver-muted);
+    }
+
+    .metric-indicator-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      border-radius: 0 0 12px 12px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Quota Banner & Terminal Log CLI */
+    .quota-card {
+      background: linear-gradient(135deg, #0d0e14, #08090c);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .quota-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .quota-bar-track {
+      background: #181920;
+      border-radius: 8px;
+      height: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      position: relative;
+    }
+
+    .quota-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981 0%, #38bdf8 50%, #f59e0b 80%, #ef4444 100%);
+      border-radius: 8px;
+      transition: width 0.4s ease;
+    }
+
+    /* CLI Terminal Drawer */
+    .cli-terminal {
+      background: #050507;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      overflow: hidden;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .cli-header {
+      background: #0d0e14;
+      padding: 8px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--silver-muted);
+    }
+
+    .cli-logs-container {
+      padding: 12px;
+      max-height: 180px;
+      overflow-y: auto;
+      font-size: 11px;
+      line-height: 1.6;
+      color: #94a3b8;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .log-line {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .log-time {
+      color: #64748b;
+      flex-shrink: 0;
+    }
+    .log-tag {
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+    .log-tag-api {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    .log-tag-ok {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .log-tag-err {
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .log-msg {
+      color: #e2e8f0;
+      word-break: break-all;
+    }
+
+    /* Filter Card */
+    .filter-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .filter-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .search-input-wrapper {
+      position: relative;
+      flex: 1;
+      min-width: 260px;
+    }
+    .search-input-wrapper i {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--silver-muted);
+      font-size: 12px;
+    }
+    .search-input {
+      width: 100%;
+      padding: 9px 12px 9px 34px;
+      background: #08090c;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: var(--silver-light);
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus {
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .select-user {
+      padding: 8px 12px;
+      background: #08090c;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: var(--silver-light);
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .tabs-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .tab-pill {
+      background: #090a0d;
+      border: 1px solid var(--card-border);
+      color: var(--silver-muted);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .tab-pill:hover {
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    .tab-pill.active {
+      background: var(--silver-gradient);
+      color: #09090b;
+      font-weight: 700;
+      border-color: transparent;
+    }
+
+    /* Data Table */
+    .table-container {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      text-align: left;
+    }
+
+    thead {
+      background: var(--table-header);
+      border-bottom: 1px solid var(--card-border);
+    }
+    thead th {
+      padding: 12px 16px;
+      color: var(--silver-muted);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      transition: background-color 0.15s;
+    }
+    tbody tr:nth-child(even) {
+      background: var(--table-row-alt);
+    }
+    tbody tr:hover {
+      background: var(--card-hover);
+    }
+    tbody td {
+      padding: 12px 16px;
+      color: var(--silver);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .badge-qual {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .badge-rev {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .badge-rej {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .badge-none {
+      background: #181920;
+      color: #94a3b8;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .badge-proc {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      animation: pulse 1.5s infinite;
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-card {
+      background: #0e0f14;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 780px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #111218;
+    }
+
+    .modal-body {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      font-size: 12px;
+    }
+
+    /* Toast */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .toast-msg {
+      background: #12131a;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toast-msg.success { border-color: #10b981; color: #6ee7b7; }
+    .toast-msg.error { border-color: #ef4444; color: #fca5a5; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col antialiased">
+<body>
 
-  <!-- ===================================================================== -->
-  <!-- TOP NAVBAR & SYSTEM STATUS INDICATORS                                 -->
-  <!-- ===================================================================== -->
-  <header class="bg-dark-card border-b border-dark-border sticky top-0 z-40 px-6 py-3.5 shadow-md">
-    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-      
-      <!-- Logo & Title -->
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20 text-slate-950 font-black text-xl">
-          <i class="fa-solid fa-bolt"></i>
-        </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <h1 class="font-bold text-lg text-white tracking-tight">QUALIFICADOR DE LEADS</h1>
-            <span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20">v1.0</span>
-          </div>
-          <p class="text-xs text-slate-400">Análise estruturada, scoring comercial e extração de contatos</p>
-        </div>
+  <!-- HEADER -->
+  <header>
+    <div class="brand-group">
+      <div class="brand-icon">
+        <i class="fa-solid fa-bolt"></i>
       </div>
-
-      <!-- Live Connection Indicators -->
-      <div class="flex items-center flex-wrap gap-2 text-xs font-medium">
-        <div id="status-youtube" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>YouTube API: <strong class="text-emerald-400" id="yt-text">Conectada</strong></span>
-        </div>
-
-        <div id="status-processor" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
-          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span>Processador Local: <strong class="text-emerald-400">Online</strong></span>
-        </div>
-
-        <div id="status-db" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
-          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span>Banco: <strong class="text-emerald-400">Conectado</strong></span>
-        </div>
-
-        <!-- Settings Button -->
-        <button onclick="openConfigModal()" class="ml-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5">
-          <i class="fa-solid fa-gear"></i>
-          <span>Configurações</span>
-        </button>
-
-        <a href="/dashboard" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5" title="Ir para Dashboard">
-          <i class="fa-solid fa-chart-pie"></i>
-          <span>Dashboard</span>
-        </a>
-
-        <a href="/users" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 transition flex items-center gap-1.5" title="Gestão de Usuários (Admin)">
-          <i class="fa-solid fa-users"></i>
-          <span>Usuários</span>
-        </a>
-
-        <a href="/youtube-apis" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 transition flex items-center gap-1.5" title="YouTube APIs & Quotas (Admin)">
-          <i class="fa-brands fa-youtube"></i>
-          <span>APIs</span>
-        </a>
+      <div>
+        <div class="brand-title">QUALIFICADOR DE LEADS</div>
+        <div class="brand-subtitle">PROSPECT OS — LEAD INTELLIGENCE ENGINE</div>
       </div>
+    </div>
 
+    <div class="header-right">
+      <a href="/dashboard" class="btn btn-secondary" title="Ir para Dashboard">
+        <i class="fa-solid fa-chart-pie"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="/users" class="btn btn-secondary" title="Gestão de Usuários">
+        <i class="fa-solid fa-users"></i>
+        <span>Usuários</span>
+      </a>
+      <a href="/youtube-apis" class="btn btn-secondary" title="Gestão de APIs & Quotas">
+        <i class="fa-brands fa-youtube"></i>
+        <span>APIs</span>
+      </a>
+      <button onclick="openConfigModal()" class="btn btn-secondary" title="Configurações">
+        <i class="fa-solid fa-gear"></i>
+      </button>
     </div>
   </header>
 
-  <!-- ===================================================================== -->
-  <!-- MAIN OPERATIONAL CONTAINER                                            -->
-  <!-- ===================================================================== -->
-  <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+  <!-- MAIN -->
+  <main>
 
-    <!-- METRIC CARDS -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-      
-      <!-- Não Analisados -->
-      <div onclick="filterByTab('NOT_ANALYZED')" class="cursor-pointer bg-dark-card border border-dark-border hover:border-slate-600 p-4 rounded-xl transition duration-150 shadow-sm relative overflow-hidden group">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Não Analisados</span>
-          <div class="w-8 h-8 rounded-lg bg-slate-800 text-slate-300 flex items-center justify-center text-sm group-hover:bg-slate-700 transition">
-            <i class="fa-solid fa-hourglass-start"></i>
-          </div>
+    <!-- METRICS OVERVIEW CARDS -->
+    <div class="metrics-grid">
+      <div class="metric-card" onclick="filterByTab('NOT_ANALYZED')">
+        <div class="metric-label">
+          <span>Não Analisados</span>
+          <i class="fa-solid fa-hourglass-start"></i>
         </div>
-        <div class="mt-3">
-          <span id="stat-not-analyzed" class="text-2xl font-bold text-white">0</span>
-          <span class="text-xs text-slate-400 block mt-0.5">aguardando qualificação</span>
-        </div>
-        <div class="absolute bottom-0 left-0 right-0 h-1 bg-slate-600"></div>
+        <div class="metric-value" id="stat-not-analyzed">0</div>
+        <div class="metric-sub">Aguardando qualificação</div>
+        <div class="metric-indicator-bar" style="background: #94a3b8;"></div>
       </div>
 
-      <!-- Qualificados -->
-      <div onclick="filterByTab('QUALIFIED')" class="cursor-pointer bg-dark-card border border-dark-border hover:border-emerald-500/50 p-4 rounded-xl transition duration-150 shadow-sm relative overflow-hidden group">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Qualificados</span>
-          <div class="w-8 h-8 rounded-lg bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 flex items-center justify-center text-sm group-hover:scale-110 transition">
-            <i class="fa-solid fa-circle-check"></i>
-          </div>
+      <div class="metric-card" onclick="filterByTab('QUALIFIED')">
+        <div class="metric-label">
+          <span>Qualificados</span>
+          <i class="fa-solid fa-circle-check" style="color: var(--success);"></i>
         </div>
-        <div class="mt-3">
-          <span id="stat-qualified" class="text-2xl font-bold text-emerald-400">0</span>
-          <span class="text-xs text-slate-400 block mt-0.5">score 70 a 100</span>
-        </div>
-        <div class="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500"></div>
+        <div class="metric-value" id="stat-qualified" style="color: var(--success);">0</div>
+        <div class="metric-sub">Score 70 a 100</div>
+        <div class="metric-indicator-bar" style="background: var(--success);"></div>
       </div>
 
-      <!-- Em Revisão -->
-      <div onclick="filterByTab('REVIEW')" class="cursor-pointer bg-dark-card border border-dark-border hover:border-amber-500/50 p-4 rounded-xl transition duration-150 shadow-sm relative overflow-hidden group">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold text-amber-400 uppercase tracking-wider">Em Revisão</span>
-          <div class="w-8 h-8 rounded-lg bg-amber-950/60 text-amber-400 border border-amber-800/40 flex items-center justify-center text-sm group-hover:scale-110 transition">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-          </div>
+      <div class="metric-card" onclick="filterByTab('REVIEW')">
+        <div class="metric-label">
+          <span>Em Revisão</span>
+          <i class="fa-solid fa-triangle-exclamation" style="color: var(--warning);"></i>
         </div>
-        <div class="mt-3">
-          <span id="stat-review" class="text-2xl font-bold text-amber-400">0</span>
-          <span class="text-xs text-slate-400 block mt-0.5">score 40 a 69</span>
-        </div>
-        <div class="absolute bottom-0 left-0 right-0 h-1 bg-amber-500"></div>
+        <div class="metric-value" id="stat-review" style="color: var(--warning);">0</div>
+        <div class="metric-sub">Score 40 a 69</div>
+        <div class="metric-indicator-bar" style="background: var(--warning);"></div>
       </div>
 
-      <!-- Descartados -->
-      <div onclick="filterByTab('REJECTED')" class="cursor-pointer bg-dark-card border border-dark-border hover:border-rose-500/50 p-4 rounded-xl transition duration-150 shadow-sm relative overflow-hidden group">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold text-rose-400 uppercase tracking-wider">Descartados</span>
-          <div class="w-8 h-8 rounded-lg bg-rose-950/60 text-rose-400 border border-rose-800/40 flex items-center justify-center text-sm group-hover:scale-110 transition">
-            <i class="fa-solid fa-ban"></i>
-          </div>
+      <div class="metric-card" onclick="filterByTab('REJECTED')">
+        <div class="metric-label">
+          <span>Descartados</span>
+          <i class="fa-solid fa-ban" style="color: var(--danger);"></i>
         </div>
-        <div class="mt-3">
-          <span id="stat-rejected" class="text-2xl font-bold text-rose-400">0</span>
-          <span class="text-xs text-slate-400 block mt-0.5">score 0 a 39 / inativo</span>
-        </div>
-        <div class="absolute bottom-0 left-0 right-0 h-1 bg-rose-500"></div>
+        <div class="metric-value" id="stat-rejected" style="color: var(--danger);">0</div>
+        <div class="metric-sub">Score 0 a 39 / inativo</div>
+        <div class="metric-indicator-bar" style="background: var(--danger);"></div>
       </div>
 
-      <!-- Prontos para Contato (Outreach Ready) -->
-      <div onclick="filterByTab('OUTREACH_READY')" class="cursor-pointer bg-dark-card border border-dark-border hover:border-cyan-500/50 p-4 rounded-xl transition duration-150 shadow-sm relative overflow-hidden group col-span-2 sm:col-span-1">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Prontos Contato</span>
-          <div class="w-8 h-8 rounded-lg bg-cyan-950/60 text-cyan-400 border border-cyan-800/40 flex items-center justify-center text-sm group-hover:scale-110 transition">
-            <i class="fa-solid fa-paper-plane"></i>
-          </div>
+      <div class="metric-card" onclick="filterByTab('OUTREACH_READY')">
+        <div class="metric-label">
+          <span>Prontos Contato</span>
+          <i class="fa-solid fa-paper-plane" style="color: #38bdf8;"></i>
         </div>
-        <div class="mt-3">
-          <span id="stat-outreach-ready" class="text-2xl font-bold text-cyan-400">0</span>
-          <span class="text-xs text-slate-400 block mt-0.5">qualificado + e-mail ✓</span>
-        </div>
-        <div class="absolute bottom-0 left-0 right-0 h-1 bg-cyan-500"></div>
+        <div class="metric-value" id="stat-outreach-ready" style="color: #38bdf8;">0</div>
+        <div class="metric-sub">Qualificado + E-mail ✓</div>
+        <div class="metric-indicator-bar" style="background: #38bdf8;"></div>
       </div>
-
     </div>
 
-    <!-- =================================================================== -->
-    <!-- REAL-TIME BATCH PROCESSING BANNER (HIDDEN BY DEFAULT)               -->
-    <!-- =================================================================== -->
-    <div id="processing-banner" class="hidden bg-gradient-to-r from-amber-950/80 via-slate-900 to-amber-950/80 border border-amber-500/30 p-4 rounded-xl shadow-lg animate-fade-in">
-      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg animate-spin">
-            <i class="fa-solid fa-circle-notch"></i>
-          </div>
+    <!-- YOUTUBE API V3 QUOTA STATUS BAR & REALTIME CLI LOGS -->
+    <div class="quota-card">
+      <div class="quota-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fa-brands fa-youtube" style="color: #ef4444; font-size: 18px;"></i>
           <div>
-            <div class="flex items-center gap-2">
-              <h4 class="font-bold text-white text-sm">QUALIFICANDO EM SEGUNDO PLANO...</h4>
-              <span id="progress-channel-name" class="text-xs px-2 py-0.5 rounded bg-slate-800 text-amber-300 font-mono">Processando...</span>
-            </div>
-            <p id="progress-text" class="text-xs text-slate-300 mt-0.5">Progresso: 0 / 0 leads processados</p>
+            <div style="font-size: 13px; font-weight: 700; color: #fff;">Status de Cotas YouTube Data API v3</div>
+            <div style="font-size: 10px; color: var(--silver-muted);">Consumo diário sincronizado em tempo real (Ciclo UTC)</div>
           </div>
         </div>
 
-        <div class="flex items-center gap-2 w-full sm:w-auto">
-          <button id="btn-cancel-batch" onclick="cancelBatchProcessing()" class="px-3 py-1.5 rounded-lg bg-rose-900/80 hover:bg-rose-800 text-rose-200 text-xs font-semibold transition border border-rose-700">
-            <i class="fa-solid fa-stop mr-1"></i> Parar Fila
+        <div style="display: flex; align-items: center; gap: 16px; font-size: 11px;">
+          <div>
+            <span style="color: var(--silver-muted);">Consumido Hoje:</span>
+            <strong id="quota-usage-text" style="color: #fff; font-family: 'JetBrains Mono', monospace;">0 / 10.000 un</strong>
+          </div>
+          <div>
+            <span style="color: var(--silver-muted);">Disponível:</span>
+            <strong id="quota-avail-text" style="color: #10b981; font-family: 'JetBrains Mono', monospace;">10.000 un</strong>
+          </div>
+          <button onclick="toggleCliDrawer()" class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px;">
+            <i class="fa-solid fa-terminal"></i>
+            <span id="cli-toggle-text">Ver Logs CLI API</span>
           </button>
         </div>
       </div>
 
-      <!-- Progress bar -->
-      <div class="w-full bg-slate-800 rounded-full h-2 mt-3 overflow-hidden">
-        <div id="progress-bar-fill" class="bg-gradient-to-r from-amber-500 to-emerald-400 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+      <!-- Barra de Progresso de Cota -->
+      <div class="quota-bar-track">
+        <div class="quota-bar-fill" id="quota-bar-fill" style="width: 0%;"></div>
+      </div>
+
+      <!-- CLI Terminal Logs Drawer (Expansível) -->
+      <div class="cli-terminal" id="cliTerminalDrawer" style="display: none;">
+        <div class="cli-header">
+          <span><i class="fa-solid fa-terminal mr-1"></i> LIVE TERMINAL — YOUTUBE API CALLS & REQUISITIONS</span>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <span style="font-size: 9px; color: #10b981;">● SYNCING</span>
+            <button onclick="loadApiLogs()" style="background: none; border: none; color: #94a3b8; cursor: pointer;" title="Atualizar Logs">
+              <i class="fa-solid fa-arrows-rotate"></i>
+            </button>
+          </div>
+        </div>
+        <div class="cli-logs-container" id="cliLogsBody">
+          <div class="log-line">
+            <span class="log-time">[--:--:--]</span>
+            <span class="log-tag log-tag-api">SYS</span>
+            <span class="log-msg">Terminal pronto. Monitorando chamadas e consumo de cotas...</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- =================================================================== -->
-    <!-- FILTERS & ACTIONS BAR                                               -->
-    <!-- =================================================================== -->
-    <div class="bg-dark-card border border-dark-border p-4 rounded-xl shadow-sm space-y-4">
-      
-      <!-- Top Action Row: Batch buttons & Search -->
-      <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+    <!-- FILTER & CONTROL BAR (COM ISOLAMENTO POR USUÁRIO) -->
+    <div class="filter-card">
+      <div class="filter-row">
         
-        <!-- Left: Batch Operations -->
-        <div class="flex items-center flex-wrap gap-2">
-          <button id="btn-qualify-selected" onclick="qualifySelectedLeads()" disabled class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-bold text-xs uppercase tracking-wider transition flex items-center gap-2 shadow-lg shadow-amber-500/10">
+        <!-- Batch Buttons -->
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <button id="btn-qualify-selected" onclick="qualifySelectedLeads()" disabled class="btn btn-primary">
             <i class="fa-solid fa-bolt"></i>
             <span id="label-qualify-selected">Qualificar Selecionados (0)</span>
           </button>
 
-          <button onclick="qualifyAllPending()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition border border-slate-700 flex items-center gap-2">
-            <i class="fa-solid fa-play text-emerald-400"></i>
-            <span>Qualificar Todos Pendentes</span>
+          <button onclick="qualifyAllPending()" class="btn btn-secondary">
+            <i class="fa-solid fa-play" style="color: #10b981;"></i>
+            <span>Qualificar Pendentes</span>
           </button>
 
-          <button onclick="loadLeads()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" title="Recarregar Tabela">
+          <button onclick="loadLeads()" class="btn btn-secondary" title="Recarregar">
             <i class="fa-solid fa-arrows-rotate"></i>
           </button>
         </div>
 
-        <!-- Right: Search Input -->
-        <div class="relative flex-1 max-w-md">
-          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-          <input 
-            type="text" 
-            id="search-input" 
-            placeholder="Buscar por nome do canal, handle (@...) ou ID..."
-            oninput="handleSearchInput(event)"
-            class="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition"
-          >
+        <!-- User Isolation Dropdown & Search -->
+        <div style="display: flex; align-items: center; gap: 10px; flex: 1; max-width: 600px;">
+          <select id="select-collector" class="select-user" onchange="handleCollectorChange()">
+            <option value="">👤 Todos os Operadores (Geral)</option>
+            <!-- Injetado dinamicamente -->
+          </select>
+
+          <div class="search-input-wrapper">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input 
+              type="text" 
+              id="search-input" 
+              class="search-input" 
+              placeholder="Buscar canal por nome, handle (@...) ou ID..."
+              oninput="handleSearchInput(event)"
+            />
+          </div>
         </div>
 
       </div>
 
-      <!-- Filter Tabs & Checkbox toggles -->
-      <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pt-3 border-t border-slate-800">
-        
-        <!-- Status Tabs -->
-        <div class="flex items-center gap-1 overflow-x-auto pb-1 custom-scrollbar text-xs font-semibold">
-          <button onclick="filterByTab('ALL')" class="tab-btn active px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition" data-tab="ALL">
+      <!-- Tab Status Filters & Checkbox Filters -->
+      <div class="filter-row" style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 12px;">
+        <div class="tabs-group">
+          <button class="tab-pill active" onclick="filterByTab('ALL')" data-tab="ALL">
             Todos (<span id="tab-count-all">0</span>)
           </button>
-          <button onclick="filterByTab('NOT_ANALYZED')" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition" data-tab="NOT_ANALYZED">
+          <button class="tab-pill" onclick="filterByTab('NOT_ANALYZED')" data-tab="NOT_ANALYZED">
             Não Analisados (<span id="tab-count-not-analyzed">0</span>)
           </button>
-          <button onclick="filterByTab('QUALIFIED')" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition" data-tab="QUALIFIED">
+          <button class="tab-pill" onclick="filterByTab('QUALIFIED')" data-tab="QUALIFIED">
             Qualificados (<span id="tab-count-qualified">0</span>)
           </button>
-          <button onclick="filterByTab('REVIEW')" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition" data-tab="REVIEW">
+          <button class="tab-pill" onclick="filterByTab('REVIEW')" data-tab="REVIEW">
             Revisar (<span id="tab-count-review">0</span>)
           </button>
-          <button onclick="filterByTab('REJECTED')" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition" data-tab="REJECTED">
+          <button class="tab-pill" onclick="filterByTab('REJECTED')" data-tab="REJECTED">
             Descartados (<span id="tab-count-rejected">0</span>)
           </button>
-          <button onclick="filterByTab('OUTREACH_READY')" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition" data-tab="OUTREACH_READY">
+          <button class="tab-pill" onclick="filterByTab('OUTREACH_READY')" data-tab="OUTREACH_READY">
             Prontos Contato (<span id="tab-count-outreach">0</span>)
           </button>
-          <button onclick="filterByTab('FAILED')" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition" data-tab="FAILED">
+          <button class="tab-pill" onclick="filterByTab('FAILED')" data-tab="FAILED">
             Erros
           </button>
         </div>
 
-        <!-- Quick Attribute Filters -->
-        <div class="flex items-center flex-wrap gap-2 text-xs text-slate-300">
-          <label class="flex items-center gap-1.5 cursor-pointer bg-slate-900/60 px-2.5 py-1 rounded-md border border-slate-800 hover:border-slate-700">
-            <input type="checkbox" id="filter-email" onchange="loadLeads()" class="rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0">
+        <div style="display: flex; align-items: center; gap: 12px; font-size: 11px;">
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="checkbox" id="filter-email" onchange="loadLeads()">
             <span>Com E-mail</span>
           </label>
-
-          <label class="flex items-center gap-1.5 cursor-pointer bg-slate-900/60 px-2.5 py-1 rounded-md border border-slate-800 hover:border-slate-700">
-            <input type="checkbox" id="filter-whatsapp" onchange="loadLeads()" class="rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0">
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="checkbox" id="filter-whatsapp" onchange="loadLeads()">
             <span>Com WhatsApp</span>
           </label>
-
-          <label class="flex items-center gap-1.5 cursor-pointer bg-slate-900/60 px-2.5 py-1 rounded-md border border-slate-800 hover:border-slate-700">
-            <input type="checkbox" id="filter-website" onchange="loadLeads()" class="rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0">
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="checkbox" id="filter-website" onchange="loadLeads()">
             <span>Com Site</span>
           </label>
-
-          <label class="flex items-center gap-1.5 cursor-pointer bg-slate-900/60 px-2.5 py-1 rounded-md border border-slate-800 hover:border-slate-700">
-            <input type="checkbox" id="filter-insta" onchange="loadLeads()" class="rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0">
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="checkbox" id="filter-insta" onchange="loadLeads()">
             <span>Instagram</span>
           </label>
         </div>
-
       </div>
-
     </div>
 
-    <!-- =================================================================== -->
-    <!-- LEADS DATA TABLE                                                    -->
-    <!-- =================================================================== -->
-    <div class="bg-dark-card border border-dark-border rounded-xl shadow-sm overflow-hidden flex flex-col">
-      
-      <div class="overflow-x-auto custom-scrollbar">
-        <table class="w-full text-left text-xs text-slate-300">
-          <thead class="bg-slate-900/90 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-dark-border">
+    <!-- LEADS DATA TABLE -->
+    <div class="table-container">
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
             <tr>
-              <th class="py-3.5 px-4 w-10 text-center">
-                <input type="checkbox" id="check-all" onchange="toggleSelectAll(event)" class="rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0 cursor-pointer">
+              <th style="width: 40px; text-align: center;">
+                <input type="checkbox" id="check-all" onchange="toggleSelectAll(event)" style="cursor: pointer;">
               </th>
-              <th class="py-3.5 px-4 min-w-[220px]">CANAL</th>
-              <th class="py-3.5 px-4 text-center">STATUS</th>
-              <th class="py-3.5 px-4 text-center">INSCRITOS</th>
-              <th class="py-3.5 px-4 text-center">ÚLTIMO VÍDEO</th>
-              <th class="py-3.5 px-4 text-center">SCORE</th>
-              <th class="py-3.5 px-4 text-center">CONTATO</th>
-              <th class="py-3.5 px-4 text-right">AÇÃO</th>
+              <th style="min-width: 220px;">CANAL</th>
+              <th>COLETADO POR</th>
+              <th style="text-align: center;">STATUS</th>
+              <th style="text-align: center;">INSCRITOS</th>
+              <th style="text-align: center;">ÚLTIMO VÍDEO</th>
+              <th style="text-align: center;">SCORE</th>
+              <th style="text-align: center;">CONTATOS</th>
+              <th style="text-align: right;">AÇÕES</th>
             </tr>
           </thead>
-          <tbody id="leads-tbody" class="divide-y divide-slate-800/60 font-medium">
-            <!-- Dynamic rows rendered via JavaScript -->
+          <tbody id="leads-tbody">
             <tr>
-              <td colspan="8" class="text-center py-12 text-slate-500">
-                <i class="fa-solid fa-circle-notch fa-spin text-xl text-amber-500 mb-2"></i>
-                <p>Carregando leads do banco de dados...</p>
+              <td colspan="9" style="text-align: center; padding: 40px; color: var(--silver-muted);">
+                <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 18px; color: #fff; margin-bottom: 8px; display: block;"></i>
+                Carregando leads do banco de dados...
               </td>
             </tr>
           </tbody>
@@ -372,237 +857,126 @@
       </div>
 
       <!-- Pagination Footer -->
-      <div class="px-6 py-3 bg-slate-900/70 border-t border-dark-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+      <div style="padding: 12px 20px; background: #0b0c10; border-top: 1px solid var(--card-border); display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--silver-muted);">
         <div>
-          Mostrando <span id="page-start" class="font-bold text-white">0</span> - <span id="page-end" class="font-bold text-white">0</span> de <span id="page-total" class="font-bold text-white">0</span> leads
+          Mostrando <strong id="page-start" style="color: #fff;">0</strong> - <strong id="page-end" style="color: #fff;">0</strong> de <strong id="page-total" style="color: #fff;">0</strong> leads
         </div>
-
-        <div class="flex items-center gap-1.5">
-          <button id="btn-prev-page" onclick="changePage(-1)" disabled class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed text-slate-200 transition">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button id="btn-prev-page" onclick="changePage(-1)" disabled class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px;">
             <i class="fa-solid fa-chevron-left mr-1"></i> Anterior
           </button>
-          <span class="px-3 py-1.5 rounded bg-slate-900 border border-slate-700 text-slate-300 font-bold" id="page-current">1</span>
-          <button id="btn-next-page" onclick="changePage(1)" disabled class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed text-slate-200 transition">
+          <span id="page-current" style="font-weight: 700; color: #fff; padding: 4px 8px; background: #181920; border-radius: 4px;">1</span>
+          <button id="btn-next-page" onclick="changePage(1)" disabled class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px;">
             Próximo <i class="fa-solid fa-chevron-right ml-1"></i>
           </button>
         </div>
       </div>
-
     </div>
 
   </main>
 
-  <!-- ===================================================================== -->
-  <!-- MODAL: VER ANÁLISE / SCORE DETALHADO                                  -->
-  <!-- ===================================================================== -->
-  <div id="analysis-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-dark-card border border-dark-border w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-up">
-      
-      <!-- Modal Header -->
-      <div class="px-6 py-4 bg-slate-900 border-b border-dark-border flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div id="modal-badge-score" class="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex flex-col items-center justify-center">
-            <span id="modal-score-val" class="font-black text-lg leading-tight">82</span>
-            <span class="text-[9px] uppercase font-bold">Score</span>
+  <!-- MODAL: VER ANÁLISE DETALHADA -->
+  <div id="analysis-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div id="modal-badge-score" style="width: 48px; height: 48px; border-radius: 12px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <span id="modal-score-val" style="font-size: 18px; font-weight: 800; font-family: 'JetBrains Mono', monospace; line-height: 1;">82</span>
+            <span style="font-size: 8px; font-weight: 700; text-transform: uppercase;">Score</span>
           </div>
           <div>
-            <h3 id="modal-channel-name" class="font-bold text-white text-base">Nome do Canal</h3>
-            <div class="flex items-center gap-2 mt-0.5">
-              <span id="modal-status-badge" class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">QUALIFICADO</span>
-              <span id="modal-niche-badge" class="text-xs text-slate-400">Nicho: Marketing</span>
+            <h3 id="modal-channel-name" style="font-size: 15px; font-weight: 800; color: #fff;">Nome do Canal</h3>
+            <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
+              <span id="modal-status-badge" class="badge badge-qual">QUALIFICADO</span>
+              <span id="modal-niche-badge" style="font-size: 11px; color: var(--silver-muted);">Nicho: Geral</span>
             </div>
           </div>
         </div>
 
-        <button onclick="closeAnalysisModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+        <button onclick="closeAnalysisModal()" class="btn btn-secondary" style="padding: 6px 10px;">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
 
-      <!-- Modal Body (Scrollable) -->
-      <div class="p-6 overflow-y-auto space-y-6 custom-scrollbar text-xs">
-        
-        <!-- Qualification Reason Highlight Box -->
-        <div class="bg-slate-900/90 border border-amber-500/30 p-4 rounded-xl">
-          <div class="flex items-center gap-2 text-amber-400 font-bold mb-1">
-            <i class="fa-solid fa-lightbulb"></i>
+      <div class="modal-body">
+        <!-- Diagnóstico -->
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--card-border); padding: 14px; border-radius: 10px;">
+          <div style="font-weight: 700; color: #fff; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-lightbulb" style="color: #f59e0b;"></i>
             <span>Diagnóstico do Qualificador</span>
           </div>
-          <p id="modal-reason-text" class="text-slate-300 leading-relaxed text-xs">Canal ativo com excelente presença digital e sinais claros de venda.</p>
+          <p id="modal-reason-text" style="color: var(--silver-muted); line-height: 1.5;">Análise do canal e atividade recente.</p>
         </div>
 
-        <!-- 2-Columns: Score Breakdown & Extracted Data Origins -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          
-          <!-- Column 1: Score Points Breakdown -->
-          <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-xl">
-            <h4 class="font-bold text-slate-200 mb-3 flex items-center justify-between">
-              <span>Composição da Pontuação</span>
-              <span class="text-[10px] text-slate-500 uppercase">Regras Locais</span>
-            </h4>
-            <div id="modal-breakdown-list" class="space-y-2 text-xs">
-              <!-- Rendered via JS -->
-            </div>
+        <!-- 2 Columns: Score Breakdown & Contacts -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div style="background: #090a0d; border: 1px solid var(--card-border); padding: 14px; border-radius: 10px;">
+            <div style="font-weight: 700; color: #fff; margin-bottom: 10px; font-size: 11px; text-transform: uppercase;">Composição da Pontuação</div>
+            <div id="modal-breakdown-list" style="display: flex; flex-direction: column; gap: 6px;"></div>
           </div>
 
-          <!-- Column 2: Direct Contacts & Origins -->
-          <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-xl">
-            <h4 class="font-bold text-slate-200 mb-3 flex items-center justify-between">
-              <span>Contatos & Origem dos Dados</span>
-              <span class="text-[10px] text-slate-500 uppercase">Extração Regex</span>
-            </h4>
-            <div id="modal-contacts-list" class="space-y-2 text-xs">
-              <!-- Rendered via JS -->
-            </div>
-          </div>
-
-        </div>
-
-        <!-- SECTION: FONTES ANALISADAS -->
-        <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl space-y-2.5">
-          <h4 class="font-bold text-slate-200 flex items-center justify-between">
-            <span class="flex items-center gap-2">
-              <i class="fa-solid fa-list-check text-emerald-400"></i>
-              <span>Fontes Públicas Analisadas</span>
-            </span>
-            <span class="text-[10px] text-slate-500 uppercase">Validação de Origem</span>
-          </h4>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-            <div class="bg-slate-950/60 p-3 rounded-lg border border-slate-800/80 flex items-start justify-between">
-              <div>
-                <span class="font-bold text-slate-200 block">Descrição do Canal</span>
-                <span class="text-[10px] text-slate-400">Sobre / About do canal</span>
-              </div>
-              <span id="modal-src-channel-desc" class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">✓ Analisada</span>
-            </div>
-
-            <div class="bg-slate-950/60 p-3 rounded-lg border border-slate-800/80 flex items-start justify-between">
-              <div>
-                <span class="font-bold text-slate-200 block truncate max-w-[200px]" id="modal-src-video-title">Último Vídeo: —</span>
-                <span class="text-[10px] text-slate-400 block" id="modal-src-video-date">Data: —</span>
-              </div>
-              <span id="modal-src-video-desc" class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">✓ Analisada</span>
-            </div>
+          <div style="background: #090a0d; border: 1px solid var(--card-border); padding: 14px; border-radius: 10px;">
+            <div style="font-weight: 700; color: #fff; margin-bottom: 10px; font-size: 11px; text-transform: uppercase;">Contatos & Origens</div>
+            <div id="modal-contacts-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
           </div>
         </div>
 
-        <!-- Commercial Signals & Keywords Found -->
-        <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-xl space-y-3">
-          <h4 class="font-bold text-slate-200 flex items-center justify-between">
-            <span class="flex items-center gap-2">
-              <i class="fa-solid fa-tags text-amber-400"></i>
-              <span>Sinais Comerciais & Palavras-Chave</span>
-            </span>
-            <span class="text-[10px] text-slate-500">Origem: Canal & Último Vídeo</span>
-          </h4>
-          <div id="modal-signals-chips" class="flex flex-wrap gap-1.5">
-            <!-- Chips rendered via JS -->
-          </div>
-        </div>
-
-        <!-- Analyzed Recent Videos -->
-        <div class="space-y-3">
-          <h4 class="font-bold text-slate-200 flex items-center justify-between">
-            <span class="flex items-center gap-2">
-              <i class="fa-brands fa-youtube text-rose-500"></i>
-              <span>Últimos Vídeos Analisados</span>
-            </span>
-            <span class="text-[10px] text-slate-500">Playlist de Uploads</span>
-          </h4>
-          <div id="modal-videos-list" class="space-y-2">
-            <!-- Video cards rendered via JS -->
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Modal Footer -->
-      <div class="px-6 py-3.5 bg-slate-900 border-t border-dark-border flex items-center justify-between">
-        <div class="flex items-center gap-2 text-[11px] text-slate-400">
-          <span>Última análise:</span>
-          <strong id="modal-analyzed-at" class="text-slate-300">Hoje</strong>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <button id="modal-btn-requalify" onclick="requalifyCurrentModalLead()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold transition">
-            <i class="fa-solid fa-arrows-rotate mr-1"></i> Requalificar
-          </button>
-          
-          <button disabled class="px-3.5 py-1.5 rounded-lg bg-cyan-950 text-cyan-500 border border-cyan-800/40 text-xs font-bold opacity-60 cursor-not-allowed" title="Disponível na Etapa 3">
-            <i class="fa-solid fa-envelope mr-1"></i> Criar Mensagem (Em Breve)
-          </button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ===================================================================== -->
-  <!-- MODAL: CONFIGURAÇÕES                                                  -->
-  <!-- ===================================================================== -->
-  <div id="config-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-dark-card border border-dark-border w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-scale-up">
-      <div class="px-6 py-4 bg-slate-900 border-b border-dark-border flex items-center justify-between">
-        <h3 class="font-bold text-white text-sm flex items-center gap-2">
-          <i class="fa-solid fa-sliders text-amber-500"></i>
-          <span>Configurações do Qualificador</span>
-        </h3>
-        <button onclick="closeConfigModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-
-      <div class="p-6 space-y-4 text-xs">
+        <!-- Recent Videos -->
         <div>
-          <label class="block font-bold text-slate-300 mb-1">Vídeos Recentes para Analisar por Canal</label>
-          <input type="number" id="cfg-videos-count" value="3" min="1" max="10" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500">
-          <span class="text-[10px] text-slate-500 mt-0.5 block">Padrão: 3 vídeos mais recentes.</span>
+          <div style="font-weight: 700; color: #fff; margin-bottom: 10px; font-size: 11px; text-transform: uppercase;">Vídeos Analisados</div>
+          <div id="modal-videos-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
         </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block font-bold text-slate-300 mb-1">Score Mínimo Qualificado</label>
-            <input type="number" id="cfg-threshold-qual" value="70" min="50" max="95" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500">
-          </div>
-          <div>
-            <label class="block font-bold text-slate-300 mb-1">Score Mínimo Revisão</label>
-            <input type="number" id="cfg-threshold-rev" value="40" min="20" max="65" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500">
-          </div>
-        </div>
-
-        <div>
-          <label class="block font-bold text-slate-300 mb-1">Dias para Canal Ativo (Máximo)</label>
-          <input type="number" id="cfg-active-days" value="30" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500">
-        </div>
-
-        <div>
-          <label class="block font-bold text-slate-300 mb-1">Limite Diário de Quota (Unidades)</label>
-          <input type="number" id="cfg-quota-limit" value="9500" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500">
-        </div>
-      </div>
-
-      <div class="px-6 py-3.5 bg-slate-900 border-t border-dark-border flex justify-end gap-2">
-        <button onclick="closeConfigModal()" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 font-semibold text-xs transition">Cancelar</button>
-        <button onclick="saveConfigurations()" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition">Salvar Alterações</button>
       </div>
     </div>
   </div>
 
-  <!-- Toast Notification Container -->
-  <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
+  <!-- MODAL: CONFIGURAÇÕES -->
+  <div id="config-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 style="font-size: 14px; font-weight: 800; color: #fff;"><i class="fa-solid fa-sliders mr-2"></i> Configurações do Qualificador</h3>
+        <button onclick="closeConfigModal()" class="btn btn-secondary" style="padding: 4px 8px;"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div>
+          <label style="display: block; font-weight: 700; color: #fff; margin-bottom: 4px;">Vídeos para Analisar por Canal</label>
+          <input type="number" id="cfg-videos-count" value="3" min="1" max="10" class="search-input">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label style="display: block; font-weight: 700; color: #fff; margin-bottom: 4px;">Score Mínimo Qualificado</label>
+            <input type="number" id="cfg-threshold-qual" value="70" class="search-input">
+          </div>
+          <div>
+            <label style="display: block; font-weight: 700; color: #fff; margin-bottom: 4px;">Score Mínimo Revisão</label>
+            <input type="number" id="cfg-threshold-rev" value="40" class="search-input">
+          </div>
+        </div>
+        <div>
+          <label style="display: block; font-weight: 700; color: #fff; margin-bottom: 4px;">Dias Limite para Canal Ativo</label>
+          <input type="number" id="cfg-active-days" value="30" class="search-input">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px;">
+          <button onclick="closeConfigModal()" class="btn btn-secondary">Cancelar</button>
+          <button onclick="saveConfigurations()" class="btn btn-primary">Salvar Alterações</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <!-- ===================================================================== -->
-  <!-- JAVASCRIPT FRONTEND CONTROLLER (LOCAL API CLIENT)                     -->
-  <!-- ===================================================================== -->
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container"></div>
+
+  <!-- JAVASCRIPT CONTROLLER -->
   <script>
-    // State
     let currentTab = 'ALL';
     let currentPage = 1;
     const pageSize = 50;
     let selectedChannelIds = new Set();
     let currentModalChannelId = null;
-    let isProcessingBatch = false;
+    let selectedCollectorId = null;
     let searchDebounceTimer = null;
+    let isCliOpen = false;
 
     function getAuthToken() {
       return localStorage.getItem('token') || '';
@@ -626,57 +1000,142 @@
       return response;
     };
 
-    // On Load
     document.addEventListener('DOMContentLoaded', () => {
       const token = getAuthToken();
       if (!token) {
         window.location.href = '/login?next=/qualifier';
         return;
       }
+      loadCollectorsList();
       loadStatusOverview();
+      loadQuotaBar();
       loadLeads();
+      loadApiLogs();
+
+      // Poll every 10s
+      setInterval(() => {
+        loadQuotaBar();
+        if (isCliOpen) loadApiLogs();
+      }, 10000);
     });
 
-    // 1. Load Status Overview & Connection Health
+    // 1. Load User Collectors List for Dropdown
+    async function loadCollectorsList() {
+      try {
+        const res = await fetch('/api/users');
+        if (!res.ok) return;
+        const users = await res.json();
+        const select = document.getElementById('select-collector');
+        users.forEach(u => {
+          const opt = document.createElement('option');
+          opt.value = u.id;
+          opt.textContent = `👤 ${u.name} (${u.role})`;
+          select.appendChild(opt);
+        });
+      } catch (e) {}
+    }
+
+    function handleCollectorChange() {
+      const val = document.getElementById('select-collector').value;
+      selectedCollectorId = val ? parseInt(val) : null;
+      currentPage = 1;
+      loadLeads();
+    }
+
+    // 2. Load Status Overview
     async function loadStatusOverview() {
       try {
         const res = await fetch('/api/qualification/status-overview');
-        if (!res.ok) throw new Error('Falha ao obter status');
+        if (!res.ok) return;
         const data = await res.json();
 
-        // Update indicators
-        const ytConnected = data.connections.youtube_api === 'connected';
-        document.getElementById('yt-text').textContent = ytConnected ? 'Conectada' : 'Sem Chave';
-        document.getElementById('yt-text').className = ytConnected ? 'text-emerald-400' : 'text-rose-400';
-
-        // Update metric cards
         document.getElementById('stat-not-analyzed').textContent = data.stats.not_analyzed;
         document.getElementById('stat-qualified').textContent = data.stats.qualified;
         document.getElementById('stat-review').textContent = data.stats.review;
         document.getElementById('stat-rejected').textContent = data.stats.rejected;
         document.getElementById('stat-outreach-ready').textContent = data.stats.outreach_ready;
 
-        // Update tab count badges
         document.getElementById('tab-count-all').textContent = data.stats.total_channels;
         document.getElementById('tab-count-not-analyzed').textContent = data.stats.not_analyzed;
         document.getElementById('tab-count-qualified').textContent = data.stats.qualified;
         document.getElementById('tab-count-review').textContent = data.stats.review;
         document.getElementById('tab-count-rejected').textContent = data.stats.rejected;
         document.getElementById('tab-count-outreach').textContent = data.stats.outreach_ready;
+      } catch (e) {}
+    }
 
-      } catch (err) {
-        console.error('Error fetching overview:', err);
+    // 3. Load YouTube API Quota Status Bar
+    async function loadQuotaBar() {
+      try {
+        const res = await fetch('/api/youtube-apis');
+        if (!res.ok) return;
+        const data = await res.json();
+        const sum = data.summary;
+
+        const used = sum.total_usage_today || 0;
+        const limit = sum.total_limit_active || 10000;
+        const avail = sum.total_available_active || 0;
+        const pct = Math.min(100, Math.round((used / maxOne(limit)) * 100));
+
+        document.getElementById('quota-usage-text').textContent = `${used.toLocaleString('pt-BR')} / ${limit.toLocaleString('pt-BR')} un (${pct}%)`;
+        document.getElementById('quota-avail-text').textContent = `${avail.toLocaleString('pt-BR')} un`;
+        document.getElementById('quota-bar-fill').style.width = `${pct}%`;
+      } catch (e) {}
+    }
+
+    function maxOne(val) { return val <= 0 ? 1 : val; }
+
+    // 4. Real-time CLI Logs
+    function toggleCliDrawer() {
+      const drawer = document.getElementById('cliTerminalDrawer');
+      const text = document.getElementById('cli-toggle-text');
+      isCliOpen = !isCliOpen;
+      if (isCliOpen) {
+        drawer.style.display = 'block';
+        text.textContent = 'Ocultar Logs CLI';
+        loadApiLogs();
+      } else {
+        drawer.style.display = 'none';
+        text.textContent = 'Ver Logs CLI API';
       }
     }
 
-    // 2. Fetch Leads with Filters & Render Table
+    async function loadApiLogs() {
+      try {
+        const res = await fetch('/api/youtube-apis/logs?limit=30');
+        if (!res.ok) return;
+        const logs = await res.json();
+        const container = document.getElementById('cliLogsBody');
+
+        if (!logs || logs.length === 0) {
+          container.innerHTML = '<div class="log-line"><span class="log-time">[--:--:--]</span><span class="log-msg">Nenhuma chamada recente registrada.</span></div>';
+          return;
+        }
+
+        container.innerHTML = logs.map(l => {
+          const statusTag = l.success 
+            ? `<span class="log-tag log-tag-ok">HTTP 200</span>` 
+            : `<span class="log-tag log-tag-err">ERRO</span>`;
+          return `
+            <div class="log-line">
+              <span class="log-time">[${l.timestamp}]</span>
+              <span class="log-tag log-tag-api">YT_API</span>
+              ${statusTag}
+              <span class="log-msg">GET /${l.endpoint} — Custo: <strong>${l.units} un</strong> ${l.error_message ? `| Falha: ${l.error_message}` : '| Sucesso'}</span>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {}
+    }
+
+    // 5. Load Leads with Filters & User Isolation
     async function loadLeads() {
       const tbody = document.getElementById('leads-tbody');
       tbody.innerHTML = `
         <tr>
-          <td colspan="8" class="text-center py-8 text-slate-500">
-            <i class="fa-solid fa-circle-notch fa-spin text-amber-500 mb-2"></i>
-            <p>Carregando leads...</p>
+          <td colspan="9" style="text-align: center; padding: 40px; color: var(--silver-muted);">
+            <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 18px; color: #fff; margin-bottom: 8px; display: block;"></i>
+            Carregando leads filtrados...
           </td>
         </tr>
       `;
@@ -692,9 +1151,8 @@
         page_size: pageSize
       });
 
-      if (currentTab !== 'ALL') {
-        params.append('status_filter', currentTab);
-      }
+      if (currentTab !== 'ALL') params.append('status_filter', currentTab);
+      if (selectedCollectorId) params.append('collector_id', selectedCollectorId);
       if (searchVal) params.append('q', searchVal);
       if (hasEmail) params.append('has_email', 'true');
       if (hasWhatsapp) params.append('has_whatsapp', 'true');
@@ -703,34 +1161,25 @@
 
       try {
         const res = await fetch(`/api/qualification/leads?${params.toString()}`);
-        if (!res.ok) throw new Error('Erro ao carregar lista de leads');
+        if (!res.ok) throw new Error('Erro ao carregar lista');
         const data = await res.json();
 
         renderTable(data.leads);
         renderPagination(data.total, data.page, data.page_size);
         loadStatusOverview();
-
       } catch (err) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="8" class="text-center py-8 text-rose-400">
-              <i class="fa-solid fa-triangle-exclamation mb-1 text-lg"></i>
-              <p>${err.message}</p>
-            </td>
-          </tr>
-        `;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 30px; color: var(--danger);">${err.message}</td></tr>`;
       }
     }
 
-    // 3. Render Table Rows
+    // 6. Render Table
     function renderTable(leads) {
       const tbody = document.getElementById('leads-tbody');
       if (!leads || leads.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="8" class="text-center py-12 text-slate-500">
-              <i class="fa-regular fa-folder-open text-2xl mb-2 text-slate-600 block"></i>
-              Nenhum lead encontrado com os filtros selecionados.
+            <td colspan="9" style="text-align: center; padding: 40px; color: var(--silver-muted);">
+              Nenhum canal encontrado para este usuário ou filtro.
             </td>
           </tr>
         `;
@@ -739,123 +1188,80 @@
 
       tbody.innerHTML = leads.map(lead => {
         const isChecked = selectedChannelIds.has(lead.channel_id) ? 'checked' : '';
-        
+
         // Status Badge
-        let statusBadge = '';
-        if (lead.status === 'QUALIFIED') {
-          statusBadge = '<span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-emerald-950 text-emerald-400 border border-emerald-800">QUALIFICADO</span>';
-        } else if (lead.status === 'REVIEW') {
-          statusBadge = '<span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-amber-950 text-amber-400 border border-amber-800">REVISAR</span>';
-        } else if (lead.status === 'REJECTED') {
-          statusBadge = '<span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-rose-950 text-rose-400 border border-rose-800">DESCARTADO</span>';
-        } else if (lead.status === 'PROCESSING') {
-          statusBadge = '<span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">ANALISANDO...</span>';
-        } else if (lead.status === 'FAILED') {
-          statusBadge = '<span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-rose-900 text-rose-300 border border-rose-700" title="' + (lead.error_message || '') + '">ERRO</span>';
-        } else {
-          statusBadge = '<span class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-slate-800 text-slate-400 border border-slate-700">NÃO ANALISADO</span>';
-        }
+        let badgeHtml = '<span class="badge badge-none">NÃO ANALISADO</span>';
+        if (lead.status === 'QUALIFIED') badgeHtml = '<span class="badge badge-qual">QUALIFICADO</span>';
+        else if (lead.status === 'REVIEW') badgeHtml = '<span class="badge badge-rev">REVISAR</span>';
+        else if (lead.status === 'REJECTED') badgeHtml = '<span class="badge badge-rej">DESCARTADO</span>';
+        else if (lead.status === 'PROCESSING') badgeHtml = '<span class="badge badge-proc">ANALISANDO...</span>';
+        else if (lead.status === 'FAILED') badgeHtml = '<span class="badge badge-rej">ERRO</span>';
 
-        // Score Badge
-        let scoreHtml = '<span class="text-slate-600 font-bold">—</span>';
+        // Score
+        let scoreVal = '—';
         if (lead.score !== null && lead.score !== undefined) {
-          let scoreColor = 'text-emerald-400 bg-emerald-950/60 border-emerald-800';
-          if (lead.score < 40) scoreColor = 'text-rose-400 bg-rose-950/60 border-rose-800';
-          else if (lead.score < 70) scoreColor = 'text-amber-400 bg-amber-950/60 border-amber-800';
-
-          scoreHtml = `<span class="inline-block px-2.5 py-0.5 rounded-full font-black text-xs border ${scoreColor}">${lead.score}/100</span>`;
-        }
-
-        // Days since last video
-        let lastVideoHtml = '<span class="text-slate-600">—</span>';
-        if (lead.days_since_last_video !== null && lead.days_since_last_video !== undefined) {
-          let dotColor = 'bg-emerald-500';
-          if (lead.days_since_last_video > 90) dotColor = 'bg-rose-500';
-          else if (lead.days_since_last_video > 30) dotColor = 'bg-amber-500';
-
-          lastVideoHtml = `
-            <div class="flex items-center justify-center gap-1.5">
-              <span class="w-2 h-2 rounded-full ${dotColor}"></span>
-              <span>${lead.days_since_last_video}d atrás</span>
-            </div>
-          `;
+          let scoreColor = '#10b981';
+          if (lead.score < 40) scoreColor = '#ef4444';
+          else if (lead.score < 70) scoreColor = '#f59e0b';
+          scoreVal = `<span style="font-weight: 800; color: ${scoreColor}; font-family: 'JetBrains Mono', monospace;">${lead.score}/100</span>`;
         }
 
         // Contacts icons
         const emailIcon = lead.email 
-          ? `<span class="text-emerald-400 cursor-pointer" title="${lead.email}" onclick="copyText('${lead.email}', 'E-mail copiado!')"><i class="fa-solid fa-envelope"></i></span>`
-          : `<span class="text-slate-600"><i class="fa-regular fa-envelope"></i></span>`;
+          ? `<span style="color: #10b981; cursor: pointer;" title="${lead.email}" onclick="copyText('${lead.email}', 'E-mail copiado!')"><i class="fa-solid fa-envelope"></i></span>`
+          : `<span style="color: rgba(255,255,255,0.1);"><i class="fa-regular fa-envelope"></i></span>`;
 
         const waIcon = lead.whatsapp
-          ? `<span class="text-emerald-400 cursor-pointer" title="${lead.whatsapp}" onclick="copyText('${lead.whatsapp}', 'WhatsApp copiado!')"><i class="fa-brands fa-whatsapp"></i></span>`
-          : `<span class="text-slate-600"><i class="fa-brands fa-whatsapp"></i></span>`;
+          ? `<span style="color: #10b981; cursor: pointer;" title="${lead.whatsapp}" onclick="copyText('${lead.whatsapp}', 'WhatsApp copiado!')"><i class="fa-brands fa-whatsapp"></i></span>`
+          : `<span style="color: rgba(255,255,255,0.1);"><i class="fa-brands fa-whatsapp"></i></span>`;
 
         const siteIcon = lead.website
-          ? `<a href="${lead.website}" target="_blank" class="text-cyan-400 hover:underline" title="${lead.website}"><i class="fa-solid fa-globe"></i></a>`
-          : `<span class="text-slate-600"><i class="fa-solid fa-globe"></i></span>`;
+          ? `<a href="${lead.website}" target="_blank" style="color: #38bdf8;" title="${lead.website}"><i class="fa-solid fa-globe"></i></a>`
+          : `<span style="color: rgba(255,255,255,0.1);"><i class="fa-solid fa-globe"></i></span>`;
 
         const instaIcon = lead.instagram
-          ? `<a href="${lead.instagram}" target="_blank" class="text-pink-400 hover:underline" title="${lead.instagram}"><i class="fa-brands fa-instagram"></i></a>`
-          : `<span class="text-slate-600"><i class="fa-brands fa-instagram"></i></span>`;
-
-        // Action Button
-        let actionBtn = '';
-        if (lead.status === 'NOT_ANALYZED' || lead.status === 'PENDING' || lead.status === 'FAILED') {
-          actionBtn = `
-            <button onclick="qualifySingleLead('${lead.channel_id}')" class="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-sm">
-              <i class="fa-solid fa-bolt mr-1"></i> Qualificar
-            </button>
-          `;
-        } else {
-          actionBtn = `
-            <div class="flex items-center justify-end gap-1.5">
-              <button onclick="openAnalysisModal('${lead.channel_id}')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition">
-                <i class="fa-solid fa-eye mr-1 text-amber-400"></i> Ver
-              </button>
-              <button onclick="qualifySingleLead('${lead.channel_id}')" class="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition" title="Requalificar">
-                <i class="fa-solid fa-arrows-rotate"></i>
-              </button>
-            </div>
-          `;
-        }
+          ? `<a href="${lead.instagram}" target="_blank" style="color: #f43f5e;" title="${lead.instagram}"><i class="fa-brands fa-instagram"></i></a>`
+          : `<span style="color: rgba(255,255,255,0.1);"><i class="fa-brands fa-instagram"></i></span>`;
 
         return `
-          <tr class="hover:bg-dark-hover transition">
-            <td class="py-3 px-4 text-center">
-              <input type="checkbox" data-cid="${lead.channel_id}" onchange="toggleSelectRow(event, '${lead.channel_id}')" ${isChecked} class="row-checkbox rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0 cursor-pointer">
+          <tr>
+            <td style="text-align: center;">
+              <input type="checkbox" data-cid="${lead.channel_id}" onchange="toggleSelectRow(event, '${lead.channel_id}')" ${isChecked} style="cursor: pointer;">
             </td>
-            <td class="py-3 px-4">
-              <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-slate-400 text-xs shrink-0">
-                  ${lead.channel_name.charAt(0).toUpperCase()}
-                </div>
-                <div class="truncate max-w-[200px]">
-                  <a href="${lead.channel_url}" target="_blank" class="font-bold text-white hover:text-amber-400 transition truncate block">
-                    ${lead.channel_name}
-                  </a>
-                  <span class="text-[11px] text-slate-400 block">${lead.channel_handle || lead.channel_id}</span>
-                </div>
+            <td>
+              <div style="font-weight: 700; color: #fff;">
+                <a href="${lead.channel_url}" target="_blank" style="color: inherit; text-decoration: none;">${lead.channel_name}</a>
+              </div>
+              <div style="font-size: 10px; color: var(--silver-muted); font-family: 'JetBrains Mono', monospace;">${lead.channel_handle || lead.channel_id}</div>
+            </td>
+            <td>
+              <div style="font-size: 11px; font-weight: 600; color: #fff;">👤 ${lead.collector_name || 'Equipe'}</div>
+            </td>
+            <td style="text-align: center;">${badgeHtml}</td>
+            <td style="text-align: center; font-family: 'JetBrains Mono', monospace;">${lead.subscribers ? lead.subscribers.toLocaleString('pt-BR') : '—'}</td>
+            <td style="text-align: center; font-size: 11px; color: var(--silver-muted);">${lead.days_since_last_video !== null ? lead.days_since_last_video + 'd atrás' : '—'}</td>
+            <td style="text-align: center;">${scoreVal}</td>
+            <td style="text-align: center;">
+              <div style="display: flex; gap: 8px; justify-content: center;">
+                ${emailIcon} ${waIcon} ${siteIcon} ${instaIcon}
               </div>
             </td>
-            <td class="py-3 px-4 text-center">${statusBadge}</td>
-            <td class="py-3 px-4 text-center font-semibold text-slate-200">${lead.subscribers ? lead.subscribers.toLocaleString('pt-BR') : '—'}</td>
-            <td class="py-3 px-4 text-center">${lastVideoHtml}</td>
-            <td class="py-3 px-4 text-center">${scoreHtml}</td>
-            <td class="py-3 px-4 text-center">
-              <div class="flex items-center justify-center gap-2 text-sm">
-                ${emailIcon}
-                ${waIcon}
-                ${siteIcon}
-                ${instaIcon}
+            <td style="text-align: right;">
+              <div style="display: flex; justify-content: flex-end; gap: 6px;">
+                <button onclick="openAnalysisModal('${lead.channel_id}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 10px;">
+                  <i class="fa-solid fa-eye"></i> Ver
+                </button>
+                <button onclick="qualifySingleLead('${lead.channel_id}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 10px;" title="Qualificar">
+                  <i class="fa-solid fa-bolt" style="color: #f59e0b;"></i>
+                </button>
               </div>
             </td>
-            <td class="py-3 px-4 text-right">${actionBtn}</td>
           </tr>
         `;
       }).join('');
     }
 
-    // 4. Render Pagination Controls
+    // 7. Pagination
     function renderPagination(total, page, size) {
       document.getElementById('page-total').textContent = total;
       const start = total === 0 ? 0 : (page - 1) * size + 1;
@@ -873,21 +1279,16 @@
       loadLeads();
     }
 
-    // 5. Tabs & Search Handlers
-    function filterByTab(tabName) {
-      currentTab = tabName;
+    function filterByTab(tab) {
+      currentTab = tab;
       currentPage = 1;
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        if (btn.dataset.tab === tabName) {
-          btn.className = 'tab-btn active px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold transition';
-        } else {
-          btn.className = 'tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
-        }
+      document.querySelectorAll('.tab-pill').forEach(p => {
+        p.classList.toggle('active', p.dataset.tab === tab);
       });
       loadLeads();
     }
 
-    function handleSearchInput(e) {
+    function handleSearchInput() {
       clearTimeout(searchDebounceTimer);
       searchDebounceTimer = setTimeout(() => {
         currentPage = 1;
@@ -895,126 +1296,92 @@
       }, 350);
     }
 
-    // 6. Selection Logic
-    function toggleSelectRow(e, channelId) {
-      if (e.target.checked) {
-        selectedChannelIds.add(channelId);
-      } else {
-        selectedChannelIds.delete(channelId);
-      }
-      updateSelectedButtonState();
+    function toggleSelectRow(e, cid) {
+      if (e.target.checked) selectedChannelIds.add(cid);
+      else selectedChannelIds.delete(cid);
+      updateSelectedBtn();
     }
 
     function toggleSelectAll(e) {
-      const checked = e.target.checked;
-      document.querySelectorAll('.row-checkbox').forEach(cb => {
-        cb.checked = checked;
+      const chk = e.target.checked;
+      document.querySelectorAll('tbody input[type="checkbox"]').forEach(cb => {
+        cb.checked = chk;
         const cid = cb.dataset.cid;
         if (cid) {
-          if (checked) selectedChannelIds.add(cid);
+          if (chk) selectedChannelIds.add(cid);
           else selectedChannelIds.delete(cid);
         }
       });
-      updateSelectedButtonState();
+      updateSelectedBtn();
     }
 
-    function updateSelectedButtonState() {
+    function updateSelectedBtn() {
       const btn = document.getElementById('btn-qualify-selected');
-      const label = document.getElementById('label-qualify-selected');
       const count = selectedChannelIds.size;
-      label.textContent = `Qualificar Selecionados (${count})`;
+      document.getElementById('label-qualify-selected').textContent = `Qualificar Selecionados (${count})`;
       btn.disabled = count === 0;
     }
 
-    // 7. Qualify Single Channel Action
+    // 8. Actions: Single & Batch
     async function qualifySingleLead(channelId) {
       showToast('Qualificando canal...', 'info');
       try {
-        const res = await fetch(`/api/qualification/qualify-single/${channelId}`, {
-          method: 'POST'
-        });
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.detail || 'Erro ao qualificar canal');
-        }
+        const res = await fetch(`/api/qualification/qualify-single/${channelId}`, { method: 'POST' });
+        if (!res.ok) throw new Error('Erro ao qualificar canal');
         const data = await res.json();
         showToast(`Canal qualificado! Score: ${data.score}/100`, 'success');
         loadLeads();
-      } catch (err) {
-        showToast(err.message, 'error');
+        loadQuotaBar();
+        loadApiLogs();
+      } catch (e) {
+        showToast(e.message, 'error');
       }
     }
 
-    // 8. Qualify Batch Actions (Selected or All Pending)
     async function qualifySelectedLeads() {
       if (selectedChannelIds.size === 0) return;
       const ids = Array.from(selectedChannelIds);
-      runBatchProcessing(ids);
+      runBatch(ids, false);
     }
 
     async function qualifyAllPending() {
-      runBatchProcessing([], true);
+      runBatch([], true);
     }
 
-    async function runBatchProcessing(channelIds, qualifyAll = false) {
-      isProcessingBatch = true;
-      const banner = document.getElementById('processing-banner');
-      banner.classList.remove('hidden');
-
-      const totalToProcess = qualifyAll ? 'todos pendentes' : channelIds.length;
-      document.getElementById('progress-text').textContent = `Iniciando processamento em lote (${totalToProcess})...`;
-      document.getElementById('progress-bar-fill').style.width = '15%';
-
+    async function runBatch(ids, qualifyAll) {
+      showToast('Processando lote em segundo plano...', 'info');
       try {
         const res = await fetch('/api/qualification/qualify-batch', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            channel_ids: channelIds,
+            channel_ids: ids,
+            collector_id: selectedCollectorId,
             qualify_all_pending: qualifyAll,
             batch_size: 50
           })
         });
-
-        if (!res.ok) throw new Error('Falha no processamento em lote');
+        if (!res.ok) throw new Error('Erro no lote');
         const data = await res.json();
-
-        document.getElementById('progress-bar-fill').style.width = '100%';
-        document.getElementById('progress-text').textContent = `Concluído! ${data.completed} qualificados, ${data.failed} falhas.`;
-
-        showToast(`Lote finalizado com sucesso! ${data.completed} leads qualificados.`, 'success');
+        showToast(`Lote finalizado! ${data.completed} processados com sucesso.`, 'success');
         selectedChannelIds.clear();
-        updateSelectedButtonState();
-
-        setTimeout(() => {
-          banner.classList.add('hidden');
-          loadLeads();
-        }, 1800);
-
-      } catch (err) {
-        showToast(err.message, 'error');
-        banner.classList.add('hidden');
-      } finally {
-        isProcessingBatch = false;
+        updateSelectedBtn();
+        loadLeads();
+        loadQuotaBar();
+        loadApiLogs();
+      } catch (e) {
+        showToast(e.message, 'error');
       }
     }
 
-    function cancelBatchProcessing() {
-      document.getElementById('processing-banner').classList.add('hidden');
-      showToast('Fila pausada na visualização.', 'info');
-    }
-
-    // 9. Analysis Modal Logic
+    // 9. Analysis Modal
     async function openAnalysisModal(channelId) {
       currentModalChannelId = channelId;
-      const modal = document.getElementById('analysis-modal');
-      modal.classList.remove('hidden');
-
+      document.getElementById('analysis-modal').classList.add('active');
       try {
         const res = await fetch(`/api/qualification/leads/${channelId}/detail`);
-        if (!res.ok) throw new Error('Não foi possível carregar detalhes do canal');
+        if (!res.ok) return;
         const data = await res.json();
-
         const ch = data.channel;
         const q = data.qualification;
         const vids = data.analyzed_videos || [];
@@ -1022,199 +1389,98 @@
         document.getElementById('modal-channel-name').textContent = ch.channel_name;
         document.getElementById('modal-score-val').textContent = q.score !== null ? q.score : '—';
         document.getElementById('modal-status-badge').textContent = q.status;
-        document.getElementById('modal-niche-badge').textContent = `Nicho: ${q.detected_niche || 'Geral'} (${Math.round(q.niche_confidence * 100)}% conf)`;
-        document.getElementById('modal-reason-text').textContent = q.qualification_reason || 'Nenhuma observação registrada.';
-        document.getElementById('modal-analyzed-at').textContent = q.qualified_at || 'Hoje';
+        document.getElementById('modal-niche-badge').textContent = `Nicho: ${q.detected_niche || 'Geral'}`;
+        document.getElementById('modal-reason-text').textContent = q.qualification_reason || 'Sem diagnóstico registrado.';
 
-        // Score Breakdown
-        const breakdownList = document.getElementById('modal-breakdown-list');
-        if (q.score_breakdown && Object.keys(q.score_breakdown).length > 0) {
-          breakdownList.innerHTML = Object.entries(q.score_breakdown).map(([k, v]) => {
-            const isPos = v > 0;
-            const color = isPos ? 'text-emerald-400' : (v < 0 ? 'text-rose-400' : 'text-slate-400');
-            const sign = isPos ? '+' : '';
-            return `
-              <div class="flex items-center justify-between py-1 border-b border-slate-800/60">
-                <span class="text-slate-400 capitalize">${k.replace(/_/g, ' ')}</span>
-                <span class="font-bold ${color}">${sign}${v}</span>
-              </div>
-            `;
-          }).join('');
-        } else {
-          breakdownList.innerHTML = '<span class="text-slate-500">Sem dados de breakdown</span>';
-        }
-
-        // Contacts & Sources
-        const contactsList = document.getElementById('modal-contacts-list');
-        contactsList.innerHTML = `
-          <div class="py-1 border-b border-slate-800/60 flex justify-between">
-            <span class="text-slate-400">E-mail:</span>
-            <span class="font-bold text-white">${q.email || '<span class="text-slate-600">Não encontrado</span>'}</span>
-          </div>
-          ${q.email_source ? `<div class="text-[10px] text-slate-500 -mt-1 mb-1">Origem: ${q.email_source}</div>` : ''}
-
-          <div class="py-1 border-b border-slate-800/60 flex justify-between">
-            <span class="text-slate-400">WhatsApp:</span>
-            <span class="font-bold text-white">${q.whatsapp || '<span class="text-slate-600">Não encontrado</span>'}</span>
-          </div>
-
-          <div class="py-1 border-b border-slate-800/60 flex justify-between">
-            <span class="text-slate-400">Website:</span>
-            <span class="font-bold text-cyan-400 truncate max-w-[180px]">${q.website ? `<a href="${q.website}" target="_blank">${q.website}</a>` : '<span class="text-slate-600 font-normal">Não encontrado</span>'}</span>
-          </div>
-
-          <div class="py-1 border-b border-slate-800/60 flex justify-between">
-            <span class="text-slate-400">Instagram:</span>
-            <span class="font-bold text-pink-400 truncate max-w-[180px]">${q.instagram ? `<a href="${q.instagram}" target="_blank">${q.instagram}</a>` : '<span class="text-slate-600 font-normal">Não encontrado</span>'}</span>
-          </div>
-        `;
-
-        // Fontes Analisadas Elements
-        const firstVid = vids.length > 0 ? vids[0] : null;
-        document.getElementById('modal-src-video-title').textContent = firstVid ? `Último Vídeo: ${firstVid.title}` : (q.last_video_title ? `Último Vídeo: ${q.last_video_title}` : 'Último Vídeo: Nenhum vídeo');
-        document.getElementById('modal-src-video-date').textContent = q.last_video_date ? `Publicado: ${q.last_video_date}` : (firstVid && firstVid.published_at ? `Publicado: ${firstVid.published_at}` : 'Data: —');
-
-        const vidDescBadge = document.getElementById('modal-src-video-desc');
-        if (firstVid || q.last_video_description_analyzed) {
-          vidDescBadge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800';
-          vidDescBadge.textContent = '✓ Analisada';
-        } else {
-          vidDescBadge.className = 'px-2 py-0.5 rounded text-[11px] font-medium bg-slate-800 text-slate-400 border border-slate-700';
-          vidDescBadge.textContent = 'Não disponível';
-        }
-
-        // Commercial signals and Keywords with Source Badges
-        const signalsContainer = document.getElementById('modal-signals-chips');
-        const signals = q.commercial_signals || [];
-        const keywords = q.keywords_found || [];
-        if (signals.length === 0 && keywords.length === 0) {
-          signalsContainer.innerHTML = '<span class="text-slate-500">Nenhum sinal comercial detectado</span>';
-        } else {
-          const sigHtml = signals.map(s => `
-            <span class="px-2 py-1 rounded bg-amber-950/60 text-amber-300 border border-amber-800/40 text-[11px] font-semibold flex items-center gap-1">
-              <i class="fa-solid fa-check text-amber-400 text-[10px]"></i>
-              ${s.type.replace(/_/g, ' ')}
-            </span>
-          `).join('');
-
-          const kwHtml = keywords.map(k => {
-            let srcLabel = 'descrição do canal';
-            if (k.source === 'last_video_description') srcLabel = 'descrição último vídeo';
-            else if (k.source && k.source.includes('video')) srcLabel = 'vídeos recentes';
-
-            return `
-              <span class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-200 border border-slate-700 text-[11px] flex items-center gap-1.5" title="${k.context || ''}">
-                <strong class="text-amber-400 font-bold">#${k.keyword}</strong>
-                <span class="text-[10px] text-slate-400">→ ${srcLabel}</span>
-              </span>
-            `;
-          }).join('');
-
-          signalsContainer.innerHTML = sigHtml + kwHtml;
-        }
-
-        // Recent Videos List
-        const videosList = document.getElementById('modal-videos-list');
-        if (vids.length === 0) {
-          videosList.innerHTML = '<span class="text-slate-500">Nenhum vídeo registrado</span>';
-        } else {
-          videosList.innerHTML = vids.map(v => `
-            <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800 flex flex-col gap-1">
-              <div class="flex items-start justify-between gap-2">
-                <h5 class="font-bold text-slate-200 line-clamp-1">${v.title}</h5>
-                <span class="text-[10px] text-slate-400 whitespace-nowrap">${v.published_at || ''}</span>
-              </div>
-              <p class="text-[11px] text-slate-400 line-clamp-2">${v.description || 'Sem descrição.'}</p>
-              <div class="flex items-center gap-3 text-[10px] text-slate-500 mt-1">
-                <span><i class="fa-solid fa-eye mr-1"></i>${v.view_count.toLocaleString('pt-BR')} views</span>
-                <span><i class="fa-solid fa-thumbs-up mr-1"></i>${v.like_count.toLocaleString('pt-BR')} likes</span>
-                <span><i class="fa-solid fa-comments mr-1"></i>${v.comment_count.toLocaleString('pt-BR')} comentários</span>
-              </div>
+        // Breakdown
+        const bl = document.getElementById('modal-breakdown-list');
+        if (q.score_breakdown) {
+          bl.innerHTML = Object.entries(q.score_breakdown).map(([k, v]) => `
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 2px 0;">
+              <span style="color: var(--silver-muted);">${k.replace(/_/g, ' ')}</span>
+              <strong style="color: ${v >= 0 ? '#10b981' : '#ef4444'};">${v >= 0 ? '+' : ''}${v}</strong>
             </div>
           `).join('');
         }
 
-      } catch (err) {
-        showToast(err.message, 'error');
-        closeAnalysisModal();
-      }
+        // Contacts
+        const cl = document.getElementById('modal-contacts-list');
+        cl.innerHTML = `
+          <div>E-mail: <strong style="color: #fff;">${q.email || 'Não encontrado'}</strong></div>
+          <div>WhatsApp: <strong style="color: #fff;">${q.whatsapp || 'Não encontrado'}</strong></div>
+          <div>Site: <strong style="color: #fff;">${q.website || 'Não encontrado'}</strong></div>
+          <div>Instagram: <strong style="color: #fff;">${q.instagram || 'Não encontrado'}</strong></div>
+        `;
+
+        // Videos
+        const vl = document.getElementById('modal-videos-list');
+        if (vids.length > 0) {
+          vl.innerHTML = vids.map(v => `
+            <div style="background: #090a0d; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--card-border);">
+              <div style="font-weight: 700; color: #fff;">${v.title}</div>
+              <div style="font-size: 10px; color: var(--silver-muted); margin-top: 2px;">
+                ${v.published_at || ''} • ${v.view_count.toLocaleString('pt-BR')} views • ${v.like_count || 0} likes
+              </div>
+            </div>
+          `).join('');
+        } else {
+          vl.innerHTML = '<div style="color: var(--silver-muted);">Nenhum vídeo analisado.</div>';
+        }
+
+      } catch (e) {}
     }
 
     function closeAnalysisModal() {
-      document.getElementById('analysis-modal').classList.add('hidden');
-      currentModalChannelId = null;
+      document.getElementById('analysis-modal').classList.remove('active');
     }
 
-    async function requalifyCurrentModalLead() {
-      if (!currentModalChannelId) return;
-      await qualifySingleLead(currentModalChannelId);
-      openAnalysisModal(currentModalChannelId);
-    }
-
-    // 10. Config Modal Logic
+    // 10. Config Modal
     function openConfigModal() {
-      document.getElementById('config-modal').classList.remove('hidden');
+      document.getElementById('config-modal').classList.add('active');
     }
-
     function closeConfigModal() {
-      document.getElementById('config-modal').classList.add('hidden');
+      document.getElementById('config-modal').classList.remove('active');
     }
 
     async function saveConfigurations() {
-      const videosCount = parseInt(document.getElementById('cfg-videos-count').value);
-      const thresholdQual = parseInt(document.getElementById('cfg-threshold-qual').value);
-      const thresholdRev = parseInt(document.getElementById('cfg-threshold-rev').value);
-      const activeDays = parseInt(document.getElementById('cfg-active-days').value);
-      const quotaLimit = parseInt(document.getElementById('cfg-quota-limit').value);
+      const count = parseInt(document.getElementById('cfg-videos-count').value);
+      const qual = parseInt(document.getElementById('cfg-threshold-qual').value);
+      const rev = parseInt(document.getElementById('cfg-threshold-rev').value);
+      const act = parseInt(document.getElementById('cfg-active-days').value);
 
       try {
         const res = await fetch('/api/qualification/config', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            videos_to_analyze: videosCount,
-            score_qualified_threshold: thresholdQual,
-            score_review_threshold: thresholdRev,
-            active_days_threshold: activeDays,
-            daily_quota_limit: quotaLimit
+            videos_to_analyze: count,
+            score_qualified_threshold: qual,
+            score_review_threshold: rev,
+            active_days_threshold: act
           })
         });
-
-        if (!res.ok) throw new Error('Erro ao salvar configurações');
-        showToast('Configurações salvas com sucesso!', 'success');
+        if (!res.ok) throw new Error('Erro ao salvar');
+        showToast('Configurações salvas!', 'success');
         closeConfigModal();
-      } catch (err) {
-        showToast(err.message, 'error');
+      } catch (e) {
+        showToast(e.message, 'error');
       }
     }
 
-    // 11. Utilities (Toast & Clipboard)
+    // Toast & Utilities
     function copyText(text, msg) {
       navigator.clipboard.writeText(text);
-      showToast(msg || 'Copiado para a área de transferência!', 'success');
+      showToast(msg, 'success');
     }
 
-    function showToast(message, type = 'info') {
-      const container = document.getElementById('toast-container');
-      const toast = document.createElement('div');
-      
-      let bg = 'bg-slate-800 border-slate-700 text-slate-200';
-      if (type === 'success') bg = 'bg-emerald-950 border-emerald-700 text-emerald-300';
-      if (type === 'error') bg = 'bg-rose-950 border-rose-700 text-rose-300';
-
-      toast.className = `flex items-center gap-2 px-4 py-2.5 rounded-xl border shadow-xl text-xs font-semibold transition-all duration-300 ${bg}`;
-      toast.innerHTML = `
-        <i class="fa-solid ${type === 'success' ? 'fa-circle-check' : (type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info')}"></i>
-        <span>${message}</span>
-      `;
-
-      container.appendChild(toast);
-      setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 300);
-      }, 3000);
+    function showToast(msg, type = 'info') {
+      const c = document.getElementById('toast-container');
+      const el = document.createElement('div');
+      el.className = `toast-msg ${type}`;
+      el.innerHTML = `<span>${msg}</span>`;
+      c.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
     }
   </script>
-
 </body>
 </html>
