@@ -19,8 +19,22 @@ logger = logging.getLogger("youtube_prospector")
 # Auto-create tables safely (ignore on read-only serverless if connection fails at startup)
 try:
     Base.metadata.create_all(bind=engine)
+    # Ensure columns are TEXT for base64 media support
+    with engine.begin() as conn:
+        conn.execute(text("""
+            DO $$ 
+            BEGIN 
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'user_profiles' AND column_name = 'avatar_url' AND data_type = 'character varying'
+                ) THEN 
+                    ALTER TABLE user_profiles ALTER COLUMN avatar_url TYPE TEXT;
+                    ALTER TABLE user_profiles ALTER COLUMN banner_url TYPE TEXT;
+                END IF; 
+            END $$;
+        """))
 except Exception as e:
-    logger.warning(f"Could not run create_all on startup (normal on cold start if remote db): {e}")
+    logger.warning(f"Startup DB check: {e}")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
