@@ -1125,7 +1125,7 @@
         <i class="fa-solid fa-trophy"></i>
         <span>Ranking de Horas</span>
       </button>
-      <button class="nav-tab-btn" data-tab="history">
+      <button class="nav-tab-btn admin-only hidden" data-tab="history">
         <i class="fa-solid fa-clock-rotate-left"></i>
         <span>Histórico</span>
       </button>
@@ -1393,12 +1393,12 @@
         <div id="pModalRoleBadge" class="badge badge-admin">ADMIN</div>
       </div>
 
-      <!-- Spotify Now Playing / Most Played -->
+      <!-- Spotify / YouTube Music Now Playing -->
       <div id="pModalSpotifySection" style="display: none;">
         <div class="spotify-card">
           <div class="spotify-art" id="pModalSpotifyArt">🎵</div>
           <div class="spotify-info">
-            <div style="font-size: 9px; font-weight: 800; color: var(--success); text-transform: uppercase; letter-spacing: 0.5px;">Ouvindo Agora no Spotify</div>
+            <div id="pModalMusicProviderLabel" style="font-size: 9px; font-weight: 800; color: var(--success); text-transform: uppercase; letter-spacing: 0.5px;">Ouvindo Agora</div>
             <div class="spotify-title" id="pModalSpotifyTitle">-</div>
             <div class="spotify-artist" id="pModalSpotifyArtist">-</div>
           </div>
@@ -1471,9 +1471,14 @@
           <label>Banner de Fundo (JPG, PNG, GIF)</label>
           <input type="file" id="editBannerFile" accept="image/jpeg,image/png,image/webp,image/gif">
         </div>
-        <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px;">
-          <input type="checkbox" id="editShowMusicCheck" style="width: auto;">
-          <label for="editShowMusicCheck" style="margin: 0; text-transform: none; cursor: pointer;">Mostrar o que estou ouvindo no Spotify para a equipe</label>
+        
+        <div style="background: var(--card-inner); padding: 12px; border-radius: 10px; border: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 8px;">
+          <div style="font-size: 11px; font-weight: 700; color: var(--silver-light); text-transform: uppercase;">Integrações de Música</div>
+          <div style="font-size: 11px; color: var(--silver-muted);">Músicas reproduzidas no Spotify ou YouTube Music aparecem no seu card para a equipe.</div>
+          <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px; margin-top: 4px;">
+            <input type="checkbox" id="editShowMusicCheck" style="width: auto;">
+            <label for="editShowMusicCheck" style="margin: 0; text-transform: none; cursor: pointer;">Mostrar música ao vivo no meu card da equipe</label>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -1927,15 +1932,20 @@
         document.getElementById('pStatTotalHours').textContent = stats.formatted_total_hours;
         document.getElementById('pStatBestDay').textContent = stats.best_day_channels > 0 ? `Melhor dia: ${stats.best_day_channels} canais` : 'Melhor dia: -';
 
-        // Spotify
+        // Spotify & YouTube Music
         const spotifySec = document.getElementById('pModalSpotifySection');
-        if (stats.now_playing && stats.show_music_to_team) {
+        if (stats.now_playing && stats.show_music_to_team && stats.now_playing.track_name) {
           spotifySec.style.display = 'block';
+          const prov = (stats.now_playing.provider || 'SPOTIFY').toUpperCase();
+          document.getElementById('pModalMusicProviderLabel').textContent = `Ouvindo Agora no ${prov}`;
           document.getElementById('pModalSpotifyTitle').textContent = stats.now_playing.track_name;
-          document.getElementById('pModalSpotifyArtist').textContent = stats.now_playing.artist;
+          document.getElementById('pModalSpotifyArtist').textContent = stats.now_playing.artist || 'Música ao vivo';
           if (stats.now_playing.album_art) {
             document.getElementById('pModalSpotifyArt').style.backgroundImage = `url('${stats.now_playing.album_art}')`;
             document.getElementById('pModalSpotifyArt').textContent = '';
+          } else {
+            document.getElementById('pModalSpotifyArt').style.backgroundImage = 'none';
+            document.getElementById('pModalSpotifyArt').textContent = '🎵';
           }
         } else {
           spotifySec.style.display = 'none';

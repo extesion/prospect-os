@@ -163,6 +163,22 @@
         </button>
       </div>
 
+      <!-- NOW PLAYING MUSIC CARD (SPOTIFY & YOUTUBE MUSIC) -->
+      <div id="sp-music-container" class="sp-card sp-music-card">
+        <div class="sp-card-header">
+          <span class="sp-card-title">🎵 Tocando Agora</span>
+          <span id="music-provider-badge" class="sp-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 9px;">SPOTIFY</span>
+        </div>
+        
+        <div id="music-playing-content" class="sp-music-row" style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">
+          <div id="sp-music-art" style="width: 38px; height: 38px; border-radius: 8px; background: #171822; background-size: cover; background-position: center; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 14px;">🎵</div>
+          <div style="flex: 1; min-width: 0;">
+            <div id="sp-music-title" style="font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Nenhuma música detectada</div>
+            <div id="sp-music-artist" style="font-size: 10px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Conecte ou toque no Spotify / YouTube Music</div>
+          </div>
+        </div>
+      </div>
+
       <!-- ADMIN SHORTCUT (ONLY VISIBLE IF ADMIN) -->
       <div id="admin-shortcuts-container" class="sp-card sp-admin-card hidden">
         <div class="sp-card-title">

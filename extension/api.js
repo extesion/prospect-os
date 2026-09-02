@@ -231,6 +231,17 @@ class ProspectorAPI {
   async getMemberProfile(userId) {
     return await this.request(`/profiles/${userId}`, { method: "GET" });
   }
+
+  async getMusicStatus() {
+    return await this.request("/music/status", { method: "GET" });
+  }
+
+  async updateMusicNowPlaying(data) {
+    return await this.request("/music/now-playing", {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+  }
 }
 
 window.prospectorAPI = new ProspectorAPI();

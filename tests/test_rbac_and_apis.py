@@ -7,12 +7,20 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from fastapi.testclient import TestClient
 from backend.main import app
-from backend.database.connection import SessionLocal
+from backend.database.connection import engine, Base, SessionLocal
 from backend.database.models import User, YouTubeApiConfig, YouTubeApiUsage
+from backend.seed import seed
 from qualifier.services.youtube_api_manager import YouTubeApiManager
 from qualifier.services.keyword_analyzer import KeywordAnalyzer
 
 client = TestClient(app)
+
+@pytest.fixture(scope="module", autouse=True)
+def setup_database():
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+    seed()
+    yield
 
 def test_rbac_admin_vs_user_protection():
     # 1. Login as USER (maria@prospector.com)

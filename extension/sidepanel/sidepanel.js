@@ -130,12 +130,50 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     loadCurrentSession();
     updatePageChannelsStats();
+    updateLiveMusic();
 
     // Start intervals
     clearInterval(pollInterval);
     pollInterval = setInterval(() => {
       updatePageChannelsStats();
-    }, 2500);
+      updateLiveMusic();
+    }, 4000);
+  }
+
+  async function updateLiveMusic() {
+    try {
+      const musicStatus = await window.prospectorAPI.getMusicStatus();
+      const artEl = document.getElementById("sp-music-art");
+      const titleEl = document.getElementById("sp-music-title");
+      const artistEl = document.getElementById("sp-music-artist");
+      const badgeEl = document.getElementById("music-provider-badge");
+
+      if (!musicStatus) return;
+
+      const spNow = musicStatus.spotify && musicStatus.spotify.now_playing;
+      if (spNow && spNow.track_name) {
+        titleEl.textContent = spNow.track_name;
+        artistEl.textContent = spNow.artist || "Spotify";
+        badgeEl.textContent = "SPOTIFY";
+        badgeEl.style.color = "#10b981";
+        badgeEl.style.background = "rgba(16, 185, 129, 0.15)";
+        if (spNow.album_art) {
+          artEl.style.backgroundImage = `url('${spNow.album_art}')`;
+          artEl.textContent = "";
+        } else {
+          artEl.style.backgroundImage = "none";
+          artEl.textContent = "🎵";
+        }
+      } else {
+        titleEl.textContent = "Nenhuma música detectada";
+        artistEl.textContent = "Conecte ou toque no Spotify / YouTube Music";
+        badgeEl.textContent = "MUSIC";
+        badgeEl.style.color = "#94a3b8";
+        badgeEl.style.background = "rgba(148, 163, 184, 0.1)";
+        artEl.style.backgroundImage = "none";
+        artEl.textContent = "🎵";
+      }
+    } catch (e) {}
   }
 
   formLogin.addEventListener("submit", async (e) => {
