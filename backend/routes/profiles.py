@@ -118,14 +118,20 @@ async def upload_profile_media(
 
     # Update profile record with persistent data url
     profile = ProfileService.get_or_create_profile(db, current_user.id)
-    if asset_type == "avatar":
-        profile.avatar_url = data_url
-    else:
-        profile.banner_url = data_url
-
-    db.commit()
-    db.refresh(profile)
-
+    try:
+        if asset_type == "avatar":
+            profile.avatar_url = data_url
+        else:
+            profile.banner_url = data_url
+        db.commit()
+        db.refresh(profile)
+    except Exception as e:
+        # Log the error for debugging
+        import traceback, logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error updating profile media: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail="Failed to update profile media.")
+    
     return {
         "success": True,
         "asset_type": asset_type,
