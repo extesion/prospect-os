@@ -17,6 +17,18 @@ logger = logging.getLogger(__name__)
 class ChannelService:
 
     @staticmethod
+    def _require_active_session(db: Session, user_id: int) -> int:
+        """Rejects before any channel/event/metric write unless turno is ACTIVE."""
+        from backend.database.models import WorkSession
+        session = (db.query(WorkSession)
+                   .filter(WorkSession.user_id == user_id, WorkSession.status == "ACTIVE")
+                   .order_by(WorkSession.started_at.desc()).first())
+        if not session:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=409, detail="Inicie seu turno de trabalho para coletar canais.")
+        return session.id
+
+    @staticmethod
     def check_channels(db: Session, channel_ids: List[str]) -> Dict[str, ChannelStatus]:
         """
         Efficiently checks duplicate status for a batch of YouTube Channel IDs.
@@ -59,7 +71,10 @@ class ChannelService:
         Atomically collects a single YouTube channel, handling race conditions and ensuring uniqueness.
         """
         now = utc_now()
-        
+
+        # Block before any write: requires ACTIVE session
+        ChannelService._require_active_session(db, current_user.id)
+
         # Quick check
         existing = (
             db.query(Channel)
@@ -116,8 +131,8 @@ class ChannelService:
                 updated_at=now
             )
             db.add(new_channel)
-            
-            # Check active work session for productivity tracking
+            db.flush()  # INSERT must succeed before session count changes.
+
             from backend.services.work_session_service import WorkSessionService
             active_session_id = WorkSessionService.register_channel_collection(db, current_user.id, channel_data.channel_id)
 
@@ -190,6 +205,8 @@ class ChannelService:
         Collects multiple channels in bulk, ignoring already existing channels and ensuring atomicity.
         """
         from backend.services.work_session_service import WorkSessionService
+        # Block before any write: requires ACTIVE session
+        ChannelService._require_active_session(db, current_user.id)
         now = utc_now()
         inserted: List[str] = []
         already_exists: List[str] = []
@@ -223,7 +240,8 @@ class ChannelService:
                         updated_at=now
                     )
                     db.add(new_channel)
-                    
+                    db.flush()  # INSERT must succeed before session count changes.
+
                     active_session_id = WorkSessionService.register_channel_collection(db, current_user.id, cid)
 
                     event = CollectionEvent(

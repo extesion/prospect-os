@@ -21,7 +21,10 @@ from qualifier.schemas.qualification_schema import (
     LeadsPaginationResponse,
     QualifyBatchRequest
 )
-from qualifier.config.qualification_config import qualification_config
+from qualifier.config.qualification_config import (
+    QualificationConfig, qualification_config, get_persisted_config,
+    save_persisted_config
+)
 from qualifier.services.qualification_service import QualificationService
 from qualifier.services.youtube_service import YouTubeService
 from qualifier.worker import QualificationWorker
@@ -97,6 +100,35 @@ def get_status_overview(db: Session = Depends(get_db)):
             "daily_quota_limit": qualification_config.DAILY_QUOTA_LIMIT
         }
     }
+
+
+@router.get("/config")
+def get_qualification_config(db: Session = Depends(get_db)):
+    record = get_persisted_config(db)
+    return {**record.config_json, "version": record.version}
+
+
+@router.put("/config")
+def update_qualification_config(
+    body: Dict[str, Any],
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(get_current_admin_user),
+):
+    record = get_persisted_config(db)
+    # Legacy clients use lower-case field names. Normalize only known model fields.
+    aliases = {"videos_to_analyze": "VIDEOS_TO_ANALYZE", "score_qualified_threshold": "SCORE_QUALIFIED_THRESHOLD"}
+    values = {**record.config_json, **{aliases.get(k, k): v for k, v in body.items()}}
+    record = save_persisted_config(db, values, admin_user.id)
+    return {**record.config_json, "version": record.version}
+
+
+@router.post("/config/defaults")
+def restore_qualification_config_defaults(
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(get_current_admin_user),
+):
+    record = save_persisted_config(db, QualificationConfig().model_dump(), admin_user.id)
+    return {**record.config_json, "version": record.version}
 
 
 # ----------------------------------------------------------------------------

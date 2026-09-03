@@ -67,6 +67,8 @@ class QualificationResultResponse(BaseModel):
     commercial_signals: Optional[List[Dict[str, Any]]] = None
     keywords_found: Optional[List[Dict[str, Any]]] = None
     score_breakdown: Optional[Dict[str, int]] = None
+    qualification_config_snapshot: Optional[Dict[str, Any]] = None
+    qualification_config_version: Optional[int] = None
     qualification_reason: Optional[str] = None
     qualification_version: str = "v1"
     

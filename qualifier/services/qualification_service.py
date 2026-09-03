@@ -8,7 +8,7 @@ from backend.database.models import Channel, utc_now
 from qualifier.models.qualification_result import QualificationResult
 from qualifier.models.qualification_job import QualificationJob
 from qualifier.models.analyzed_video import AnalyzedVideo
-from qualifier.config.qualification_config import qualification_config
+from qualifier.config.qualification_config import qualification_config, load_runtime_config
 from qualifier.services.youtube_service import YouTubeService, YouTubeQuotaExceededException
 from qualifier.services.link_extractor import LinkExtractor
 from qualifier.services.email_extractor import EmailExtractor
@@ -167,6 +167,9 @@ class QualificationService:
             texts_with_sources=texts_with_sources
         )
 
+        # Current persisted config must govern every (re)qualification.
+        runtime_config, config_version = load_runtime_config(db)
+
         # 8. Activity Calculation
         days_since_last_video = None
         last_video_date = None
@@ -182,7 +185,7 @@ class QualificationService:
                 delta = now - most_recent_dt
                 days_since_last_video = max(0, delta.days)
 
-                activity_status = QualificationService._classify_activity(days_since_last_video)
+                activity_status = "INACTIVE" if days_since_last_video > runtime_config.LOW_ACTIVITY_DAYS_THRESHOLD else ("LOW_ACTIVITY" if days_since_last_video > runtime_config.ACTIVE_DAYS_THRESHOLD else "ACTIVE")
 
             if len(sorted_videos) >= 2:
                 timestamps = [parse_iso_datetime(v.get("published_at")) for v in sorted_videos if v.get("published_at")]
@@ -212,7 +215,9 @@ class QualificationService:
             keywords_found=keywords_found,
             link_aggregators=extracted_links.get("link_aggregators", []),
             sales_platforms=extracted_links.get("sales_platforms", []),
-            has_any_external_links=has_any_external_links
+            has_any_external_links=has_any_external_links,
+            config=runtime_config,
+            subscribers=channel_data.get("subscribers", 0) or 0
         )
 
         # 10. Persist or Update QualificationResult
@@ -258,8 +263,10 @@ class QualificationService:
         qual_res.keywords_found = keywords_found
         qual_res.keywords_sources = keywords_sources
         qual_res.score_breakdown = score_res["score_breakdown"]
+        qual_res.qualification_config_snapshot = runtime_config.model_dump()
+        qual_res.qualification_config_version = config_version
         qual_res.qualification_reason = score_res["qualification_reason"]
-        qual_res.qualification_version = qualification_config.QUALIFICATION_VERSION
+        qual_res.qualification_version = runtime_config.QUALIFICATION_VERSION
         qual_res.youtube_data_updated_at = now
         qual_res.updated_at = now
         qual_res.qualified_at = now

@@ -6,10 +6,15 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 os.environ["DATABASE_URL"] = "sqlite:///./test_work_sessions.db"
 os.environ["SECRET_KEY"] = "test-secret-key-12345"
+try:
+    os.remove("test_work_sessions.db")
+except FileNotFoundError:
+    pass
 
 from fastapi.testclient import TestClient
 from backend.main import app
-from backend.database.connection import engine, Base
+from backend.database.connection import engine, Base, SessionLocal
+from backend.database.models import Channel, CollectionEvent, Notification, WorkSession, WorkSessionEvent
 from backend.seed import seed
 
 client = TestClient(app)
@@ -18,7 +23,43 @@ client = TestClient(app)
 def setup_database():
     Base.metadata.create_all(bind=engine)
     seed()
+    db = SessionLocal()
+    try:
+        db.query(CollectionEvent).delete()
+        db.query(WorkSessionEvent).delete()
+        db.query(Notification).delete()
+        db.query(WorkSession).delete()
+        db.query(Channel).delete()
+        db.commit()
+    finally:
+        db.close()
     yield
+
+def test_new_session_ignores_historical_channels():
+    token = client.post("/auth/login", json={"email": "ana@prospector.com", "password": "123"}).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    from backend.database.connection import SessionLocal
+    from backend.database.models import Channel, User, utc_now
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == "ana@prospector.com").one()
+        for i in range(5):
+            db.add(Channel(channel_id=f"UC_HIST_{i}", channel_name=f"Histórico {i}",
+                channel_url=f"https://youtube.com/channel/UC_HIST_{i}",
+                first_collected_by_id=user.id, first_collected_at=utc_now()))
+        db.commit()
+    finally:
+        db.close()
+
+    started = client.post("/work-sessions/start", json={"daily_target": 160, "target_hours": 8.0, "cycle_type": "8H"}, headers=headers)
+    assert started.status_code == 200
+    assert started.json()["collected_count"] == 0
+
+    new_channel = {"channel_id": "UC_NEW_IN_SESSION", "channel_name": "Novo", "channel_url": "https://youtube.com/channel/UC_NEW_IN_SESSION"}
+    assert client.post("/channels", json=new_channel, headers=headers).json()["success"] is True
+    assert client.get("/work-sessions/current", headers=headers).json()["collected_count"] == 1
+
 
 def test_start_8h_session():
     carlos_token = client.post("/auth/login", json={
@@ -66,6 +107,13 @@ def test_single_active_session_enforcement():
         "password": "123"
     }).json()["access_token"]
 
+    started = client.post("/work-sessions/start", json={
+        "daily_target": 160,
+        "target_hours": 8.0,
+        "cycle_type": "8H"
+    }, headers={"Authorization": f"Bearer {carlos_token}"})
+    assert started.status_code == 200
+
     # Try starting another session while one is active
     resp = client.post("/work-sessions/start", json={
         "daily_target": 200,
@@ -82,6 +130,13 @@ def test_pause_and_resume_session():
         "email": "carlos@prospector.com",
         "password": "123"
     }).json()["access_token"]
+
+    started = client.post("/work-sessions/start", json={
+        "daily_target": 160,
+        "target_hours": 8.0,
+        "cycle_type": "8H"
+    }, headers={"Authorization": f"Bearer {carlos_token}"})
+    assert started.status_code == 200
 
     # Pause
     pause_resp = client.post("/work-sessions/pause", headers={"Authorization": f"Bearer {carlos_token}"})
@@ -103,6 +158,11 @@ def test_channel_collection_increments_session():
         "email": "carlos@prospector.com",
         "password": "123"
     }).json()["access_token"]
+
+    # ACTIVE session is required
+    start_resp = client.post("/work-sessions/start", json={"daily_target": 1, "target_hours": 8.0, "cycle_type": "8H"}, headers={"Authorization": f"Bearer {carlos_token}"})
+    assert start_resp.status_code == 200
+    assert start_resp.json()["status"] == "ACTIVE"
 
     # Collect a new channel
     collect_resp = client.post("/channels", json={
@@ -127,6 +187,23 @@ def test_channel_collection_increments_session():
 
     cur_resp2 = client.get("/work-sessions/current", headers={"Authorization": f"Bearer {carlos_token}"})
     assert cur_resp2.json()["collected_count"] == 1 # Still 1
+
+def test_collection_rejected_without_active_session():
+    token = client.post("/auth/login", json={"email": "maria@prospector.com", "password": "123"}).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    payload = {"channel_id": "UC_BLOCKED", "channel_name": "Blocked", "channel_url": "https://youtube.com/channel/UC_BLOCKED"}
+
+    rejected = client.post("/channels", json=payload, headers=headers)
+    assert rejected.status_code == 409
+    assert rejected.json()["detail"] == "Inicie seu turno de trabalho para coletar canais."
+
+    # Exact extension start payload is valid and permits only ACTIVE collection.
+    started = client.post("/work-sessions/start", json={"daily_target": 160, "target_hours": 8.0, "cycle_type": "8H"}, headers=headers)
+    assert started.status_code == 200
+    assert started.json()["status"] == "ACTIVE"
+    assert client.post("/work-sessions/pause", headers=headers).status_code == 200
+    assert client.post("/channels/bulk", json={"channels": [payload]}, headers=headers).status_code == 409
+
 
 def test_hours_ranking_strictly_by_active_hours():
     # Ranking endpoint
@@ -154,6 +231,13 @@ def test_finish_session():
         "email": "carlos@prospector.com",
         "password": "123"
     }).json()["access_token"]
+
+    started = client.post("/work-sessions/start", json={
+        "daily_target": 160,
+        "target_hours": 8.0,
+        "cycle_type": "8H"
+    }, headers={"Authorization": f"Bearer {carlos_token}"})
+    assert started.status_code == 200
 
     finish_resp = client.post("/work-sessions/finish", headers={"Authorization": f"Bearer {carlos_token}"})
     assert finish_resp.status_code == 200

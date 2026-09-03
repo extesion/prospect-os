@@ -1,4 +1,4 @@
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from pydantic import BaseModel, Field
 import os
 from pathlib import Path
@@ -32,6 +32,28 @@ class QualificationConfig(BaseModel):
     REQUALIFICATION_INTERVAL_DAYS: int = Field(default=30)
     QUALIFICATION_VERSION: str = Field(default="v1")
     QUEUE_PAUSED: bool = Field(default=False)
+
+    # Persisted, admin-customizable qualification criteria
+    min_subscribers: int = Field(default=0, ge=0)
+    max_subscribers: Optional[int] = Field(default=None, ge=0)
+    max_activity_days: int = Field(default=30, ge=0)
+    require_public_contact: bool = False
+    require_email: bool = False
+    require_commercial_links: bool = False
+    positive_keywords: List[str] = []
+    negative_keywords: List[str] = []
+    weight_activity: float = Field(default=1.0, ge=0)
+    weight_audience: float = Field(default=1.0, ge=0)
+    weight_contact: float = Field(default=1.0, ge=0)
+    weight_commercial: float = Field(default=1.0, ge=0)
+    review_threshold: int = Field(default=40, ge=0, le=100)
+    qualified_threshold: int = Field(default=70, ge=0, le=100)
+    enabled_criteria: Dict[str, bool] = {
+        "min_subscribers": True, "max_subscribers": True,
+        "max_activity_days": True, "require_public_contact": True,
+        "require_email": True, "require_commercial_links": True,
+        "positive_keywords": True, "negative_keywords": True,
+    }
 
     # Activity thresholds
     ACTIVE_DAYS_THRESHOLD: int = Field(default=30)
@@ -89,3 +111,31 @@ class QualificationConfig(BaseModel):
     }
 
 qualification_config = QualificationConfig()
+
+
+def get_persisted_config(db):
+    """Current DB config. Creates one default record on first access."""
+    from backend.database.models import QualificationConfigRecord
+    record = db.query(QualificationConfigRecord).filter(QualificationConfigRecord.id == 1).first()
+    if not record:
+        record = QualificationConfigRecord(id=1, version=1, config_json=qualification_config.model_dump())
+        db.add(record)
+        db.commit()
+        db.refresh(record)
+    return record
+
+
+def load_runtime_config(db):
+    record = get_persisted_config(db)
+    return QualificationConfig(**record.config_json), record.version
+
+
+def save_persisted_config(db, values: Dict[str, Any], user_id: int):
+    record = get_persisted_config(db)
+    config = QualificationConfig(**values)
+    record.config_json = config.model_dump()
+    record.version += 1
+    record.updated_by_id = user_id
+    db.commit()
+    db.refresh(record)
+    return record

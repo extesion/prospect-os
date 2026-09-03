@@ -45,6 +45,10 @@ try:
                     ) THEN
                         ALTER TABLE users ADD COLUMN last_seen_at TIMESTAMP WITH TIME ZONE;
                     END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'qualification_results' AND column_name = 'qualification_config_snapshot') THEN
+                        ALTER TABLE qualification_results ADD COLUMN qualification_config_snapshot JSONB;
+                        ALTER TABLE qualification_results ADD COLUMN qualification_config_version INTEGER;
+                    END IF;
                     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_music_connections' AND column_name = 'current_track_id') THEN
                         ALTER TABLE user_music_connections ADD COLUMN current_track_id VARCHAR(255);
                         ALTER TABLE user_music_connections ADD COLUMN position_ms INTEGER NOT NULL DEFAULT 0;
@@ -68,6 +72,11 @@ try:
                                    ("duration_ms", "INTEGER NOT NULL DEFAULT 0"), ("captured_at", "TIMESTAMP")):
                 if name not in music_cols:
                     conn.execute(text(f"ALTER TABLE user_music_connections ADD COLUMN {name} {sql_type}"))
+            qual_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(qualification_results)")).fetchall()]
+            if "qualification_config_snapshot" not in qual_cols:
+                conn.execute(text("ALTER TABLE qualification_results ADD COLUMN qualification_config_snapshot JSON"))
+            if "qualification_config_version" not in qual_cols:
+                conn.execute(text("ALTER TABLE qualification_results ADD COLUMN qualification_config_version INTEGER"))
             notif_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(notifications)")).fetchall()]
             if "dedupe_key" not in notif_cols:
                 conn.execute(text("ALTER TABLE notifications ADD COLUMN dedupe_key VARCHAR(200)"))

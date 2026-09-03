@@ -62,6 +62,8 @@ class QualificationResult(Base):
     keywords_found = Column(JSON, nullable=True)     # [{"keyword": "consultoria", "source": "channel_description", "context": "..."}]
     keywords_sources = Column(JSON, nullable=True)   # {"consultoria": ["channel_description"], "parcerias": ["last_video_description"]}
     score_breakdown = Column(JSON, nullable=True)    # {"email": 20, "website": 15, ...}
+    qualification_config_snapshot = Column(JSON, nullable=True)
+    qualification_config_version = Column(Integer, nullable=True)
     
     # Reasoning & Versioning
     qualification_reason = Column(Text, nullable=True)

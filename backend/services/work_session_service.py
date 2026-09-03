@@ -380,33 +380,31 @@ class WorkSessionService:
         """
         session = (
             db.query(WorkSession)
-            .filter(WorkSession.user_id == user_id)
-            .filter(WorkSession.status == "ACTIVE")
+            .filter(WorkSession.user_id == user_id, WorkSession.status == "ACTIVE")
+            .order_by(WorkSession.started_at.desc())
             .first()
         )
+        if not session:
+            raise ValueError("Inicie seu turno de trabalho para coletar canais.")
 
-        if session:
-            prev_count = session.collected_count
-            session.collected_count += 1
-            session.updated_at = utc_now()
-            db.flush()
+        prev_count = session.collected_count
+        session.collected_count += 1
+        session.updated_at = utc_now()
+        db.flush()
 
-            # Checar se bateu a meta agora
-            if prev_count < session.daily_target and session.collected_count >= session.daily_target:
-                try:
-                    from backend.services.notification_service import NotificationService
-                    user = db.query(User).filter(User.id == user_id).first()
-                    u_name = user.name if user else "Operador"
-                    NotificationService.notify_goal_reached(
-                        db=db, actor_user_id=user_id, session_id=session.id,
-                        daily_target=session.daily_target, collected_count=session.collected_count,
-                        actor_name=u_name,
-                    )
-                except Exception as e:
-                    logger.warning(f"Erro ao disparar notificação de meta atingida: {e}")
+        if prev_count < session.daily_target <= session.collected_count:
+            try:
+                from backend.services.notification_service import NotificationService
+                user = db.query(User).filter(User.id == user_id).first()
+                NotificationService.notify_goal_reached(
+                    db=db, actor_user_id=user_id, session_id=session.id,
+                    daily_target=session.daily_target, collected_count=session.collected_count,
+                    actor_name=user.name if user else "Operador",
+                )
+            except Exception as e:
+                logger.warning(f"Erro ao disparar notificação de meta atingida: {e}")
 
-            return session.id
-        return None
+        return session.id
 
     @staticmethod
     def get_ranking(db: Session, period: str = "today") -> List[UserRankingItem]:

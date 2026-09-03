@@ -77,7 +77,11 @@ def test_collect_channel_and_duplicate_prevention():
         "password": "123"
     }).json()["access_token"]
 
-    # 3. Carlos collects channel UC999AAA
+    # 3. ACTIVE session is mandatory for collection
+    client.post("/work-sessions/start", json={"daily_target": 160, "target_hours": 8.0, "cycle_type": "8H"}, headers={"Authorization": f"Bearer {carlos_token}"})
+    client.post("/work-sessions/start", json={"daily_target": 160, "target_hours": 8.0, "cycle_type": "8H"}, headers={"Authorization": f"Bearer {maria_token}"})
+
+    # 4. Carlos collects channel UC999AAA
     collect_resp = client.post(
         "/channels",
         json={
@@ -130,6 +134,8 @@ def test_bulk_collect():
         "email": "carlos@prospector.com",
         "password": "123"
     }).json()["access_token"]
+
+    client.post("/work-sessions/start", json={"daily_target": 160, "target_hours": 8.0, "cycle_type": "8H"}, headers={"Authorization": f"Bearer {carlos_token}"})
 
     bulk_data = {
         "channels": [

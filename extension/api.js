@@ -69,7 +69,7 @@ class ProspectorAPI {
     }
 
     const url = `${baseUrl}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
-
+    
     try {
       const response = await fetch(url, {
         ...options,
@@ -84,6 +84,11 @@ class ProspectorAPI {
           chrome.runtime.sendMessage({ action: "AUTH_EXPIRED" });
         }
         const error = new Error(data.detail || `Erro na requisição (${response.status})`);
+        // Log status and sanitized detail for debugging
+        console.warn(`[ProspectorAPI] ${response.status} ${endpoint}`, {
+          body: options.body ? JSON.parse(options.body) : null,
+          detail: data.detail
+        });
         error.status = response.status;
         error.data = data;
         throw error;
@@ -140,7 +145,15 @@ class ProspectorAPI {
     });
   }
 
+  async requireActiveWorkSession() {
+    const session = await this.getCurrentWorkSession();
+    if (!session || session.status !== "ACTIVE") {
+      throw new Error("Inicie seu turno de trabalho para coletar canais.");
+    }
+  }
+
   async collectChannel(channelData) {
+    await this.requireActiveWorkSession();
     return await this.request("/channels", {
       method: "POST",
       body: JSON.stringify(channelData)
@@ -148,6 +161,7 @@ class ProspectorAPI {
   }
 
   async collectBulk(channelsList) {
+    await this.requireActiveWorkSession();
     return await this.request("/channels/bulk", {
       method: "POST",
       body: JSON.stringify({ channels: channelsList })

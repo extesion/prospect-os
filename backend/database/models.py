@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from sqlalchemy import (
-    Column, Integer, String, Boolean, DateTime, ForeignKey, Index, Float, Text
+    Column, Integer, String, Boolean, DateTime, ForeignKey, Index, Float, Text, JSON
 )
 from sqlalchemy.orm import relationship
 from backend.database.connection import Base
@@ -25,6 +25,16 @@ class User(Base):
     channels = relationship("Channel", back_populates="first_collector", foreign_keys="Channel.first_collected_by_id")
     events = relationship("CollectionEvent", back_populates="user")
     work_sessions = relationship("WorkSession", back_populates="user")
+
+
+class QualificationConfigRecord(Base):
+    __tablename__ = "qualification_config"
+
+    id = Column(Integer, primary_key=True, default=1)
+    version = Column(Integer, default=1, nullable=False)
+    config_json = Column(JSON, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+    updated_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
 
 class Channel(Base):

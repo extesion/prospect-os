@@ -17,7 +17,8 @@ class ScoringEngine:
         link_aggregators: List[Dict[str, Any]],
         sales_platforms: List[Dict[str, Any]],
         has_any_external_links: bool,
-        config=None
+        config=None,
+        subscribers: int = 0
     ) -> Dict[str, Any]:
         """
         Calculates normalized qualification score (0-100), breakdown, classification, and reason.
@@ -145,13 +146,32 @@ class ScoringEngine:
             total_score += penalty
             reason_penalties.append("ausência de sinais ou termos comerciais")
 
-        # Clamp score to [0, 100]
-        final_score = max(0, min(100, total_score))
+        # Admin criteria and weighted score. Defaults retain current behavior.
+        enabled = getattr(cfg, "enabled_criteria", {})
+        keyword_text = " ".join(str(k.get("keyword", "")).lower() for k in keywords_found)
+        _subscribers = subscribers
+        hard_fail = (
+            (enabled.get("min_subscribers", True) and getattr(cfg, "min_subscribers", 0) and _subscribers < cfg.min_subscribers) or
+            (enabled.get("max_subscribers", True) and getattr(cfg, "max_subscribers", None) is not None and _subscribers > cfg.max_subscribers) or
+            (enabled.get("max_activity_days", True) and days_since_last_video is not None and days_since_last_video > getattr(cfg, "max_activity_days", 999999)) or
+            (enabled.get("require_public_contact", True) and getattr(cfg, "require_public_contact", False) and not (email or whatsapp)) or
+            (enabled.get("require_email", True) and getattr(cfg, "require_email", False) and not email) or
+            (enabled.get("require_commercial_links", True) and getattr(cfg, "require_commercial_links", False) and not (sales_platforms or commercial_signals)) or
+            (enabled.get("negative_keywords", True) and any(k.lower() in keyword_text for k in getattr(cfg, "negative_keywords", [])))
+        )
+        total_score *= getattr(cfg, "weight_contact", 1.0) if (email or whatsapp) else 1.0
+        total_score *= getattr(cfg, "weight_activity", 1.0) if days_since_last_video is not None else 1.0
+        total_score *= getattr(cfg, "weight_commercial", 1.0) if (commercial_signals or keywords_found) else 1.0
+        if enabled.get("positive_keywords", True) and any(k.lower() in keyword_text for k in getattr(cfg, "positive_keywords", [])):
+            total_score *= getattr(cfg, "weight_audience", 1.0)
+        final_score = max(0, min(100, round(total_score)))
 
         # Classification
-        if final_score >= cfg.SCORE_QUALIFIED_THRESHOLD:
+        if hard_fail:
+            status = "REJECTED"
+        elif final_score >= getattr(cfg, "qualified_threshold", cfg.SCORE_QUALIFIED_THRESHOLD):
             status = "QUALIFIED"
-        elif final_score >= cfg.SCORE_REVIEW_THRESHOLD:
+        elif final_score >= getattr(cfg, "review_threshold", cfg.SCORE_REVIEW_THRESHOLD):
             status = "REVIEW"
         else:
             status = "REJECTED"

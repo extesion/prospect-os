@@ -58,60 +58,40 @@ def _clear_cache() -> None:
 # -------------------------------------------------------------------------
 # Decorator to add retry/backoff around API calls
 # -------------------------------------------------------------------------
-def _call_with_retry(
-    api_key: str,
-    endpoint: str,
-    params: Dict[str, Any],
-    max_retries: int = 3,
-    base_delay: float = 1.0,
-) -> Dict[str, Any]:
-    """
-    Executes request with exponential backoff retry for:
-    - HTTP 429 (rate limit)
-    - 5xx server errors
-    - Timeouts
-    Permanent errors (404, 400, auth failure) propagate.
-    """
-    last_exc = None
+def _call_with_retry(db: Session, endpoint: str, operation: str, params: Dict[str, Any],
+                     max_retries: int = 3, base_delay: float = 1.0) -> Tuple[Dict[str, Any], int]:
+    """Executes a tracked YouTube request with retry for temporary failures."""
+    import time
+
+    last_exc: Optional[Exception] = None
     for attempt in range(max_retries):
+        config, api_key = YouTubeApiManager.get_active_config(db)
+        config_id = config.id
         try:
-            resp = requests.get(
+            response = requests.get(
                 YouTubeService.BASE_URL + endpoint,
                 params={"key": api_key, **params},
                 timeout=15,
             )
-            # Permanent: 4xx except 429 -> fail fast
-            if 400 <= resp.status_code < 500 and resp.status_code != 429:
-                raise requests.HTTPError(f"Permanent error {resp.status_code}: {resp.text}", response=resp)
-            # Temporary: 429 or 5xx -> retry
-            if resp.status_code == 429:
-                delay = base_delay * (2 ** attempt)
-                logger.warning(f"[YOUTUBE] Rate limited on {endpoint}, retry {attempt+1}/{max_retries} in {delay}s")
-                import time
-                time.sleep(delay)
-                continue
-            if resp.status_code >= 500:
-                delay = base_delay * (2 ** attempt)
-                logger.warning(f"[YOUTUBE] Server error {resp.status_code} on {endpoint}, retry {attempt+1}/{max_retries} in {delay}s")
-                import time
-                time.sleep(delay)
-                continue
-            # Pass through 2xx and 3xx
-            resp.raise_for_status()
-            return resp.json()
-        except requests.Timeout as e:
-            last_exc = e
-            logger.warning(f"[YOUTUBE] Timeout on {endpoint}, retry {attempt+1}/{max_retries}")
-            import time
+            if response.ok:
+                YouTubeApiManager.record_usage(db, config_id, operation, ENDPOINT_COSTS[operation])
+                return response.json(), config_id
+
+            error = f"HTTP {response.status_code}: {response.text}"
+            YouTubeApiManager.record_usage(db, config_id, operation, ENDPOINT_COSTS[operation], False, error)
+            if 400 <= response.status_code < 500 and response.status_code != 429:
+                response.raise_for_status()
+            last_exc = requests.HTTPError(error, response=response)
+        except requests.RequestException as exc:
+            last_exc = exc
+            YouTubeApiManager.record_usage(db, config_id, operation, ENDPOINT_COSTS[operation], False, str(exc))
+
+        if attempt + 1 < max_retries:
             time.sleep(base_delay * (2 ** attempt))
-        except requests.HTTPError as e:
-            if 400 <= e.response.status_code < 500 and e.response.status_code != 429:
-                raise  # Permanent error, do not retry
-            last_exc = e
-            logger.warning(f"[YOUTUBE] {e} on {endpoint}, retry {attempt+1}/{max_retries}")
-            import time
-            time.sleep(base_delay * (2 ** attempt))
-    raise YouTubeQuotaExceededException(f"Retry exhausted after {max_retries} attempts: {last_exc}") if last_exc else last_exc  # type: ignore[arg-type]
+
+    raise YouTubeQuotaExceededException(
+        f"Retry exhausted after {max_retries} attempts: {last_exc}"
+    ) from last_exc
 
 
 class YouTubeService:

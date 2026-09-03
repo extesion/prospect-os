@@ -346,6 +346,30 @@ def test_queue_pause_invalid_channel_and_no_double_enqueue():
 # 8. API ENDPOINTS TESTS
 # ============================================================================
 
+def test_qualification_config_persists_admin_only():
+    admin = client.post("/auth/login", json={"email": "carlos@prospector.com", "password": "123"}).json()["access_token"]
+    user = client.post("/auth/login", json={"email": "maria@prospector.com", "password": "123"}).json()["access_token"]
+    admin_headers = {"Authorization": f"Bearer {admin}"}
+    user_headers = {"Authorization": f"Bearer {user}"}
+
+    update = client.put("/api/qualification/config", json={
+        "qualified_threshold": 80,
+        "require_email": True,
+        "positive_keywords": ["curso"],
+        "enabled_criteria": {"require_email": True},
+    }, headers=admin_headers)
+    assert update.status_code == 200
+    assert update.json()["qualified_threshold"] == 80
+    assert update.json()["version"] >= 2
+
+    forbidden = client.put("/api/qualification/config", json={"qualified_threshold": 50}, headers=user_headers)
+    assert forbidden.status_code == 403
+
+    restore = client.post("/api/qualification/config/defaults", headers=admin_headers)
+    assert restore.status_code == 200
+    assert restore.json()["qualified_threshold"] == 70
+
+
 def test_qualification_api_endpoints():
     token = get_auth_token()
     headers = {"Authorization": f"Bearer {token}"}
