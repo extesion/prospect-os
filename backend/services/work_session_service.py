@@ -432,6 +432,7 @@ class WorkSessionService:
     def get_ranking(db: Session, period: str = "today") -> List[UserRankingItem]:
         """
         Retorna o ranking de membros ordenado EXCLUSIVAMENTE por HORAS TRABALHADAS.
+        Ignora usuários excluídos e sessões órfãs.
         """
         now = utc_now()
         if period == "today":
@@ -443,20 +444,23 @@ class WorkSessionService:
         else:
             start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-        # Consulta todas as sessões dentro do período
+        # Usuários ativos e não excluídos
+        all_users = db.query(User).filter(User.active == True, User.is_deleted == False).all()
+        user_map = {u.id: u for u in all_users}
+        valid_user_ids = set(user_map.keys())
+
+        # Consulta todas as sessões dentro do período pertencentes a usuários válidos
         sessions = (
             db.query(WorkSession)
-            .options(joinedload(WorkSession.user))
             .filter(WorkSession.started_at >= start_date)
+            .filter(WorkSession.user_id.in_(valid_user_ids) if valid_user_ids else False)
             .all()
         )
 
-        # Agrupa por usuário somando active_seconds e canais coletados
-        user_totals: Dict[int, Dict] = {}
-        all_users = db.query(User).filter(User.active == True).all()
-        profiles = db.query(UserProfile).all()
+        profiles = db.query(UserProfile).filter(UserProfile.user_id.in_(valid_user_ids) if valid_user_ids else False).all()
         profile_map = {p.user_id: p for p in profiles}
 
+        user_totals: Dict[int, Dict] = {}
         for u in all_users:
             p = profile_map.get(u.id)
             user_totals[u.id] = {
@@ -471,15 +475,7 @@ class WorkSessionService:
         for s in sessions:
             uid = s.user_id
             if uid not in user_totals:
-                p = profile_map.get(uid)
-                user_totals[uid] = {
-                    "user_id": uid,
-                    "user_name": s.user.name if s.user else "Usuário",
-                    "avatar_url": p.avatar_url if p else None,
-                    "banner_url": p.banner_url if p else None,
-                    "total_active_seconds": 0,
-                    "channels_collected": 0
-                }
+                continue
 
             # Calcula tempo ativo da sessão
             active = s.active_seconds
@@ -518,29 +514,37 @@ class WorkSessionService:
     def get_team_summary(db: Session) -> TeamSummaryResponse:
         """
         Retorna visão geral da equipe em tempo real (usuários trabalhando, horas totais hoje, média de canais/h).
+        Garante que apenas membros ativos e não excluídos façam parte dos cards e métricas.
         """
         now = utc_now()
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-        all_users = db.query(User).filter(User.active == True).all()
-        profiles = db.query(UserProfile).all()
+        all_users = db.query(User).filter(User.active == True, User.is_deleted == False).all()
+        valid_user_ids = {u.id for u in all_users}
+
+        profiles = db.query(UserProfile).filter(UserProfile.user_id.in_(valid_user_ids) if valid_user_ids else False).all()
         profile_map = {p.user_id: p for p in profiles}
 
-        music_conns = db.query(UserMusicConnection).filter(UserMusicConnection.is_connected == True).all()
+        music_conns = db.query(UserMusicConnection).filter(
+            UserMusicConnection.is_connected == True,
+            UserMusicConnection.user_id.in_(valid_user_ids) if valid_user_ids else False
+        ).all()
         music_map = {m.user_id: m for m in music_conns}
 
-        # Busca sessões ativas/pausadas
+        # Busca sessões ativas/pausadas de usuários válidos
         current_sessions = (
             db.query(WorkSession)
             .filter(WorkSession.status.in_(["ACTIVE", "PAUSED"]))
+            .filter(WorkSession.user_id.in_(valid_user_ids) if valid_user_ids else False)
             .all()
         )
         current_session_map = {s.user_id: s for s in current_sessions}
 
-        # Busca todas as sessões de hoje
+        # Busca todas as sessões de hoje de usuários válidos
         today_sessions = (
             db.query(WorkSession)
             .filter(WorkSession.started_at >= today_start)
+            .filter(WorkSession.user_id.in_(valid_user_ids) if valid_user_ids else False)
             .all()
         )
 
@@ -642,7 +646,12 @@ class WorkSessionService:
         """
         Retorna o histórico detalhado de sessões de trabalho finalizadas ou recentes.
         """
-        query = db.query(WorkSession).options(joinedload(WorkSession.user))
+        query = (
+            db.query(WorkSession)
+            .join(User, WorkSession.user_id == User.id)
+            .options(joinedload(WorkSession.user))
+            .filter(User.is_deleted == False)
+        )
         if user_id:
             query = query.filter(WorkSession.user_id == user_id)
 

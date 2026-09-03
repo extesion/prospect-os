@@ -12,7 +12,8 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/login", response_model=TokenResponse)
 def login(login_data: UserLogin, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == login_data.email.lower().strip()).first()
+    email_clean = login_data.email.lower().strip()
+    user = db.query(User).filter(User.email == email_clean, User.is_deleted == False).first()
     if not user or not verify_password(login_data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -44,8 +45,9 @@ def get_current_user_profile(current_user: User = Depends(get_current_user)):
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
-    """Convenience endpoint to register users for the team."""
-    existing = db.query(User).filter(User.email == user_data.email.lower().strip()).first()
+    """Convenience endpoint to register users for the team (always created as USER)."""
+    email_clean = user_data.email.lower().strip()
+    existing = db.query(User).filter(User.email == email_clean, User.is_deleted == False).first()
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -54,10 +56,11 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     
     new_user = User(
         name=user_data.name.strip(),
-        email=user_data.email.lower().strip(),
+        email=email_clean,
         password_hash=get_password_hash(user_data.password),
-        role=(user_data.role or "USER").upper(),
-        active=True
+        role="USER",
+        active=True,
+        is_deleted=False
     )
     db.add(new_user)
     db.commit()

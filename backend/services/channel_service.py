@@ -308,7 +308,8 @@ class ChannelService:
 
         active_users_today = (
             db.query(func.count(func.distinct(Channel.first_collected_by_id)))
-            .filter(Channel.first_collected_at >= today_start)
+            .join(User, Channel.first_collected_by_id == User.id)
+            .filter(Channel.first_collected_at >= today_start, User.is_deleted == False, User.active == True)
             .scalar()
         ) or 0
 

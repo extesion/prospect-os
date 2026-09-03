@@ -19,20 +19,36 @@ logger = logging.getLogger("youtube_prospector")
 # Auto-create tables safely (ignore on read-only serverless if connection fails at startup)
 try:
     Base.metadata.create_all(bind=engine)
-    # Ensure columns are TEXT for base64 media support
     with engine.begin() as conn:
-        conn.execute(text("""
-            DO $$ 
-            BEGIN 
-                IF EXISTS (
-                    SELECT 1 FROM information_schema.columns 
-                    WHERE table_name = 'user_profiles' AND column_name = 'avatar_url' AND data_type = 'character varying'
-                ) THEN 
-                    ALTER TABLE user_profiles ALTER COLUMN avatar_url TYPE TEXT;
-                    ALTER TABLE user_profiles ALTER COLUMN banner_url TYPE TEXT;
-                END IF; 
-            END $$;
-        """))
+        # PostgreSQL column text upgrade
+        if "postgresql" in str(engine.url):
+            conn.execute(text("""
+                DO $$ 
+                BEGIN 
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns 
+                        WHERE table_name = 'user_profiles' AND column_name = 'avatar_url' AND data_type = 'character varying'
+                    ) THEN 
+                        ALTER TABLE user_profiles ALTER COLUMN avatar_url TYPE TEXT;
+                        ALTER TABLE user_profiles ALTER COLUMN banner_url TYPE TEXT;
+                    END IF;
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns 
+                        WHERE table_name = 'users' AND column_name = 'is_deleted'
+                    ) THEN 
+                        ALTER TABLE users ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE;
+                        ALTER TABLE users ADD COLUMN deleted_at TIMESTAMP WITH TIME ZONE;
+                    END IF;
+                END $$;
+            """))
+        elif "sqlite" in str(engine.url):
+            # SQLite safe column migration
+            res = conn.execute(text("PRAGMA table_info(users)")).fetchall()
+            col_names = [r[1] for r in res] if res else []
+            if "is_deleted" not in col_names:
+                conn.execute(text("ALTER TABLE users ADD COLUMN is_deleted BOOLEAN DEFAULT 0"))
+            if "deleted_at" not in col_names:
+                conn.execute(text("ALTER TABLE users ADD COLUMN deleted_at TIMESTAMP"))
 except Exception as e:
     logger.warning(f"Startup DB check: {e}")
 
@@ -44,7 +60,7 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-from backend.routes import auth, channels, stats, work_sessions, users, youtube_apis, notifications, profiles, music
+from backend.routes import auth, channels, stats, work_sessions, users, youtube_apis, notifications, profiles, music, system
 from qualifier.routes.qualification import router as qualification_router
 
 # Configure CORS
@@ -80,6 +96,7 @@ app.include_router(youtube_apis.router, prefix=settings.API_V1_STR)
 app.include_router(notifications.router, prefix=settings.API_V1_STR)
 app.include_router(profiles.router, prefix=settings.API_V1_STR)
 app.include_router(music.router, prefix=settings.API_V1_STR)
+app.include_router(system.router, prefix=settings.API_V1_STR)
 
 # Also expose without /api prefix for convenience
 app.include_router(auth.router)
@@ -92,6 +109,7 @@ app.include_router(youtube_apis.router)
 app.include_router(notifications.router)
 app.include_router(profiles.router)
 app.include_router(music.router)
+app.include_router(system.router)
 
 
 @app.get("/health", tags=["Health"])

@@ -262,9 +262,23 @@
         </div>
       </div>
 
-      <p class="text-xs text-slate-300 leading-relaxed bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-        Você tem certeza que deseja excluir o usuário <strong id="delete-user-name" class="text-rose-400"></strong> (<span id="delete-user-email" class="font-mono text-slate-400"></span>)?
-        <br><span class="text-[11px] text-slate-400 mt-1 block">O histórico de canais coletados por ele será preservado e reatribuído com segurança.</span>
+      <div class="bg-slate-900/60 p-3.5 rounded-lg border border-slate-800 space-y-2 text-xs">
+        <div class="flex justify-between items-center">
+          <span class="text-slate-400">Nome:</span>
+          <strong id="delete-user-name" class="text-white"></strong>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-slate-400">E-mail / Login:</span>
+          <span id="delete-user-email" class="font-mono text-slate-300"></span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-slate-400">Cargo:</span>
+          <span id="delete-user-role" class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-slate-800 text-slate-300 border border-slate-700"></span>
+        </div>
+      </div>
+
+      <p class="text-[11px] text-slate-400 leading-relaxed">
+        O usuário será removido e perderá o acesso imediato. O histórico de canais coletados será mantido de forma consistente.
       </p>
 
       <input type="hidden" id="delete-user-id">
@@ -279,6 +293,39 @@
     </div>
   </div>
 
+  <!-- ===================================================================== -->
+  <!-- MODAL: SENHA DO SISTEMA (PROMOÇÃO PARA ADMIN)                         -->
+  <!-- ===================================================================== -->
+  <div id="admin-promotion-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-dark-card border border-dark-border w-full max-w-md rounded-2xl shadow-2xl overflow-hidden p-6 space-y-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-lg font-bold">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div>
+          <h3 class="font-bold text-white text-sm">Autorização de Segurança</h3>
+          <p class="text-xs text-slate-400">Promoção para Administrador</p>
+        </div>
+      </div>
+
+      <form id="admin-promotion-form" onsubmit="handleConfirmPromotion(event)" class="space-y-4">
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Definir cargo de <strong class="text-amber-400">ADMIN</strong> é uma operação privilegiada. Digite a Senha do Sistema para confirmar:
+        </p>
+
+        <div>
+          <label class="block font-bold text-slate-300 mb-1 text-xs">Senha do Sistema</label>
+          <input type="password" id="promotion-system-password" required placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-amber-500 text-xs" autocomplete="off">
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+          <button type="button" onclick="closeAdminPromotionModal()" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-semibold transition">Cancelar</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition shadow-lg shadow-amber-600/20">Confirmar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Toast Container -->
   <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
 
@@ -287,6 +334,9 @@
   <!-- ===================================================================== -->
   <script>
     let usersList = [];
+    let pendingPayload = null;
+    let pendingUrl = null;
+    let pendingMethod = null;
 
     // Helper to get or request authentication token
     function getAuthToken() {
@@ -370,6 +420,7 @@
         const createdDate = u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '—';
         const escapedName = (u.name || '').replace(/'/g, "\\'");
         const escapedEmail = (u.email || '').replace(/'/g, "\\'");
+        const userRole = u.role || 'USER';
 
         return `
           <tr class="hover:bg-dark-hover transition">
@@ -396,7 +447,7 @@
                 <button onclick="toggleUserStatus(${u.id}, ${u.active})" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 ${u.active ? 'text-amber-400' : 'text-emerald-400'} border border-slate-700 text-xs font-semibold transition" title="${u.active ? 'Desativar Usuário' : 'Ativar Usuário'}">
                   <i class="fa-solid ${u.active ? 'fa-user-slash' : 'fa-user-check'}"></i>
                 </button>
-                <button onclick="openDeleteUserModal(${u.id}, '${escapedName}', '${escapedEmail}')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 text-rose-400 hover:text-rose-300 border border-slate-700 hover:border-rose-800 text-xs font-semibold transition" title="Excluir Usuário">
+                <button onclick="openDeleteUserModal(${u.id}, '${escapedName}', '${escapedEmail}', '${userRole}')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 text-rose-400 hover:text-rose-300 border border-slate-700 hover:border-rose-800 text-xs font-semibold transition" title="Excluir Usuário">
                   <i class="fa-solid fa-trash-can"></i>
                 </button>
               </div>
@@ -437,6 +488,7 @@
       document.getElementById('label-form-password').textContent = 'Senha Inicial';
       document.getElementById('password-hint').classList.add('hidden');
       document.getElementById('form-role').value = 'USER';
+      document.getElementById('form-role').dataset.originalRole = 'USER';
       document.getElementById('form-active').value = 'true';
       document.getElementById('user-modal').classList.remove('hidden');
     }
@@ -454,6 +506,7 @@
       document.getElementById('label-form-password').textContent = 'Nova Senha (Opcional)';
       document.getElementById('password-hint').classList.remove('hidden');
       document.getElementById('form-role').value = u.role || 'USER';
+      document.getElementById('form-role').dataset.originalRole = u.role || 'USER';
       document.getElementById('form-active').value = u.active ? 'true' : 'false';
       document.getElementById('user-modal').classList.remove('hidden');
     }
@@ -462,10 +515,15 @@
       document.getElementById('user-modal').classList.add('hidden');
     }
 
-    function openDeleteUserModal(userId, name, email) {
+    function openDeleteUserModal(userId, name, email, role) {
       document.getElementById('delete-user-id').value = userId;
       document.getElementById('delete-user-name').textContent = name;
       document.getElementById('delete-user-email').textContent = email;
+      const roleEl = document.getElementById('delete-user-role');
+      if (roleEl) {
+        roleEl.textContent = role || 'USER';
+        roleEl.className = `px-2 py-0.5 text-[10px] font-bold rounded-md ${role === 'ADMIN' ? 'bg-indigo-950 text-indigo-300 border border-indigo-800' : 'bg-slate-800 text-slate-300 border border-slate-700'}`;
+      }
       document.getElementById('delete-modal').classList.remove('hidden');
     }
 
@@ -490,12 +548,11 @@
           }
         });
 
+        const data = await res.json();
         if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.detail || 'Erro ao excluir usuário');
+          throw new Error(data.detail || 'Erro ao excluir usuário');
         }
 
-        const data = await res.json();
         showToast(data.message || 'Usuário excluído com sucesso!', 'success');
         closeDeleteModal();
         loadUsers();
@@ -507,6 +564,31 @@
       }
     }
 
+    function openAdminPromotionModal() {
+      document.getElementById('promotion-system-password').value = '';
+      document.getElementById('admin-promotion-modal').classList.remove('hidden');
+    }
+
+    function closeAdminPromotionModal() {
+      document.getElementById('admin-promotion-modal').classList.add('hidden');
+    }
+
+    async function handleConfirmPromotion(e) {
+      e.preventDefault();
+      const sysPwd = document.getElementById('promotion-system-password').value;
+      if (!sysPwd) {
+        showToast('Digite a Senha do Sistema.', 'error');
+        return;
+      }
+      if (!pendingPayload || !pendingUrl) {
+        closeAdminPromotionModal();
+        return;
+      }
+
+      pendingPayload.system_password = sysPwd;
+      await submitUserForm(pendingUrl, pendingMethod, pendingPayload);
+    }
+
     async function handleSaveUser(e) {
       e.preventDefault();
       const userId = document.getElementById('form-user-id').value;
@@ -514,56 +596,152 @@
       const email = document.getElementById('form-email').value.trim();
       const password = document.getElementById('form-password').value.trim();
       const role = document.getElementById('form-role').value;
+      const originalRole = document.getElementById('form-role').dataset.originalRole || 'USER';
       const active = document.getElementById('form-active').value === 'true';
 
+      const isEdit = Boolean(userId);
+      const url = isEdit ? `/api/users/${userId}` : '/api/users';
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const payload = { name, email, role, active };
+      if (!isEdit) {
+        if (!password) {
+          showToast('A senha inicial é obrigatória.', 'error');
+          return;
+        }
+        payload.password = password;
+      } else {
+        if (password) payload.password = password;
+      }
+
+      // Check if promoting or creating ADMIN
+      if (role === 'ADMIN' && (!isEdit || originalRole !== 'ADMIN')) {
+        pendingPayload = payload;
+        pendingUrl = url;
+        pendingMethod = method;
+        openAdminPromotionModal();
+        return;
+      }
+
+      await submitUserForm(url, method, payload);
+    }
+
+    async function submitUserForm(url, method, payload) {
       const token = getAuthToken();
       const btn = document.getElementById('btn-save-user');
       btn.disabled = true;
 
       try {
-        if (!userId) {
-          // CREATE
-          if (!password) throw new Error('A senha inicial é obrigatória');
-          const res = await fetch('/api/users', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ name, email, password, role, active })
-          });
-          if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.detail || 'Erro ao criar usuário');
-          }
-          showToast(`Usuário '${name}' criado com sucesso!`, 'success');
-        } else {
-          // EDIT
-          const bodyData = { name, email, role, active };
-          if (password) bodyData.password = password;
+        const res = await fetch(url, {
+          method: method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
 
-          const res = await fetch(`/api/users/${userId}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(bodyData)
-          });
-          if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.detail || 'Erro ao atualizar usuário');
-          }
-          showToast(`Usuário '${name}' atualizado com sucesso!`, 'success');
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || 'Erro ao processar usuário');
         }
 
+        showToast(method === 'PUT' ? `Usuário '${payload.name}' atualizado!` : `Usuário '${payload.name}' criado com sucesso!`, 'success');
         closeUserModal();
+        closeAdminPromotionModal();
         loadUsers();
       } catch (err) {
         showToast(err.message, 'error');
       } finally {
         btn.disabled = false;
       }
+    }
+
+    async function promptResetPassword(userId, name) {
+      const newPassword = prompt(`Digite a nova senha para ${name}:`);
+      if (!newPassword || !newPassword.trim()) return;
+
+      const token = getAuthToken();
+      try {
+        const res = await fetch(`/api/users/${userId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ password: newPassword.trim() })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Erro ao redefinir senha');
+        }
+        showToast(`Senha de ${name} redefinida com sucesso!`, 'success');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function toggleUserStatus(userId, currentActive) {
+      const token = getAuthToken();
+      try {
+        const res = await fetch(`/api/users/${userId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ active: !currentActive })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Erro ao alternar status');
+        }
+        showToast(`Status atualizado para ${!currentActive ? 'ATIVO' : 'INATIVO'}!`, 'success');
+        loadUsers();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function promptManualLogin() {
+      const email = prompt("Digite o e-mail do Administrador:", "carlos@prospector.com");
+      if (!email) return;
+      const password = prompt("Digite a senha do Administrador:", "123");
+      if (!password) return;
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        if (!res.ok) throw new Error('Credenciais inválidas');
+        const data = await res.json();
+        localStorage.setItem('token', data.access_token);
+        showToast('Login realizado com sucesso!', 'success');
+        loadUsers();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      let bg = 'bg-slate-800 border-slate-700 text-slate-200';
+      if (type === 'success') bg = 'bg-emerald-950 border-emerald-700 text-emerald-300';
+      if (type === 'error') bg = 'bg-rose-950 border-rose-700 text-rose-300';
+
+      toast.className = `flex items-center gap-2 px-4 py-2.5 rounded-xl border shadow-xl text-xs font-semibold transition-all duration-300 ${bg}`;
+      toast.innerHTML = `
+        <i class="fa-solid ${type === 'success' ? 'fa-circle-check' : (type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info')}"></i>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
     }
 
     async function promptResetPassword(userId, name) {

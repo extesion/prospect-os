@@ -54,7 +54,7 @@ class ProfileService:
     @staticmethod
     def get_user_full_stats(db: Session, user_id: int) -> Optional[UserProfileStats]:
         """Calcula métricas agregadas e dados de perfil do usuário."""
-        user = db.query(User).filter(User.id == user_id).first()
+        user = db.query(User).filter(User.id == user_id, User.is_deleted == False).first()
         if not user:
             return None
 

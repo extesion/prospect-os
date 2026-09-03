@@ -1340,19 +1340,41 @@
 
     <!-- TAB 6: CONFIGURAÇÕES (ADMIN ONLY) -->
     <div id="tabSettings" class="tab-view">
-      <div class="content-card" style="max-width: 500px;">
-        <div class="section-title">
-          <i class="fa-solid fa-sliders"></i>
-          <span>Metas e Parâmetros da Equipe</span>
-        </div>
-        <form id="settingsForm" style="display: flex; flex-direction: column; gap: 14px;">
-          <div class="form-group">
-            <label>Meta Diária Padrão (Canais)</label>
-            <input type="number" id="cfgDefaultTarget" min="1" max="5000" value="160" required>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; max-width: 960px;">
+        <div class="content-card">
+          <div class="section-title">
+            <i class="fa-solid fa-sliders"></i>
+            <span>Metas e Parâmetros da Equipe</span>
           </div>
-          <button type="submit" class="btn" style="align-self: flex-start;">Salvar Alterações</button>
-          <div id="cfgFeedback" style="font-size: 12px; color: var(--success); display: none;">Configurações salvas!</div>
-        </form>
+          <form id="settingsForm" style="display: flex; flex-direction: column; gap: 14px;">
+            <div class="form-group">
+              <label>Meta Diária Padrão (Canais)</label>
+              <input type="number" id="cfgDefaultTarget" min="1" max="5000" value="160" required>
+            </div>
+            <button type="submit" class="btn" style="align-self: flex-start;">Salvar Alterações</button>
+            <div id="cfgFeedback" style="font-size: 12px; color: var(--success); display: none;">Configurações salvas!</div>
+          </form>
+        </div>
+
+        <!-- ZONA DE PERIGO (RESET DOS DADOS DO SISTEMA) -->
+        <div class="content-card" style="border: 1px solid rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.04);">
+          <div class="section-title" style="color: #ef4444;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>Zona de Perigo</span>
+          </div>
+          <p style="font-size: 12px; color: var(--silver-muted); line-height: 1.5;">
+            Limpa todos os dados operacionais do Prospect OS (canais coletados, histórico, sessões, ciclos, métricas e qualificações de leads).
+          </p>
+          <div style="font-size: 11px; color: #94a3b8;">
+            ✓ Usuários, contas de login, cargos e configurações essenciais são <strong>preservados</strong>.
+          </div>
+          <div style="margin-top: 6px;">
+            <button type="button" class="btn btn-danger" onclick="openSystemResetModal()">
+              <i class="fa-solid fa-trash-can"></i>
+              <span>Resetar Dados do Sistema</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </main>
@@ -1503,7 +1525,7 @@
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group">
               <label>Nível</label>
-              <select id="dashFormRole">
+              <select id="dashFormRole" onchange="handleRoleChangeInModal()">
                 <option value="USER">USER</option>
                 <option value="ADMIN">ADMIN</option>
               </select>
@@ -1520,6 +1542,128 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" onclick="closeDashboardUserModal()">Cancelar</button>
           <button type="submit" class="btn">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: CONFIRMAÇÃO DE EXCLUSÃO DE USUÁRIO (ADMIN)                     -->
+  <!-- ===================================================================== -->
+  <div id="deleteUserModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header" style="border-bottom-color: rgba(239, 68, 68, 0.3);">
+        <div class="modal-title" style="color: #f87171;">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>Excluir Usuário</span>
+        </div>
+        <button class="modal-close" onclick="closeDeleteUserModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 13px; color: var(--silver-light); line-height: 1.5;">
+          Tem certeza que deseja excluir este usuário?
+        </p>
+        <div style="background: var(--card-inner); border: 1px solid var(--card-border); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; font-size: 12px;">
+            <span style="color: var(--silver-muted);">Nome:</span>
+            <strong id="delModalUserName" style="color: var(--silver-light);">-</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px;">
+            <span style="color: var(--silver-muted);">E-mail / Login:</span>
+            <span id="delModalUserEmail" style="font-family: 'JetBrains Mono', monospace; color: var(--silver);">-</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px;">
+            <span style="color: var(--silver-muted);">Cargo:</span>
+            <span id="delModalUserRole" class="badge badge-user">-</span>
+          </div>
+        </div>
+        <p style="font-size: 11px; color: var(--silver-muted);">
+          O usuário será removido e perderá o acesso imediato ao sistema. O histórico e canais serão mantidos íntegros.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <input type="hidden" id="delModalUserId">
+        <button type="button" class="btn btn-secondary" onclick="closeDeleteUserModal()">Cancelar</button>
+        <button type="button" id="btnConfirmDeleteUser" class="btn btn-danger" onclick="executeDeleteDashboardUser()">
+          <i class="fa-solid fa-trash-can"></i>
+          <span>Excluir Definitivamente</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: AUTORIZAÇÃO DE PROMOÇÃO PARA ADMIN (SENHA DO SISTEMA)           -->
+  <!-- ===================================================================== -->
+  <div id="adminPromotionModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title" style="color: #fbbf24;">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Autorização de Privilégio (ADMIN)</span>
+        </div>
+        <button class="modal-close" onclick="closeAdminPromotionModal()">&times;</button>
+      </div>
+      <form id="adminPromotionForm" onsubmit="handleConfirmPromotion(event)">
+        <div class="modal-body">
+          <p style="font-size: 12px; color: var(--silver-muted); line-height: 1.5;">
+            Conceder acesso de <strong style="color: var(--silver-light);">ADMINISTRADOR</strong> é uma ação sensível. Digite a Senha do Sistema para confirmar:
+          </p>
+          <div class="form-group">
+            <label>Senha do Sistema</label>
+            <input type="password" id="promotionSysPassword" required placeholder="••••••••" autocomplete="off">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeAdminPromotionModal()">Cancelar</button>
+          <button type="submit" class="btn">Confirmar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: RESET DOS DADOS DO SISTEMA (ZONA DE PERIGO)                   -->
+  <!-- ===================================================================== -->
+  <div id="systemResetModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header" style="border-bottom-color: rgba(239, 68, 68, 0.4);">
+        <div class="modal-title" style="color: #ef4444;">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>Resetar Dados do Sistema</span>
+        </div>
+        <button class="modal-close" onclick="closeSystemResetModal()">&times;</button>
+      </div>
+      <form id="systemResetForm" onsubmit="handleExecuteSystemReset(event)">
+        <div class="modal-body">
+          <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="font-size: 12px; font-weight: 800; color: #fca5a5; text-transform: uppercase;">
+              ⚠️ Operação Destrutiva
+            </div>
+            <p style="font-size: 12px; color: var(--silver-muted); line-height: 1.5;">
+              Esta ação limpará todos os <strong>canais coletados, históricos, sessões, ciclos de trabalho, notificações, métricas e qualificações de leads</strong>.
+            </p>
+            <p style="font-size: 11px; color: #94a3b8;">
+              ✓ Usuários, credenciais de login, cargos e configurações essenciais serão <strong>preservados</strong>.
+            </p>
+          </div>
+
+          <div class="form-group">
+            <label>Senha do Sistema</label>
+            <input type="password" id="resetSysPassword" required placeholder="••••••••" autocomplete="off">
+          </div>
+
+          <div class="form-group">
+            <label>Digite <span style="color: #ef4444; font-weight: 800;">RESETAR</span> para confirmar:</label>
+            <input type="text" id="resetConfirmationInput" required placeholder="RESETAR" autocomplete="off">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeSystemResetModal()">Cancelar</button>
+          <button type="submit" id="btnExecuteResetSubmit" class="btn btn-danger">
+            <i class="fa-solid fa-trash-can"></i>
+            <span>Confirmar Reset Operacional</span>
+          </button>
         </div>
       </form>
     </div>
@@ -1608,6 +1752,15 @@
         document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
       } else {
         document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+        if (activeTab !== 'overview' && activeTab !== 'ranking') {
+          activeTab = 'overview';
+          document.querySelectorAll('.nav-tabs .nav-tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+          const overBtn = document.querySelector('.nav-tab-btn[data-tab="overview"]');
+          if (overBtn) overBtn.classList.add('active');
+          const overView = document.getElementById('tabOverview');
+          if (overView) overView.classList.add('active');
+        }
       }
 
       // Load avatar image for current user in background
@@ -1635,10 +1788,19 @@
     document.querySelectorAll('.nav-tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         if (btn.classList.contains('filter-pill')) return;
+        const targetTab = btn.dataset.tab;
+        
+        // Strict client-side RBAC tab check
+        const userRole = currentUser ? (currentUser.role || 'USER') : 'USER';
+        if (userRole !== 'ADMIN' && (targetTab === 'history' || targetTab === 'channels' || targetTab === 'users' || targetTab === 'settings')) {
+          showToast('Acesso restrito para administradores.', 'error');
+          return;
+        }
+
         document.querySelectorAll('.nav-tabs .nav-tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
         btn.classList.add('active');
-        activeTab = btn.dataset.tab;
+        activeTab = targetTab;
         const targetView = document.getElementById('tab' + activeTab.charAt(0).toUpperCase() + activeTab.slice(1));
         if (targetView) targetView.classList.add('active');
         refreshCurrentTab();
@@ -1800,8 +1962,9 @@
       }
     }
 
-    // 3. History Tab
+    // 3. History Tab (Admin Only)
     async function loadHistoryData() {
+      if (currentUser.role !== 'ADMIN') return;
       const tbody = document.getElementById('historyTableBody');
       tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--silver-muted); padding: 20px;">Carregando histórico...</td></tr>';
 
@@ -1809,6 +1972,10 @@
         const res = await fetch('/api/work-sessions/history', {
           headers: { 'Authorization': `Bearer ${getToken()}` }
         });
+        if (res.status === 403) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--danger); padding: 20px;">403 FORBIDDEN: Acesso exclusivo para administradores.</td></tr>';
+          return;
+        }
         if (!res.ok) throw new Error('Erro ao carregar');
         const history = await res.json();
 
@@ -1902,18 +2069,31 @@
 
     function renderDashboardUsersTable(users) {
       const tbody = document.getElementById('dashUsersTableBody');
-      tbody.innerHTML = users.map(u => `
+      tbody.innerHTML = users.map(u => {
+        const escapedName = (u.name || '').replace(/'/g, "\\'");
+        const escapedEmail = (u.email || '').replace(/'/g, "\\'");
+        return `
         <tr>
           <td><strong>${u.name}</strong></td>
           <td style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--silver-muted);">${u.email}</td>
           <td style="text-align: center;"><span class="badge ${u.role === 'ADMIN' ? 'badge-admin' : 'badge-user'}">${u.role}</span></td>
           <td style="text-align: center;"><span class="badge ${u.active ? 'badge-active' : 'badge-inactive'}">${u.active ? 'ATIVO' : 'INATIVO'}</span></td>
-          <td style="text-align: right;">
+          <td style="text-align: right; white-space: nowrap;">
             <button class="btn-icon" onclick="openMemberProfileModal(${u.id})" title="Ver Perfil"><i class="fa-solid fa-id-card"></i></button>
             <button class="btn-icon" onclick="openEditDashboardUserModal(${u.id})" title="Editar"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-icon" style="color: #f87171;" onclick="openDeleteUserModal(${u.id}, '${escapedName}', '${escapedEmail}', '${u.role}')" title="Excluir Usuário"><i class="fa-solid fa-trash-can"></i></button>
           </td>
         </tr>
-      `).join('');
+      `;
+      }).join('');
+    }
+
+    let pendingUserPayload = null;
+    let pendingUserUrl = null;
+    let pendingUserMethod = null;
+
+    function handleRoleChangeInModal() {
+      // hook if needed
     }
 
     function openCreateDashboardUserModal() {
@@ -1940,6 +2120,7 @@
       document.getElementById('dashFormPassword').required = false;
       document.getElementById('dashFormPasswordLabel').textContent = 'Nova Senha (deixe em branco para manter)';
       document.getElementById('dashFormRole').value = u.role || 'USER';
+      document.getElementById('dashFormRole').dataset.originalRole = u.role || 'USER';
       document.getElementById('dashFormActive').value = u.active ? 'true' : 'false';
       document.getElementById('dashUserModal').classList.add('active');
     }
@@ -1955,6 +2136,7 @@
       const email = document.getElementById('dashFormEmail').value.trim();
       const password = document.getElementById('dashFormPassword').value;
       const role = document.getElementById('dashFormRole').value;
+      const originalRole = document.getElementById('dashFormRole').dataset.originalRole || 'USER';
       const active = document.getElementById('dashFormActive').value === 'true';
 
       const isEdit = Boolean(userId);
@@ -1974,6 +2156,19 @@
         }
       }
 
+      // Check if promoting to ADMIN or creating as ADMIN -> require System Password
+      if (role === 'ADMIN' && (!isEdit || originalRole !== 'ADMIN')) {
+        pendingUserPayload = payload;
+        pendingUserUrl = url;
+        pendingUserMethod = method;
+        openAdminPromotionModal();
+        return;
+      }
+
+      await submitUserSave(url, method, payload);
+    }
+
+    async function submitUserSave(url, method, payload) {
       try {
         const res = await fetch(url, {
           method: method,
@@ -1989,12 +2184,181 @@
           throw new Error(data.detail || 'Erro ao salvar usuário.');
         }
 
-        showToast(isEdit ? 'Usuário e senha atualizados!' : 'Novo usuário criado com sucesso!', 'success');
+        showToast(method === 'PUT' ? 'Usuário atualizado com sucesso!' : 'Novo usuário criado com sucesso!', 'success');
         closeDashboardUserModal();
+        closeAdminPromotionModal();
         loadUsersData();
+        loadOverviewData();
+        loadRankingData();
       } catch (err) {
         showToast(err.message, 'error');
       }
+    }
+
+    // Admin Promotion Modal (System Password verification)
+    function openAdminPromotionModal() {
+      document.getElementById('promotionSysPassword').value = '';
+      document.getElementById('adminPromotionModal').classList.add('active');
+    }
+
+    function closeAdminPromotionModal() {
+      document.getElementById('adminPromotionModal').classList.remove('active');
+    }
+
+    async function handleConfirmPromotion(e) {
+      e.preventDefault();
+      const sysPwd = document.getElementById('promotionSysPassword').value;
+      if (!sysPwd) {
+        showToast('Digite a Senha do Sistema.', 'error');
+        return;
+      }
+      if (!pendingUserPayload || !pendingUserUrl) {
+        closeAdminPromotionModal();
+        return;
+      }
+
+      pendingUserPayload.system_password = sysPwd;
+      await submitUserSave(pendingUserUrl, pendingUserMethod, pendingUserPayload);
+    }
+
+    // Delete User Modal
+    function openDeleteUserModal(userId, name, email, role) {
+      document.getElementById('delModalUserId').value = userId;
+      document.getElementById('delModalUserName').textContent = name;
+      document.getElementById('delModalUserEmail').textContent = email;
+      const roleEl = document.getElementById('delModalUserRole');
+      roleEl.textContent = role;
+      roleEl.className = `badge ${role === 'ADMIN' ? 'badge-admin' : 'badge-user'}`;
+      document.getElementById('deleteUserModal').classList.add('active');
+    }
+
+    function closeDeleteUserModal() {
+      document.getElementById('deleteUserModal').classList.remove('active');
+    }
+
+    async function executeDeleteDashboardUser() {
+      const userId = document.getElementById('delModalUserId').value;
+      if (!userId) return;
+
+      const delBtn = document.getElementById('btnConfirmDeleteUser');
+      const origText = delBtn.innerHTML;
+      try {
+        delBtn.disabled = true;
+        delBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Excluindo...</span>';
+
+        const res = await fetch(`/api/users/${userId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || 'Erro ao excluir usuário.');
+        }
+
+        showToast('Usuário excluído com sucesso!', 'success');
+        closeDeleteUserModal();
+        loadUsersData();
+        loadOverviewData();
+        loadRankingData();
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        delBtn.disabled = false;
+        delBtn.innerHTML = origText;
+      }
+    }
+
+    // System Reset Modal (Zona de Perigo)
+    function openSystemResetModal() {
+      document.getElementById('resetSysPassword').value = '';
+      document.getElementById('resetConfirmationInput').value = '';
+      document.getElementById('systemResetModal').classList.add('active');
+    }
+
+    function closeSystemResetModal() {
+      document.getElementById('systemResetModal').classList.remove('active');
+    }
+
+    async function handleExecuteSystemReset(e) {
+      e.preventDefault();
+      const sysPwd = document.getElementById('resetSysPassword').value;
+      const confirmation = document.getElementById('resetConfirmationInput').value.trim();
+
+      if (confirmation !== 'RESETAR') {
+        showToast('Digite a palavra RESETAR exatamente em maiúsculas para confirmar.', 'error');
+        return;
+      }
+      if (!sysPwd) {
+        showToast('Digite a Senha do Sistema.', 'error');
+        return;
+      }
+
+      const submitBtn = document.getElementById('btnExecuteResetSubmit');
+      const origText = submitBtn.innerHTML;
+
+      try {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Resetando banco...</span>';
+
+        const res = await fetch('/api/admin/system/reset', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getToken()}`
+          },
+          body: JSON.stringify({
+            system_password: sysPwd,
+            confirmation: confirmation
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || 'Erro ao resetar dados do sistema.');
+        }
+
+        showToast('Reset operacional concluído com sucesso!', 'success');
+        closeSystemResetModal();
+        loadOverviewData();
+        loadRankingData();
+        if (activeTab === 'history') loadHistoryData();
+        if (activeTab === 'channels') loadChannelsData();
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origText;
+      }
+    }
+
+    // Settings Form Submit
+    const settingsForm = document.getElementById('settingsForm');
+    if (settingsForm) {
+      settingsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const targetVal = parseInt(document.getElementById('cfgDefaultTarget').value, 10);
+        try {
+          const res = await fetch('/api/work-sessions/settings', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${getToken()}`
+            },
+            body: JSON.stringify({ default_daily_target: targetVal })
+          });
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.detail || 'Erro ao salvar configurações.');
+          }
+          const feedback = document.getElementById('cfgFeedback');
+          feedback.style.display = 'block';
+          showToast('Configurações salvas!', 'success');
+          setTimeout(() => { feedback.style.display = 'none'; }, 3000);
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      });
     }
 
     // 6. Member Profile Modal

@@ -4,7 +4,7 @@ from typing import Optional, List
 
 from backend.database.connection import get_db
 from backend.database.models import User
-from backend.security.auth import get_current_user
+from backend.security.auth import get_current_user, get_current_admin_user
 from backend.schemas.work_session import (
     WorkSessionStart, WorkSessionResponse, UserRankingItem,
     TeamStatusItem, TeamSummaryResponse, CycleSettingsResponse,
@@ -111,17 +111,12 @@ def get_sessions_history(
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    admin_user: User = Depends(get_current_admin_user)
 ):
     """
-    Histórico detalhado de sessões finalizadas para auditoria e acompanhamento.
-    ADMIN pode visualizar histórico da equipe toda ou filtrar.
-    USER visualiza exclusivamente seu próprio histórico.
+    Histórico detalhado de sessões finalizadas para auditoria e acompanhamento (Exclusivo ADMIN).
     """
-    effective_user_id = user_id
-    if (current_user.role or "USER").upper() != "ADMIN":
-        effective_user_id = current_user.id
-    return WorkSessionService.get_history(db, user_id=effective_user_id, limit=limit, offset=offset)
+    return WorkSessionService.get_history(db, user_id=user_id, limit=limit, offset=offset)
 
 @router.get("/settings", response_model=CycleSettingsResponse)
 def get_cycle_settings(
@@ -136,9 +131,9 @@ def get_cycle_settings(
 def update_cycle_settings(
     data: CycleSettingsUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    admin_user: User = Depends(get_current_admin_user)
 ):
     """
-    Atualiza as configurações de metas e presets de ciclos da equipe.
+    Atualiza as configurações de metas e presets de ciclos da equipe (Exclusivo ADMIN).
     """
     return WorkSessionService.update_cycle_settings(db, data)

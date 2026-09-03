@@ -10,6 +10,8 @@ from backend.config.settings import settings
 from backend.database.connection import get_db
 from backend.database.models import User
 
+import hmac
+
 security = HTTPBearer(auto_error=False)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -20,6 +22,13 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         )
     except Exception:
         return False
+
+def verify_system_password(provided_password: Optional[str]) -> bool:
+    """Valida a senha mestra do sistema com comparação segura de tempo constante."""
+    if not provided_password:
+        return False
+    expected = settings.SYSTEM_ADMIN_PASSWORD or "883800"
+    return hmac.compare_digest(str(provided_password).strip(), str(expected).strip())
 
 def get_password_hash(password: str) -> str:
     salt = bcrypt.gensalt()
@@ -57,7 +66,7 @@ def get_current_user(
         raise credentials_exception
         
     user = db.query(User).filter(User.id == int(user_id)).first()
-    if user is None or not user.active:
+    if user is None or not user.active or getattr(user, "is_deleted", False):
         raise credentials_exception
         
     return user

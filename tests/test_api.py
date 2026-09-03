@@ -16,20 +16,11 @@ from backend.seed import seed
 
 client = TestClient(app)
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(autouse=True)
 def setup_database():
-    # Recreate test db and seed users
-    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     seed()
     yield
-    # Cleanup
-    Base.metadata.drop_all(bind=engine)
-    if os.path.exists("./test_prospector.db"):
-        try:
-            os.remove("./test_prospector.db")
-        except:
-            pass
 
 def test_health_check():
     response = client.get("/health")

@@ -31,12 +31,15 @@ def seed():
                     email=u["email"],
                     password_hash=get_password_hash(u["password"]),
                     role=u.get("role", "USER"),
-                    active=True
+                    active=True,
+                    is_deleted=False
                 )
                 db.add(new_user)
                 created_count += 1
             else:
                 existing.role = u.get("role", "USER")
+                existing.active = True
+                existing.is_deleted = False
 
         default_presets = [
             {"id": "8H", "name": "Ciclo 8 Horas", "hours": 8.0, "target": 160, "rate": 20.0},

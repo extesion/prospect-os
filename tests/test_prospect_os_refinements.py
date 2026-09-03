@@ -14,18 +14,11 @@ from backend.seed import seed
 
 client = TestClient(app)
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(autouse=True)
 def setup_test_db():
-    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     seed()
     yield
-    Base.metadata.drop_all(bind=engine)
-    if os.path.exists("./test_prospect_os.db"):
-        try:
-            os.remove("./test_prospect_os.db")
-        except:
-            pass
 
 def test_rbac_matrix_and_protected_routes():
     # Login ADMIN

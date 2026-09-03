@@ -49,6 +49,9 @@ class Settings(BaseSettings):
     # YouTube API
     YOUTUBE_API_KEY: str = os.getenv("YOUTUBE_API_KEY", "")
 
+    # Master System Administration Password (Protected on Backend)
+    SYSTEM_ADMIN_PASSWORD: str = os.getenv("SYSTEM_ADMIN_PASSWORD", "883800")
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

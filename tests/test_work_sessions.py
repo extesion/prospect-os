@@ -14,18 +14,11 @@ from backend.seed import seed
 
 client = TestClient(app)
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(autouse=True)
 def setup_database():
-    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     seed()
     yield
-    Base.metadata.drop_all(bind=engine)
-    if os.path.exists("./test_work_sessions.db"):
-        try:
-            os.remove("./test_work_sessions.db")
-        except:
-            pass
 
 def test_start_8h_session():
     carlos_token = client.post("/auth/login", json={

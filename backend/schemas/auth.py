@@ -18,6 +18,7 @@ class UserAdminCreate(BaseModel):
     password: str
     role: str = "USER"  # 'ADMIN' or 'USER'
     active: bool = True
+    system_password: Optional[str] = None  # Required if promoting/creating ADMIN
 
 class UserAdminUpdate(BaseModel):
     name: Optional[str] = None
@@ -25,6 +26,7 @@ class UserAdminUpdate(BaseModel):
     role: Optional[str] = None
     active: Optional[bool] = None
     password: Optional[str] = None  # If provided, resets password
+    system_password: Optional[str] = None  # Required if elevating to ADMIN
 
 class UserResponse(BaseModel):
     id: int
