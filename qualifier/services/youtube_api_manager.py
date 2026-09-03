@@ -65,6 +65,17 @@ class YouTubeApiManager:
         return int(total)
 
     @classmethod
+    def get_today_usage_total(cls, db: Session) -> int:
+        """Total estimated units consumed today across all configurations."""
+        today_midnight = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        total = (
+            db.query(func.sum(YouTubeApiUsage.units))
+            .filter(YouTubeApiUsage.requested_at >= today_midnight)
+            .scalar()
+        ) or 0
+        return int(total)
+
+    @classmethod
     def get_active_config(cls, db: Session) -> Tuple[Any, str]:
         """
         Selects an available active API configuration that has remaining daily quota.
@@ -99,6 +110,61 @@ class YouTubeApiManager:
 
         # If all active configs exceeded quota, raise quota exception
         raise YouTubeQuotaExceededException("Limite diário de quota atingido em todas as configurações ativas da YouTube API.")
+
+    @classmethod
+    def select_active_config(
+        cls,
+        db: Session,
+        prefer_config_id: Optional[int] = None,
+        exclude_ids: Optional[List[int]] = None,
+    ) -> Tuple[Any, str]:
+        """
+        Selects next usable active configuration.
+
+        - Honors preferred config id if eligible.
+        - Skips ids in exclude_ids (used during fallback to avoid retrying the same key).
+        - Marks configs that hit daily limit as QUOTA_EXCEEDED.
+        - Falls back to .env key if no DB row is active.
+        """
+        exclude_ids = exclude_ids or []
+        cls.ensure_default_config(db)
+
+        query = (
+            db.query(YouTubeApiConfig)
+            .filter(YouTubeApiConfig.status == "ACTIVE")
+            .order_by(YouTubeApiConfig.id.asc())
+        )
+        candidates = [c for c in query.all() if c.id not in exclude_ids]
+
+        # Prefer specific id if eligible
+        if prefer_config_id is not None:
+            for cfg in candidates:
+                if cfg.id == prefer_config_id:
+                    usage_today = cls.get_today_usage_for_config(db, cfg.id)
+                    if usage_today < cfg.daily_limit:
+                        return cfg, cfg.api_key
+                    break
+
+        for cfg in candidates:
+            usage_today = cls.get_today_usage_for_config(db, cfg.id)
+            if usage_today < cfg.daily_limit:
+                return cfg, cfg.api_key
+            cfg.status = "QUOTA_EXCEEDED"
+            cfg.updated_at = utc_now()
+            db.commit()
+
+        # Fallback to .env directly if no DB config is active
+        env_key = qualification_config.YOUTUBE_API_KEY or os.getenv("YOUTUBE_API_KEY", "")
+        if env_key:
+            dummy = YouTubeApiConfig(
+                id=0,
+                name="Ambiente .env",
+                api_key=env_key,
+                daily_limit=10000,
+                status="ACTIVE",
+            )
+            return dummy, env_key
+        raise ValueError("Nenhuma chave da YouTube API ativa configurada no sistema.")
 
     @classmethod
     def record_usage(

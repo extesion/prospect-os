@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, or_, and_, desc
 
 from backend.database.connection import get_db
-from backend.database.models import Channel, User
+from backend.database.models import Channel, User, QualificationQueueState, utc_now
 from backend.security.auth import get_current_user, get_current_admin_user
 from qualifier.models.qualification_result import QualificationResult
 from qualifier.models.qualification_job import QualificationJob
@@ -60,7 +60,7 @@ def get_status_overview(db: Session = Depends(get_db)):
     total_qualified = db.query(func.count(QualificationResult.id)).filter(QualificationResult.qualification_status == "QUALIFIED").scalar() or 0
     total_review = db.query(func.count(QualificationResult.id)).filter(QualificationResult.qualification_status == "REVIEW").scalar() or 0
     total_rejected = db.query(func.count(QualificationResult.id)).filter(QualificationResult.qualification_status == "REJECTED").scalar() or 0
-    total_failed = db.query(func.count(QualificationResult.id)).filter(QualificationResult.qualification_status == "FAILED").scalar() or 0
+    total_failed = db.query(func.count(QualificationJob.id)).filter(QualificationJob.status == "ERROR").scalar() or 0
     
     total_analyzed = db.query(func.count(QualificationResult.id)).scalar() or 0
     total_not_analyzed = max(0, total_channels - total_analyzed)
@@ -107,7 +107,7 @@ def get_status_overview(db: Session = Depends(get_db)):
 def list_leads(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, le=200),
-    status_filter: Optional[str] = Query(None, description="TODOS, NOT_ANALYZED, QUALIFIED, REVIEW, REJECTED, OUTREACH_READY, FAILED, PENDING"),
+    status_filter: Optional[str] = Query(None, description="TODOS, NOT_ANALYZED, QUALIFIED, REVIEW, REJECTED, OUTREACH_READY, ERROR, PENDING"),
     q: Optional[str] = Query(None, description="Busca por nome, handle ou channel_id"),
     collector_id: Optional[int] = Query(None, description="Isolar leads coletados por usuário específico"),
     has_email: Optional[bool] = Query(None),
@@ -152,13 +152,8 @@ def list_leads(
             query = query.filter(QualificationResult.qualification_status == "REVIEW")
         elif sf == "REJECTED":
             query = query.filter(QualificationResult.qualification_status == "REJECTED")
-        elif sf == "FAILED":
-            query = query.filter(
-                or_(
-                    QualificationResult.qualification_status == "FAILED",
-                    QualificationJob.status == "FAILED"
-                )
-            )
+        elif sf == "ERROR":
+            query = query.filter(QualificationJob.status == "ERROR")
         elif sf == "PENDING":
             query = query.filter(
                 or_(
@@ -201,8 +196,8 @@ def list_leads(
             lead_status = job.status
         elif qual:
             lead_status = qual.qualification_status
-        elif job and job.status == "FAILED":
-            lead_status = "FAILED"
+        elif job and job.status == "ERROR":
+            lead_status = "ERROR"
             error_msg = job.error_message
 
         outreach_ready = bool(qual and qual.score >= qualification_config.SCORE_QUALIFIED_THRESHOLD and qual.email)
@@ -379,7 +374,7 @@ def get_lead_detail_for_modal(
             "first_collected_at": channel.first_collected_at.strftime("%d/%m/%Y %H:%M") if channel.first_collected_at else None
         },
         "qualification": {
-            "status": qual.qualification_status if qual else ("FAILED" if (job and job.status == "FAILED") else "NOT_ANALYZED"),
+            "status": qual.qualification_status if qual else ("ERROR" if (job and job.status == "ERROR") else "NOT_ANALYZED"),
             "score": qual.score if qual else None,
             "detected_niche": qual.detected_niche if qual else None,
             "niche_confidence": qual.niche_confidence if qual else 0.0,
@@ -414,7 +409,7 @@ def get_lead_detail_for_modal(
             "qualification_version": qual.qualification_version if qual else "v1",
             "qualified_at": qual.qualified_at.strftime("%d/%m/%Y %H:%M") if (qual and qual.qualified_at) else None,
             "outreach_ready": bool(qual and qual.score >= qualification_config.SCORE_QUALIFIED_THRESHOLD and qual.email),
-            "error_message": job.error_message if (job and job.status == "FAILED") else None
+            "error_message": job.error_message if (job and job.status == "ERROR") else None
         },
         "analyzed_videos": videos_list
     }
@@ -434,6 +429,42 @@ def get_qualification_queue(
     if status_filter:
         query = query.filter(QualificationJob.status == status_filter.upper())
     return query.order_by(QualificationJob.created_at.desc()).limit(limit).all()
+
+@router.post("/queue/pause")
+def pause_qualification_queue(db: Session = Depends(get_db)):
+    # Ensure row exists
+    state = db.query(QualificationQueueState).first()
+    if not state:
+        state = QualificationQueueState(paused=True)
+        db.add(state)
+    else:
+        state.paused = True
+        state.updated_at = utc_now()
+    db.commit()
+    qualification_config.QUEUE_PAUSED = True
+    return {"paused": True}
+
+@router.post("/queue/resume")
+def resume_qualification_queue(db: Session = Depends(get_db)):
+    state = db.query(QualificationQueueState).first()
+    if state:
+        state.paused = False
+        state.updated_at = utc_now()
+        db.commit()
+    qualification_config.QUEUE_PAUSED = False
+    return {"paused": False}
+
+@router.post("/queue/{channel_id}/cancel")
+def cancel_pending_job(channel_id: str, db: Session = Depends(get_db)):
+    job = db.query(QualificationJob).filter(QualificationJob.channel_id == channel_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job de qualificação não encontrado.")
+    if job.status not in ("PENDING", "RETRY"):
+        raise HTTPException(status_code=409, detail="Somente item pendente pode ser cancelado.")
+    job.status = "CANCELLED"
+    job.finished_at = func.now()
+    db.commit()
+    return {"status": "CANCELLED"}
 
 @router.post("/run")
 def run_qualification_batch(
@@ -455,7 +486,7 @@ def qualify_channel_now(
     result = db.query(QualificationResult).filter(QualificationResult.channel_id == channel_id).first()
     if not result:
         db.refresh(job)
-        if job.status == "FAILED":
+        if job.status == "ERROR":
             raise HTTPException(status_code=400, detail=f"Falha na qualificação: {job.error_message}")
         return {"message": "Job enfileirado para processamento", "job_status": job.status}
     return result
@@ -482,15 +513,15 @@ def get_qualification_stats(db: Session = Depends(get_db)):
     total_qualified = db.query(func.count(QualificationResult.id)).filter(QualificationResult.qualification_status == "QUALIFIED").scalar() or 0
     total_review = db.query(func.count(QualificationResult.id)).filter(QualificationResult.qualification_status == "REVIEW").scalar() or 0
     total_rejected = db.query(func.count(QualificationResult.id)).filter(QualificationResult.qualification_status == "REJECTED").scalar() or 0
-    total_failed = db.query(func.count(QualificationResult.id)).filter(QualificationResult.qualification_status == "FAILED").scalar() or 0
+    total_failed = db.query(func.count(QualificationJob.id)).filter(QualificationJob.status == "ERROR").scalar() or 0
     total_analyzed = db.query(func.count(QualificationResult.id)).scalar() or 0
     total_outreach = db.query(func.count(QualificationResult.id)).filter(QualificationResult.score >= qualification_config.SCORE_QUALIFIED_THRESHOLD, QualificationResult.email != None).scalar() or 0
 
     pending_jobs = db.query(func.count(QualificationJob.id)).filter(QualificationJob.status == "PENDING").scalar() or 0
     processing_jobs = db.query(func.count(QualificationJob.id)).filter(QualificationJob.status == "PROCESSING").scalar() or 0
-    completed_jobs = db.query(func.count(QualificationJob.id)).filter(QualificationJob.status == "COMPLETED").scalar() or 0
+    completed_jobs = db.query(func.count(QualificationJob.id)).filter(QualificationJob.status.in_(["QUALIFIED", "REVIEW", "REJECTED"])).scalar() or 0
     retry_jobs = db.query(func.count(QualificationJob.id)).filter(QualificationJob.status == "RETRY").scalar() or 0
-    failed_jobs = db.query(func.count(QualificationJob.id)).filter(QualificationJob.status == "FAILED").scalar() or 0
+    failed_jobs = db.query(func.count(QualificationJob.id)).filter(QualificationJob.status == "ERROR").scalar() or 0
 
     return QualificationStatsResponse(
         total_channels=total_channels,

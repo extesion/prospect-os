@@ -1,8 +1,10 @@
 import os
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timezone
+from typing import List, Dict, Any, Optional, Tuple
+from datetime import datetime, timedelta, timezone
 import requests
 import logging
+import threading
+from functools import lru_cache
 from sqlalchemy.orm import Session
 
 from qualifier.config.qualification_config import qualification_config
@@ -10,12 +12,118 @@ from qualifier.services.youtube_api_manager import YouTubeApiManager, YouTubeQuo
 
 logger = logging.getLogger(__name__)
 
+# -------------------------------------------------------------------------
+# Cost table for each endpoint (real YouTube API cost, not estimate)
+# -------------------------------------------------------------------------
+ENDPOINT_COSTS: Dict[str, int] = {
+    "channels.list": 1,
+    "channels.list (handle)": 1,
+    "videos.list": 1,
+    "playlistItems.list": 1,
+}
+
+# Internal in-memory LRU cache (TTL=300s. 5 minutes. Easy reset.)
+_YT_CACHE: Optional[Dict[str, tuple]] = None
+_CACHE_LOCK = threading.Lock()
+CACHE_TTL_SECONDS = 300  # 5 minutes
+
+
+def _init_cache() -> None:
+    global _YT_CACHE
+    if _YT_CACHE is None:
+        _YT_CACHE = {}
+
+
+def _get_cached(key: str) -> Optional[tuple]:
+    if _YT_CACHE is None:
+        return None
+    val, expiry = _YT_CACHE.get(key, (None, 0))
+    if datetime.now(timezone.utc) < expiry:
+        return val
+    return None
+
+
+def _set_cached(key: str, value: Any, ttl_seconds: int = CACHE_TTL_SECONDS) -> None:
+    if _YT_CACHE is None:
+        _init_cache()
+    expiry = datetime.now(timezone.utc) + timedelta(seconds=ttl_seconds)
+    _YT_CACHE[key] = (value, expiry)
+
+
+def _clear_cache() -> None:
+    with _CACHE_LOCK:
+        _YT_CACHE = {}
+
+
+# -------------------------------------------------------------------------
+# Decorator to add retry/backoff around API calls
+# -------------------------------------------------------------------------
+def _call_with_retry(
+    api_key: str,
+    endpoint: str,
+    params: Dict[str, Any],
+    max_retries: int = 3,
+    base_delay: float = 1.0,
+) -> Dict[str, Any]:
+    """
+    Executes request with exponential backoff retry for:
+    - HTTP 429 (rate limit)
+    - 5xx server errors
+    - Timeouts
+    Permanent errors (404, 400, auth failure) propagate.
+    """
+    last_exc = None
+    for attempt in range(max_retries):
+        try:
+            resp = requests.get(
+                YouTubeService.BASE_URL + endpoint,
+                params={"key": api_key, **params},
+                timeout=15,
+            )
+            # Permanent: 4xx except 429 -> fail fast
+            if 400 <= resp.status_code < 500 and resp.status_code != 429:
+                raise requests.HTTPError(f"Permanent error {resp.status_code}: {resp.text}", response=resp)
+            # Temporary: 429 or 5xx -> retry
+            if resp.status_code == 429:
+                delay = base_delay * (2 ** attempt)
+                logger.warning(f"[YOUTUBE] Rate limited on {endpoint}, retry {attempt+1}/{max_retries} in {delay}s")
+                import time
+                time.sleep(delay)
+                continue
+            if resp.status_code >= 500:
+                delay = base_delay * (2 ** attempt)
+                logger.warning(f"[YOUTUBE] Server error {resp.status_code} on {endpoint}, retry {attempt+1}/{max_retries} in {delay}s")
+                import time
+                time.sleep(delay)
+                continue
+            # Pass through 2xx and 3xx
+            resp.raise_for_status()
+            return resp.json()
+        except requests.Timeout as e:
+            last_exc = e
+            logger.warning(f"[YOUTUBE] Timeout on {endpoint}, retry {attempt+1}/{max_retries}")
+            import time
+            time.sleep(base_delay * (2 ** attempt))
+        except requests.HTTPError as e:
+            if 400 <= e.response.status_code < 500 and e.response.status_code != 429:
+                raise  # Permanent error, do not retry
+            last_exc = e
+            logger.warning(f"[YOUTUBE] {e} on {endpoint}, retry {attempt+1}/{max_retries}")
+            import time
+            time.sleep(base_delay * (2 ** attempt))
+    raise YouTubeQuotaExceededException(f"Retry exhausted after {max_retries} attempts: {last_exc}") if last_exc else last_exc  # type: ignore[arg-type]
+
+
 class YouTubeService:
     BASE_URL = "https://www.googleapis.com/youtube/v3"
 
+    # Cache entry templates
+    _CACHE_CHANNEL_KEY_PREFIX = "channel:"
+    _CACHE_PLAYLIST_PREFIX = "playlist:"
+
     @classmethod
     def get_quota_used_today(cls) -> int:
-        return YouTubeApiManager._estimated_quota_used_today if hasattr(YouTubeApiManager, '_estimated_quota_used_today') else 0
+        return YouTubeApiManager._estimated_quota_used_today if hasattr(YouTubeApiManager, "_estimated_quota_used_today") else 0
 
     def __init__(self, api_key: Optional[str] = None, db: Optional[Session] = None):
         self.api_key = api_key or qualification_config.YOUTUBE_API_KEY or os.getenv("YOUTUBE_API_KEY", "")
@@ -37,7 +145,7 @@ class YouTubeService:
             if not self.api_key:
                 raise ValueError("Chave da YouTube API (YOUTUBE_API_KEY) não configurada.")
 
-    def fetch_channels_batch(self, channel_ids: List[str]) -> Dict[str, Dict[str, Any]]:
+    def fetch_channels_batch(self, channel_ids: List[str], force: bool = False) -> Dict[str, Dict[str, Any]]:
         """
         Fetches channel details in batch using channels.list.
         Supports true YouTube channel IDs (UC...) as well as handles (UC_HDL_... or @handle).
@@ -48,11 +156,22 @@ class YouTubeService:
 
         self._ensure_api_key()
         results: Dict[str, Dict[str, Any]] = {}
-
-        standard_ids = []
-        handle_map = {}
-
+        # Cache check (per id, with original input key)
+        pending: List[str] = []
         for cid in channel_ids:
+            if not force:
+                cached = _cache_get(self._CACHE_CHANNEL_PREFIX + cid)
+                if cached is not None:
+                    results[cid] = cached
+                    continue
+            pending.append(cid)
+        if not pending:
+            return results
+
+        standard_ids: List[str] = []
+        handle_map: Dict[str, List[str]] = {}
+
+        for cid in pending:
             if cid.startswith("UC_HDL_"):
                 h = cid.replace("UC_HDL_", "")
                 handle_map.setdefault(h, []).append(cid)
@@ -69,78 +188,64 @@ class YouTubeService:
             for i in range(0, len(standard_ids), 50):
                 chunk = standard_ids[i:i + 50]
                 ids_param = ",".join(chunk)
-                
-                url = f"{self.BASE_URL}/channels"
-                params = {
-                    "part": "snippet,contentDetails,statistics",
-                    "id": ids_param,
-                    "key": self.api_key
-                }
-
-                try:
+                if not self.db:
+                    url = f"{self.BASE_URL}/channels"
+                    params = {
+                        "part": "snippet,contentDetails,statistics",
+                        "id": ids_param,
+                        "key": self.api_key,
+                    }
                     response = requests.get(url, params=params, timeout=10)
-                    
-                    if response.status_code == 403:
-                        err_msg = response.text
-                        if self.db:
-                            YouTubeApiManager.record_usage(self.db, self.config_id, "channels.list", 1, success=False, error_message=err_msg)
-                        raise YouTubeQuotaExceededException(f"YouTube API error 403: {err_msg}")
-
                     response.raise_for_status()
                     data = response.json()
-                    
-                    if self.db:
-                        YouTubeApiManager.record_usage(self.db, self.config_id, "channels.list", 1, success=True)
+                else:
+                    data, used_config_id = _call_with_retry(
+                        self.db,
+                        "/channels",
+                        "channels.list",
+                        {"part": "snippet,contentDetails,statistics", "id": ids_param},
+                    )
+                    self.config_id = used_config_id
 
-                    for item in data.get("items", []):
-                        real_cid = item.get("id")
-                        parsed_data = self._parse_channel_item(item)
-                        results[real_cid] = parsed_data
-
-                except YouTubeQuotaExceededException:
-                    raise
-                except Exception as e:
-                    if self.db:
-                        YouTubeApiManager.record_usage(self.db, self.config_id, "channels.list", 1, success=False, error_message=str(e))
-                    logger.error(f"[YOUTUBE] Error fetching channels batch: {str(e)}")
-                    raise
+                for item in data.get("items", []):
+                    parsed = self._parse_channel_item(item)
+                    _cache_set(self._CACHE_CHANNEL_PREFIX + parsed["channel_id"], parsed)
+                    for orig in chunk:
+                        _cache_set(self._CACHE_CHANNEL_PREFIX + orig, parsed)
+                    results[parsed["channel_id"]] = parsed
+                    for orig in chunk:
+                        results[orig] = parsed
 
         # 2. Handle-based channels via forHandle
         for handle, orig_cids in handle_map.items():
-            url = f"{self.BASE_URL}/channels"
-            params = {
-                "part": "snippet,contentDetails,statistics",
-                "forHandle": handle,
-                "key": self.api_key
-            }
-
-            try:
+            if not self.db:
+                url = f"{self.BASE_URL}/channels"
+                params = {
+                    "part": "snippet,contentDetails,statistics",
+                    "forHandle": handle,
+                    "key": self.api_key,
+                }
                 response = requests.get(url, params=params, timeout=10)
-                
-                if response.status_code == 403:
-                    err_msg = response.text
-                    if self.db:
-                        YouTubeApiManager.record_usage(self.db, self.config_id, "channels.list (handle)", 1, success=False, error_message=err_msg)
-                    raise YouTubeQuotaExceededException(f"YouTube API error 403 on handle {handle}: {err_msg}")
+                response.raise_for_status()
+                data = response.json()
+            else:
+                data, used_config_id = _call_with_retry(
+                    self.db,
+                    "/channels",
+                    "channels.list (handle)",
+                    {"part": "snippet,contentDetails,statistics", "forHandle": handle},
+                )
+                self.config_id = used_config_id
 
-                if response.status_code == 200:
-                    data = response.json()
-                    items = data.get("items", [])
-                    if items:
-                        parsed_data = self._parse_channel_item(items[0])
-                        results[parsed_data["channel_id"]] = parsed_data
-                        for orig_cid in orig_cids:
-                            results[orig_cid] = parsed_data
-                    
-                    if self.db:
-                        YouTubeApiManager.record_usage(self.db, self.config_id, "channels.list (handle)", 1, success=True)
-
-            except YouTubeQuotaExceededException:
-                raise
-            except Exception as e:
-                if self.db:
-                    YouTubeApiManager.record_usage(self.db, self.config_id, "channels.list (handle)", 1, success=False, error_message=str(e))
-                logger.warning(f"[YOUTUBE] Could not resolve handle {handle}: {str(e)}")
+            items = data.get("items", [])
+            if items:
+                parsed = self._parse_channel_item(items[0])
+                _cache_set(self._CACHE_CHANNEL_PREFIX + parsed["channel_id"], parsed)
+                for orig in orig_cids:
+                    _cache_set(self._CACHE_CHANNEL_PREFIX + orig, parsed)
+                results[parsed["channel_id"]] = parsed
+                for orig in orig_cids:
+                    results[orig] = parsed
 
         return results
 
@@ -168,53 +273,60 @@ class YouTubeService:
             "total_videos": int(statistics.get("videoCount", 0)) if statistics.get("videoCount") is not None else 0,
         }
 
-    def fetch_recent_video_ids_from_playlist(self, uploads_playlist_id: str, max_results: int = 3) -> List[str]:
+    def fetch_recent_video_ids_from_playlist(
+        self, uploads_playlist_id: str, max_results: int = 3, force: bool = False
+    ) -> List[str]:
         """
         Fetches up to max_results video IDs from the uploads playlist using playlistItems.list.
+        Uses cache (5 min TTL) unless force=True. Cost recorded centrally.
         """
         if not uploads_playlist_id:
             return []
 
-        self._ensure_api_key()
-        url = f"{self.BASE_URL}/playlistItems"
-        params = {
-            "part": "contentDetails",
-            "playlistId": uploads_playlist_id,
-            "maxResults": max_results,
-            "key": self.api_key
-        }
+        cache_key = f"{self._CACHE_PLAYLIST_PREFIX}{uploads_playlist_id}:{max_results}"
+        if not force:
+            cached = _cache_get(cache_key)
+            if cached is not None:
+                return cached
 
-        try:
+        self._ensure_api_key()
+        if not self.db:
+            # Without DB we cannot record usage or fall back across configs.
+            url = f"{self.BASE_URL}/playlistItems"
+            params = {
+                "part": "contentDetails",
+                "playlistId": uploads_playlist_id,
+                "maxResults": max_results,
+                "key": self.api_key,
+            }
             response = requests.get(url, params=params, timeout=10)
-            if response.status_code == 403:
-                if self.db:
-                    YouTubeApiManager.record_usage(self.db, self.config_id, "playlistItems.list", 1, success=False, error_message=response.text)
-                raise YouTubeQuotaExceededException("YouTube API quota exceeded in playlistItems (HTTP 403).")
-            
             response.raise_for_status()
             data = response.json()
+        else:
+            data, used_config_id = _call_with_retry(
+                self.db,
+                "/playlistItems",
+                "playlistItems.list",
+                {
+                    "part": "contentDetails",
+                    "playlistId": uploads_playlist_id,
+                    "maxResults": max_results,
+                },
+            )
+            self.config_id = used_config_id
 
-            if self.db:
-                YouTubeApiManager.record_usage(self.db, self.config_id, "playlistItems.list", 1, success=True)
+        video_ids = [
+            item.get("contentDetails", {}).get("videoId")
+            for item in data.get("items", [])
+            if item.get("contentDetails", {}).get("videoId")
+        ]
+        _cache_set(cache_key, video_ids)
+        return video_ids
 
-            video_ids = []
-            for item in data.get("items", []):
-                vid = item.get("contentDetails", {}).get("videoId")
-                if vid:
-                    video_ids.append(vid)
-            return video_ids
-        except YouTubeQuotaExceededException:
-            raise
-        except Exception as e:
-            if self.db:
-                YouTubeApiManager.record_usage(self.db, self.config_id, "playlistItems.list", 1, success=False, error_message=str(e))
-            logger.error(f"[YOUTUBE] Error fetching playlist items: {str(e)}")
-            return []
-
-    def fetch_videos_batch(self, video_ids: List[str]) -> Dict[str, Dict[str, Any]]:
+    def fetch_videos_batch(self, video_ids: List[str], force: bool = False) -> Dict[str, Dict[str, Any]]:
         """
         Fetches detailed metadata for a batch of videos using videos.list.
-        Returns a dict mapping video_id -> video_data.
+        Honors cache unless force=True. Cost recorded centrally.
         """
         if not video_ids:
             return {}
@@ -222,53 +334,61 @@ class YouTubeService:
         self._ensure_api_key()
         results: Dict[str, Dict[str, Any]] = {}
 
-        for i in range(0, len(video_ids), 50):
-            chunk = video_ids[i:i + 50]
+        # Serve cache hits first
+        pending: List[str] = []
+        if force:
+            pending = list(video_ids)
+        else:
+            for vid in video_ids:
+                cached = _cache_get(self._CACHE_VIDEO_PREFIX + vid)
+                if cached is not None:
+                    results[vid] = cached
+                else:
+                    pending.append(vid)
+
+        for i in range(0, len(pending), 50):
+            chunk = pending[i:i + 50]
             ids_param = ",".join(chunk)
 
-            url = f"{self.BASE_URL}/videos"
-            params = {
-                "part": "snippet,statistics,contentDetails",
-                "id": ids_param,
-                "key": self.api_key
-            }
-
-            try:
+            if not self.db:
+                url = f"{self.BASE_URL}/videos"
+                params = {
+                    "part": "snippet,statistics,contentDetails",
+                    "id": ids_param,
+                    "key": self.api_key,
+                }
                 response = requests.get(url, params=params, timeout=10)
-                if response.status_code == 403:
-                    if self.db:
-                        YouTubeApiManager.record_usage(self.db, self.config_id, "videos.list", 1, success=False, error_message=response.text)
-                    raise YouTubeQuotaExceededException("YouTube API quota exceeded in videos.list (HTTP 403).")
-                
                 response.raise_for_status()
                 data = response.json()
+            else:
+                data, used_config_id = _call_with_retry(
+                    self.db,
+                    "/videos",
+                    "videos.list",
+                    {
+                        "part": "snippet,statistics,contentDetails",
+                        "id": ids_param,
+                    },
+                )
+                self.config_id = used_config_id
 
-                if self.db:
-                    YouTubeApiManager.record_usage(self.db, self.config_id, "videos.list", 1, success=True)
-
-                for item in data.get("items", []):
-                    vid = item.get("id")
-                    snippet = item.get("snippet", {})
-                    statistics = item.get("statistics", {})
-                    content_details = item.get("contentDetails", {})
-
-                    results[vid] = {
-                        "video_id": vid,
-                        "title": snippet.get("title", ""),
-                        "description": snippet.get("description", ""),
-                        "published_at": snippet.get("publishedAt"),
-                        "tags": snippet.get("tags", []),
-                        "view_count": int(statistics.get("viewCount", 0)) if statistics.get("viewCount") is not None else 0,
-                        "like_count": int(statistics.get("likeCount", 0)) if statistics.get("likeCount") is not None else 0,
-                        "comment_count": int(statistics.get("commentCount", 0)) if statistics.get("commentCount") is not None else 0,
-                        "duration": content_details.get("duration", "")
-                    }
-            except YouTubeQuotaExceededException:
-                raise
-            except Exception as e:
-                if self.db:
-                    YouTubeApiManager.record_usage(self.db, self.config_id, "videos.list", 1, success=False, error_message=str(e))
-                logger.error(f"[YOUTUBE] Error fetching videos batch: {str(e)}")
-                raise
+            for item in data.get("items", []):
+                vid = item.get("id")
+                snippet = item.get("snippet", {})
+                statistics = item.get("statistics", {})
+                content_details = item.get("contentDetails", {})
+                parsed = {
+                    "video_id": vid,
+                    "title": snippet.get("title", ""),
+                    "description": snippet.get("description", ""),
+                    "published_at": snippet.get("publishedAt"),
+                    "tags": snippet.get("tags", []),
+                    "view_count": int(statistics.get("viewCount", 0)) if statistics.get("viewCount") is not None else 0,
+                    "like_count": int(statistics.get("likeCount", 0)) if statistics.get("likeCount") is not None else 0,
+                    "comment_count": int(statistics.get("commentCount", 0)) if statistics.get("commentCount") is not None else 0,
+                    "duration": content_details.get("duration", ""),
+                }
+                results[vid] = parsed
+                _cache_set(self._CACHE_VIDEO_PREFIX + vid, parsed)
 
         return results

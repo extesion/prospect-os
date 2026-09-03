@@ -800,7 +800,7 @@
           <button class="tab-pill" onclick="filterByTab('OUTREACH_READY')" data-tab="OUTREACH_READY">
             Prontos Contato (<span id="tab-count-outreach">0</span>)
           </button>
-          <button class="tab-pill" onclick="filterByTab('FAILED')" data-tab="FAILED">
+          <button class="tab-pill" onclick="filterByTab('ERROR')" data-tab="ERROR">
             Erros
           </button>
         </div>
@@ -1006,11 +1006,17 @@
         window.location.href = '/login?next=/qualifier';
         return;
       }
-      loadCollectorsList();
-      loadStatusOverview();
-      loadQuotaBar();
-      loadLeads();
-      loadApiLogs();
+      fetch('/api/auth/me').then(async res => {
+        if (!res.ok || (await res.json()).role !== 'ADMIN') {
+          window.location.href = '/dashboard';
+          return;
+        }
+        loadCollectorsList();
+        loadStatusOverview();
+        loadQuotaBar();
+        loadLeads();
+        loadApiLogs();
+      });
 
       // Poll every 10s
       setInterval(() => {
@@ -1195,7 +1201,9 @@
         else if (lead.status === 'REVIEW') badgeHtml = '<span class="badge badge-rev">REVISAR</span>';
         else if (lead.status === 'REJECTED') badgeHtml = '<span class="badge badge-rej">DESCARTADO</span>';
         else if (lead.status === 'PROCESSING') badgeHtml = '<span class="badge badge-proc">ANALISANDO...</span>';
-        else if (lead.status === 'FAILED') badgeHtml = '<span class="badge badge-rej">ERRO</span>';
+        else if (lead.status === 'ERROR') badgeHtml = '<span class="badge badge-rej">ERRO</span>';
+        else if (lead.status === 'RETRY') badgeHtml = '<span class="badge badge-rev">RETRY</span>';
+        else if (lead.status === 'PENDING') badgeHtml = '<span class="badge badge-none">PENDENTE</span>';
 
         // Score
         let scoreVal = '—';

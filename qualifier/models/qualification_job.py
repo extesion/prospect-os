@@ -13,7 +13,7 @@ class QualificationJob(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     channel_id = Column(String(64), index=True, nullable=False)
     
-    # Status: 'PENDING', 'PROCESSING', 'COMPLETED', 'RETRY', 'FAILED', 'CANCELLED'
+    # Status: PENDING, PROCESSING, QUALIFIED, REVIEW, REJECTED, ERROR, RETRY, CANCELLED
     status = Column(String(20), default="PENDING", index=True, nullable=False)
     
     attempts = Column(Integer, default=0, nullable=False)

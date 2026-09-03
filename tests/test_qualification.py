@@ -300,7 +300,44 @@ def test_qualification_service_and_worker():
         assert qual_res.days_since_last_video == 3
         assert qual_res.subscribers == 50000
         assert len(qual_res.analyzed_videos) == 2
+        db.refresh(job)
+        assert job.status == "QUALIFIED"
+        assert 0 <= qual_res.score <= 100
+        assert qual_res.score_breakdown
+        assert any(k["source"] == "channel_description" for k in qual_res.keywords_found)
 
+    finally:
+        db.close()
+
+
+def test_activity_boundaries_and_retry_error_states():
+    for days, expected in [(30, "ACTIVE"), (31, "LOW_ACTIVITY"), (90, "LOW_ACTIVITY"), (91, "INACTIVE")]:
+        assert QualificationService._classify_activity(days) == expected
+
+    job = QualificationJob(channel_id="UC_RETRY", status="PROCESSING", attempts=0, max_attempts=2)
+    worker = QualificationWorker(youtube_service=MagicMock(spec=YouTubeService))
+    worker._handle_retry(job, "temporary")
+    assert job.status == "RETRY" and job.next_retry_at and job.error_message == "temporary"
+    worker._handle_retry(job, "persistent")
+    assert job.status == "ERROR" and job.finished_at
+
+
+def test_queue_pause_invalid_channel_and_no_double_enqueue():
+    db = SessionLocal()
+    try:
+        with pytest.raises(ValueError):
+            QualificationService.enqueue_channel(db, "UC_DOES_NOT_EXIST")
+        existing = db.query(Channel).first()
+        job = QualificationService.enqueue_channel(db, existing.channel_id)
+        job.status = "PROCESSING"
+        db.commit()
+        same = QualificationService.enqueue_channel(db, existing.channel_id)
+        assert same.id == job.id and same.status == "PROCESSING"
+
+        from qualifier.config.qualification_config import qualification_config
+        qualification_config.QUEUE_PAUSED = True
+        assert QualificationWorker(youtube_service=MagicMock(spec=YouTubeService)).process_batch(db)["processed"] == 0
+        qualification_config.QUEUE_PAUSED = False
     finally:
         db.close()
 

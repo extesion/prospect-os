@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 
 from backend.database.connection import SessionLocal
-from backend.database.models import utc_now
+from backend.database.models import utc_now, QualificationQueueState
 from qualifier.models.qualification_job import QualificationJob
 from qualifier.models.qualification_result import QualificationResult
 from qualifier.config.qualification_config import qualification_config
@@ -17,10 +17,25 @@ logger = logging.getLogger("qualifier.worker")
 
 RETRY_BACKOFF_MINUTES = [5, 15, 60]
 
+
+def load_queue_state_from_db() -> bool:
+    """Reads persisted paused state and applies it to the in-memory config."""
+    try:
+        with SessionLocal() as db:
+            state = db.query(QualificationQueueState).first()
+            qualification_config.QUEUE_PAUSED = bool(state.paused) if state else False
+            return qualification_config.QUEUE_PAUSED
+    except Exception as e:
+        logger.warning(f"[WORKER] Could not load queue state from DB: {e}")
+        return qualification_config.QUEUE_PAUSED
+
+
 class QualificationWorker:
 
     def __init__(self, youtube_service: Optional[YouTubeService] = None):
         self.yt_service = youtube_service or YouTubeService()
+        # Sync from DB on construction so restarts preserve state.
+        load_queue_state_from_db()
 
     def fetch_pending_jobs(self, db: Session, limit: int = 50) -> List[QualificationJob]:
         """
@@ -51,20 +66,32 @@ class QualificationWorker:
         """
         Processes a batch of pending qualification jobs efficiently.
         """
-        jobs = self.fetch_pending_jobs(db, limit=limit)
-        if not jobs:
+        # Re-read persisted state on every batch.
+        load_queue_state_from_db()
+        if qualification_config.QUEUE_PAUSED:
+            return {"processed": 0, "completed": 0, "failed": 0, "retried": 0, "message": "Queue paused"}
+
+        candidates = self.fetch_pending_jobs(db, limit=limit)
+        if not candidates:
             return {"processed": 0, "completed": 0, "failed": 0, "retried": 0, "message": "No pending jobs"}
 
         now = utc_now()
-        job_map: Dict[str, QualificationJob] = {}
-
-        # 1. Atomically mark selected jobs as PROCESSING
-        for job in jobs:
-            job.status = "PROCESSING"
-            job.started_at = now
-            job.updated_at = now
-            job_map[job.channel_id] = job
+        claimed_ids: List[int] = []
+        for candidate in candidates:
+            claimed = db.query(QualificationJob).filter(
+                QualificationJob.id == candidate.id,
+                QualificationJob.status == candidate.status,
+            ).update({
+                QualificationJob.status: "PROCESSING",
+                QualificationJob.started_at: now,
+                QualificationJob.updated_at: now,
+            }, synchronize_session=False)
+            if claimed:
+                claimed_ids.append(candidate.id)
         db.commit()
+
+        jobs = db.query(QualificationJob).filter(QualificationJob.id.in_(claimed_ids)).all() if claimed_ids else []
+        job_map: Dict[str, QualificationJob] = {job.channel_id: job for job in jobs}
 
         channel_ids = list(job_map.keys())
         logger.info(f"[QUALIFICATION] Starting batch of {len(channel_ids)} channels: {channel_ids[:5]}...")
@@ -82,7 +109,7 @@ class QualificationWorker:
             if existing_result and existing_result.youtube_data_updated_at and existing_result.youtube_data_updated_at > cache_valid_threshold:
                 # Can reuse cached data and complete job
                 job = job_map[cid]
-                job.status = "COMPLETED"
+                job.status = existing_result.qualification_status
                 job.finished_at = utc_now()
                 job.updated_at = utc_now()
                 completed_count += 1
@@ -131,7 +158,7 @@ class QualificationWorker:
 
             if not ch_data:
                 # Permanent error: channel not found or deleted on YouTube
-                job.status = "FAILED"
+                job.status = "ERROR"
                 job.error_message = "Canal não encontrado ou excluído no YouTube (404/Empty)."
                 job.finished_at = utc_now()
                 job.updated_at = utc_now()
@@ -192,7 +219,7 @@ class QualificationWorker:
                     channel_data=ch_data_to_store,
                     recent_videos=recent_videos
                 )
-                job.status = "COMPLETED"
+                job.status = qual_result.qualification_status
                 job.error_message = None
                 job.finished_at = utc_now()
                 job.updated_at = utc_now()
@@ -217,7 +244,7 @@ class QualificationWorker:
         job.updated_at = utc_now()
 
         if job.attempts >= job.max_attempts:
-            job.status = "FAILED"
+            job.status = "ERROR"
             job.finished_at = utc_now()
         else:
             job.status = "RETRY"

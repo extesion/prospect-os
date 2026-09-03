@@ -131,7 +131,7 @@ class LeadItemResponse(BaseModel):
     collector_id: Optional[int] = None
     collector_name: Optional[str] = None
     
-    status: str # NOT_ANALYZED, PENDING, PROCESSING, QUALIFIED, REVIEW, REJECTED, FAILED, RETRY
+    status: str # NOT_ANALYZED, PENDING, PROCESSING, QUALIFIED, REVIEW, REJECTED, ERROR, RETRY
     score: Optional[int] = None
     detected_niche: Optional[str] = None
     niche_confidence: Optional[float] = 0.0

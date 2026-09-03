@@ -33,11 +33,25 @@ def parse_iso_datetime(dt_str: Optional[str]) -> Optional[datetime]:
 class QualificationService:
 
     @staticmethod
+    def _classify_activity(days_since_last_video: Optional[int]) -> str:
+        if days_since_last_video is None or days_since_last_video > qualification_config.LOW_ACTIVITY_DAYS_THRESHOLD:
+            return "INACTIVE"
+        if days_since_last_video > qualification_config.ACTIVE_DAYS_THRESHOLD:
+            return "LOW_ACTIVITY"
+        return "ACTIVE"
+
+    @staticmethod
     def enqueue_channel(db: Session, channel_id: str, priority: int = 0) -> QualificationJob:
         """Adds or re-activates a qualification job for a channel."""
         now = utc_now()
+        channel = db.query(Channel.id).filter(Channel.channel_id == channel_id).first()
+        if not channel:
+            raise ValueError("Canal não encontrado no banco de dados.")
+
         existing_job = db.query(QualificationJob).filter(QualificationJob.channel_id == channel_id).first()
         if existing_job:
+            if existing_job.status == "PROCESSING":
+                return existing_job
             existing_job.status = "PENDING"
             existing_job.attempts = 0
             existing_job.priority = priority
@@ -168,12 +182,7 @@ class QualificationService:
                 delta = now - most_recent_dt
                 days_since_last_video = max(0, delta.days)
 
-                if days_since_last_video <= qualification_config.ACTIVE_DAYS_THRESHOLD:
-                    activity_status = "ACTIVE"
-                elif days_since_last_video <= qualification_config.LOW_ACTIVITY_DAYS_THRESHOLD:
-                    activity_status = "LOW_ACTIVITY"
-                else:
-                    activity_status = "INACTIVE"
+                activity_status = QualificationService._classify_activity(days_since_last_video)
 
             if len(sorted_videos) >= 2:
                 timestamps = [parse_iso_datetime(v.get("published_at")) for v in sorted_videos if v.get("published_at")]

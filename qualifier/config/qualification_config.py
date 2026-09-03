@@ -31,6 +31,7 @@ class QualificationConfig(BaseModel):
     BATCH_SIZE: int = Field(default=50)
     REQUALIFICATION_INTERVAL_DAYS: int = Field(default=30)
     QUALIFICATION_VERSION: str = Field(default="v1")
+    QUEUE_PAUSED: bool = Field(default=False)
 
     # Activity thresholds
     ACTIVE_DAYS_THRESHOLD: int = Field(default=30)

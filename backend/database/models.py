@@ -248,3 +248,14 @@ class AuditLog(Base):
 
     actor = relationship("User", foreign_keys=[actor_user_id])
 
+
+class QualificationQueueState(Base):
+    __tablename__ = "qualification_queue_state"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    paused = Column(Boolean, default=False, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    __table_args__ = (
+        Index("idx_queue_state", "paused"),
+    )
