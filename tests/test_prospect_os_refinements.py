@@ -68,7 +68,12 @@ def test_notifications_lifecycle_and_single_goal_trigger():
     carlos_token = carlos_login.json()["access_token"]
     carlos_headers = {"Authorization": f"Bearer {carlos_token}"}
 
-    # 1. Start session -> triggers USER_START_SESSION notification
+    # Login Maria para verificar SESSION_STARTED (ator nao recebe, outros recebem)
+    maria_login = client.post("/auth/login", json={"email": "maria@prospector.com", "password": "123"})
+    maria_token = maria_login.json()["access_token"]
+    maria_headers = {"Authorization": f"Bearer {maria_token}"}
+
+    # 1. Start session -> triggers SESSION_STARTED notification para outros usuarios
     start_res = client.post("/work-sessions/start", json={
         "daily_target": 2,
         "target_hours": 8.0,
@@ -76,10 +81,9 @@ def test_notifications_lifecycle_and_single_goal_trigger():
     }, headers=carlos_headers)
     assert start_res.status_code == 200
 
-    # Verify notification created
-    notifs = client.get("/notifications", headers=carlos_headers).json()
-    assert len(notifs) >= 1
-    assert any(n["type"] == "USER_START_SESSION" for n in notifs)
+    # Verificar que Maria recebeu SESSION_STARTED (nao Carlos, pois ele eh o ator)
+    maria_notifs = client.get("/notifications", headers=maria_headers).json()
+    assert any(n["type"] == "SESSION_STARTED" for n in maria_notifs)
 
     # 2. Collect channel 1
     ch1 = client.post("/channels", json={
@@ -89,7 +93,7 @@ def test_notifications_lifecycle_and_single_goal_trigger():
     }, headers=carlos_headers)
     assert ch1.status_code == 200
 
-    # 3. Collect channel 2 -> Reaches goal (daily_target = 2) -> triggers USER_REACHED_GOAL
+    # 3. Collect channel 2 -> Reaches goal (daily_target = 2) -> triggers GOAL_REACHED
     ch2 = client.post("/channels", json={
         "channel_id": "UC_TEST_NOTIF_002",
         "channel_name": "Test Notif Channel 2",
@@ -97,7 +101,7 @@ def test_notifications_lifecycle_and_single_goal_trigger():
     }, headers=carlos_headers)
     assert ch2.status_code == 200
 
-    # 4. Collect channel 3 -> Exceeds goal, MUST NOT create duplicate USER_REACHED_GOAL
+    # 4. Collect channel 3 -> Exceeds goal, MUST NOT create duplicate GOAL_REACHED
     ch3 = client.post("/channels", json={
         "channel_id": "UC_TEST_NOTIF_003",
         "channel_name": "Test Notif Channel 3",
@@ -106,15 +110,15 @@ def test_notifications_lifecycle_and_single_goal_trigger():
     assert ch3.status_code == 200
 
     notifs_after = client.get("/notifications", headers=carlos_headers).json()
-    goal_notifs = [n for n in notifs_after if n["type"] == "USER_REACHED_GOAL"]
+    goal_notifs = [n for n in notifs_after if n["type"] == "GOAL_REACHED"]
     assert len(goal_notifs) == 1, "Goal notification must trigger exactly ONCE per cycle"
 
-    # 5. Finish session -> triggers USER_COMPLETE_CYCLE
+    # 5. Finish session -> triggers CYCLE_COMPLETED
     finish_res = client.post("/work-sessions/finish", headers=carlos_headers)
     assert finish_res.status_code == 200
 
     notifs_final = client.get("/notifications", headers=carlos_headers).json()
-    cycle_notifs = [n for n in notifs_final if n["type"] == "USER_COMPLETE_CYCLE"]
+    cycle_notifs = [n for n in notifs_final if n["type"] == "CYCLE_COMPLETED"]
     assert len(cycle_notifs) >= 1
 
 def test_member_profile_stats_and_averages():

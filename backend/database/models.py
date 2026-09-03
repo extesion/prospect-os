@@ -169,12 +169,14 @@ class Notification(Base):
     __tablename__ = "notifications"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    type = Column(String(50), nullable=False)  # 'USER_START_SESSION', 'USER_REACHED_GOAL', 'USER_COMPLETE_CYCLE', 'USER_END_SESSION', 'SYSTEM'
+    type = Column(String(50), nullable=False)  # 'SESSION_STARTED', 'GOAL_REACHED', 'CYCLE_COMPLETED', 'SYSTEM'
     actor_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
-    target_user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True) # None = Broadcast to all team
+    target_user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     title = Column(String(200), nullable=False)
     message = Column(Text, nullable=False)
-    metadata_json = Column(Text, nullable=True) # JSON with extra payload (channels, rate, cycle_type, etc.)
+    metadata_json = Column(Text, nullable=True) # JSON with extra payload
+    # Chave idempotente: garante 1 notif por (tipo, destinatário, sessão/ciclo)
+    dedupe_key = Column(String(200), nullable=True, unique=True, index=True)
     read_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
 
@@ -184,6 +186,7 @@ class Notification(Base):
     __table_args__ = (
         Index("idx_notifications_created", "created_at"),
         Index("idx_notifications_target", "target_user_id"),
+        Index("idx_notifications_read", "target_user_id", "read_at"),
     )
 
 

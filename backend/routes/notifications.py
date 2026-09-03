@@ -26,9 +26,7 @@ def get_unread_count(
     current_user: User = Depends(get_current_user)
 ):
     """Retorna a contagem de notificações não lidas."""
-    count = db.query(Notification).filter(
-        (Notification.target_user_id == current_user.id) | (Notification.target_user_id == None)
-    ).filter(Notification.read_at == None).count()
+    count = NotificationService.get_unread_count(db, current_user)
     return NotificationCountResponse(unread_count=count)
 
 @router.post("/{notification_id}/read")

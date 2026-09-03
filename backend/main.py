@@ -68,6 +68,11 @@ try:
                                    ("duration_ms", "INTEGER NOT NULL DEFAULT 0"), ("captured_at", "TIMESTAMP")):
                 if name not in music_cols:
                     conn.execute(text(f"ALTER TABLE user_music_connections ADD COLUMN {name} {sql_type}"))
+            notif_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(notifications)")).fetchall()]
+            if "dedupe_key" not in notif_cols:
+                conn.execute(text("ALTER TABLE notifications ADD COLUMN dedupe_key VARCHAR(200)"))
+            if "target_user_id" in notif_cols:
+                pass  # already exists
 except Exception as e:
     logger.warning(f"Startup DB check: {e}")
 

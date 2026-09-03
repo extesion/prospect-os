@@ -201,14 +201,9 @@ class WorkSessionService:
         # Disparar notificação interna de início de turno
         try:
             from backend.services.notification_service import NotificationService
-            start_time_str = now.strftime("%H:%M")
-            NotificationService.create_notification(
-                db=db,
-                notification_type="USER_START_SESSION",
-                actor_user_id=user.id,
-                title="Turno Iniciado",
-                message=f"{user.name} iniciou um turno de trabalho às {start_time_str}.",
-                metadata={"session_id": new_session.id, "cycle_type": new_session.cycle_type, "target": new_session.daily_target}
+            NotificationService.notify_session_started(
+                db=db, actor=user, session_id=new_session.id,
+                cycle_type=new_session.cycle_type, daily_target=new_session.daily_target,
             )
         except Exception as e:
             logger.warning(f"Erro ao disparar notificação de início de turno: {e}")
@@ -347,18 +342,10 @@ class WorkSessionService:
             active_hours = session.active_seconds / 3600.0
             avg_rate = round(session.collected_count / active_hours, 1) if active_hours > 0.01 else 0.0
             time_str = format_seconds_hours_mins(session.active_seconds)
-            NotificationService.create_notification(
-                db=db,
-                notification_type="USER_COMPLETE_CYCLE",
-                actor_user_id=user.id,
-                title="Ciclo Finalizado",
-                message=f"🏁 {user.name} finalizou seu ciclo: {session.collected_count} canais em {time_str} ({avg_rate} canais/h).",
-                metadata={
-                    "session_id": session.id,
-                    "collected_count": session.collected_count,
-                    "active_seconds": session.active_seconds,
-                    "average_rate": avg_rate
-                }
+            NotificationService.notify_cycle_completed(
+                db=db, actor=user, session_id=session.id,
+                collected_count=session.collected_count, active_seconds=session.active_seconds,
+                average_rate=avg_rate, time_str=time_str,
             )
         except Exception as e:
             logger.warning(f"Erro ao disparar notificação de fim de ciclo: {e}")
@@ -410,17 +397,10 @@ class WorkSessionService:
                     from backend.services.notification_service import NotificationService
                     user = db.query(User).filter(User.id == user_id).first()
                     u_name = user.name if user else "Operador"
-                    NotificationService.create_notification(
-                        db=db,
-                        notification_type="USER_REACHED_GOAL",
-                        actor_user_id=user_id,
-                        title="Meta Atingida! 🎯",
-                        message=f"🎯 {u_name} atingiu a meta de {session.daily_target} canais!",
-                        metadata={
-                            "session_id": session.id,
-                            "daily_target": session.daily_target,
-                            "collected_count": session.collected_count
-                        }
+                    NotificationService.notify_goal_reached(
+                        db=db, actor_user_id=user_id, session_id=session.id,
+                        daily_target=session.daily_target, collected_count=session.collected_count,
+                        actor_name=u_name,
                     )
                 except Exception as e:
                     logger.warning(f"Erro ao disparar notificação de meta atingida: {e}")
