@@ -32,12 +32,11 @@ def override_get_db():
     finally:
         db.close()
 
-app.dependency_overrides[get_db] = override_get_db
-
 client = TestClient(app)
 
 @pytest.fixture(autouse=True)
 def setup_and_clean_db():
+    app.dependency_overrides[get_db] = override_get_db
     Base.metadata.create_all(bind=test_engine)
     db = TestingSessionLocal()
     db.query(WorkSessionEvent).delete()
@@ -58,6 +57,7 @@ def setup_and_clean_db():
     db.query(User).delete()
     db.commit()
     db.close()
+    app.dependency_overrides.pop(get_db, None)
 
 def create_test_user(email: str, name: str, role: str = "USER", password: str = "pass123", is_admin: bool = False, active: bool = True):
     db = TestingSessionLocal()

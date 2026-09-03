@@ -3,12 +3,22 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 
 from backend.database.connection import get_db
-from backend.database.models import User
+from backend.database.models import User, utc_now
 from backend.schemas.auth import UserLogin, UserCreate, UserResponse, TokenResponse
 from backend.security.auth import verify_password, get_password_hash, create_access_token, get_current_user
 from backend.config.settings import settings
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+@router.post("/heartbeat")
+def heartbeat(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Registra presença recente do usuário autenticado."""
+    current_user.last_seen_at = utc_now()
+    db.commit()
+    return {"status": "ok"}
 
 @router.post("/login", response_model=TokenResponse)
 def login(login_data: UserLogin, db: Session = Depends(get_db)):

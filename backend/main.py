@@ -39,6 +39,12 @@ try:
                         ALTER TABLE users ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE;
                         ALTER TABLE users ADD COLUMN deleted_at TIMESTAMP WITH TIME ZONE;
                     END IF;
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name = 'users' AND column_name = 'last_seen_at'
+                    ) THEN
+                        ALTER TABLE users ADD COLUMN last_seen_at TIMESTAMP WITH TIME ZONE;
+                    END IF;
                 END $$;
             """))
         elif "sqlite" in str(engine.url):
@@ -49,6 +55,8 @@ try:
                 conn.execute(text("ALTER TABLE users ADD COLUMN is_deleted BOOLEAN DEFAULT 0"))
             if "deleted_at" not in col_names:
                 conn.execute(text("ALTER TABLE users ADD COLUMN deleted_at TIMESTAMP"))
+            if "last_seen_at" not in col_names:
+                conn.execute(text("ALTER TABLE users ADD COLUMN last_seen_at TIMESTAMP"))
 except Exception as e:
     logger.warning(f"Startup DB check: {e}")
 

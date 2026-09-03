@@ -51,19 +51,36 @@ class UserRankingItem(BaseModel):
 class TeamStatusItem(BaseModel):
     user_id: int
     user_name: str
+    role: str = "USER"
     avatar_url: Optional[str] = None
     banner_url: Optional[str] = None
-    presence: str = "offline"  # 'online', 'offline'
+    presence: str = "offline"  # 'online', 'offline'; independent from work status
     session_id: Optional[int] = None
-    session_status: str  # 'ACTIVE', 'PAUSED', 'IDLE', 'FINISHED'
-    active_seconds: int
-    formatted_time: str
-    collected_count: int
-    daily_target: int
-    current_rate: float
+    session_status: str  # 'ACTIVE', 'PAUSED', 'IDLE'
+    active_seconds: int = 0
+    formatted_time: str = "00:00:00"
+    collected_count: int = 0
+    daily_target: int = 0
+    current_rate: float = 0.0
     required_rate: float = 0.0
-    progress_percentage: float
+    progress_percentage: float = 0.0
+    projected_finish_display: Optional[str] = None
+    hours_today: float = 0.0
+    hours_this_week: float = 0.0
+    hours_this_month: float = 0.0
+    total_hours_worked: float = 0.0
+    channels_today: int = 0
+    channels_this_week: int = 0
+    channels_this_month: int = 0
+    total_channels_collected: int = 0
+    daily_avg_hours: float = 0.0
+    daily_avg_channels: float = 0.0
+    avg_channels_per_hour: float = 0.0
+    completed_cycles_count: int = 0
+    goals_reached_count: int = 0
+    chart_7d: List[Dict[str, Any]] = Field(default_factory=list)
     now_playing: Optional[Dict[str, Any]] = None
+    music_status: str = "Nada tocando"
 
 class TeamSummaryResponse(BaseModel):
     users_working_count: int

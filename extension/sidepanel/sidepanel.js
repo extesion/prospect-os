@@ -54,6 +54,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let currentSession = null;
   let timerInterval = null;
   let pollInterval = null;
+  let heartbeatInterval = null;
   let selectedCycleType = "8H";
   let selectedTargetHours = 8.0;
   let selectedDailyTarget = 160;
@@ -82,6 +83,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   function showLoginView() {
     clearInterval(timerInterval);
     clearInterval(pollInterval);
+    clearInterval(heartbeatInterval);
     viewLogin.classList.remove("hidden");
     viewWorkspace.classList.add("hidden");
   }
@@ -132,6 +134,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Start intervals
     clearInterval(pollInterval);
+    clearInterval(heartbeatInterval);
+    window.prospectorAPI.heartbeat().catch(() => {});
+    heartbeatInterval = setInterval(() => {
+      window.prospectorAPI.heartbeat().catch(() => {});
+    }, 45000);
     pollInterval = setInterval(() => {
       updatePageChannelsStats();
       updateLiveMusic();

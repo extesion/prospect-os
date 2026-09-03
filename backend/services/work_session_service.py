@@ -5,7 +5,7 @@ from sqlalchemy import func, and_, or_
 import json
 import logging
 
-from backend.database.models import User, UserProfile, UserMusicConnection, WorkSession, WorkSessionEvent, CycleSetting, utc_now
+from backend.database.models import User, UserProfile, UserMusicConnection, WorkSession, WorkSessionEvent, CycleSetting, Channel, utc_now
 from backend.schemas.work_session import (
     WorkSessionStart, WorkSessionResponse, UserRankingItem,
     TeamStatusItem, TeamSummaryResponse, CyclePresetItem,
@@ -521,107 +521,102 @@ class WorkSessionService:
 
         all_users = db.query(User).filter(User.active == True, User.is_deleted == False).all()
         valid_user_ids = {u.id for u in all_users}
+        if not valid_user_ids:
+            return TeamSummaryResponse(users_working_count=0, total_hours_today_seconds=0,
+                formatted_total_hours_today="00h 00min", total_channels_today=0,
+                team_average_rate=0.0, members=[])
 
-        profiles = db.query(UserProfile).filter(UserProfile.user_id.in_(valid_user_ids) if valid_user_ids else False).all()
+        profiles = db.query(UserProfile).filter(UserProfile.user_id.in_(valid_user_ids)).all()
         profile_map = {p.user_id: p for p in profiles}
-
-        music_conns = db.query(UserMusicConnection).filter(
-            UserMusicConnection.is_connected == True,
-            UserMusicConnection.user_id.in_(valid_user_ids) if valid_user_ids else False
-        ).all()
+        music_conns = db.query(UserMusicConnection).filter(UserMusicConnection.user_id.in_(valid_user_ids)).all()
         music_map = {m.user_id: m for m in music_conns}
+        all_sessions = db.query(WorkSession).filter(WorkSession.user_id.in_(valid_user_ids)).all()
+        all_channels = db.query(Channel).filter(Channel.first_collected_by_id.in_(valid_user_ids)).all()
 
-        # Busca sessões ativas/pausadas de usuários válidos
-        current_sessions = (
-            db.query(WorkSession)
-            .filter(WorkSession.status.in_(["ACTIVE", "PAUSED"]))
-            .filter(WorkSession.user_id.in_(valid_user_ids) if valid_user_ids else False)
-            .all()
-        )
-        current_session_map = {s.user_id: s for s in current_sessions}
+        current_session_map = {}
+        sessions_by_user = {uid: [] for uid in valid_user_ids}
+        channels_by_user = {uid: [] for uid in valid_user_ids}
+        for s in all_sessions:
+            sessions_by_user[s.user_id].append(s)
+            if s.status in ["ACTIVE", "PAUSED"]:
+                old = current_session_map.get(s.user_id)
+                if not old or ensure_utc(s.started_at) > ensure_utc(old.started_at):
+                    current_session_map[s.user_id] = s
+        for channel in all_channels:
+            channels_by_user[channel.first_collected_by_id].append(channel)
 
-        # Busca todas as sessões de hoje de usuários válidos
-        today_sessions = (
-            db.query(WorkSession)
-            .filter(WorkSession.started_at >= today_start)
-            .filter(WorkSession.user_id.in_(valid_user_ids) if valid_user_ids else False)
-            .all()
-        )
-
+        week_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        chart_start = today_start - timedelta(days=6)
         total_hours_today_seconds = 0
-        total_channels_today = 0
-        users_working_count = 0
-
-        for s in today_sessions:
-            active = s.active_seconds
-            if s.status == "ACTIVE":
-                last_resumed = ensure_utc(s.last_resumed_at) or now
-                elapsed = int((now - last_resumed).total_seconds())
-                if elapsed > 0:
-                    active += elapsed
-            total_hours_today_seconds += active
-            total_channels_today += s.collected_count
-
+        total_channels_today = sum(1 for c in all_channels if ensure_utc(c.first_collected_at) >= today_start)
+        users_working_count = sum(1 for s in current_session_map.values() if s.status == "ACTIVE")
         members: List[TeamStatusItem] = []
         for u in all_users:
-            sess = current_session_map.get(u.id)
-            p = profile_map.get(u.id)
-            m_conn = music_map.get(u.id)
-            avatar_url = p.avatar_url if p else None
-            banner_url = p.banner_url if p else None
+            sess, p, m_conn = current_session_map.get(u.id), profile_map.get(u.id), music_map.get(u.id)
+            user_sessions, user_channels = sessions_by_user[u.id], channels_by_user[u.id]
+            seconds = {"today": 0, "week": 0, "month": 0, "total": 0}
+            daily_seconds, daily_channels = {}, {}
+            completed_cycles = goals_reached = 0
+            for item in user_sessions:
+                started = ensure_utc(item.started_at)
+                active = item.active_seconds
+                if item.status == "ACTIVE":
+                    active += max(0, int((now - (ensure_utc(item.last_resumed_at) or now)).total_seconds()))
+                seconds["total"] += active
+                if started >= today_start: seconds["today"] += active
+                if started >= week_start: seconds["week"] += active
+                if started >= month_start: seconds["month"] += active
+                day = started.strftime("%Y-%m-%d")
+                daily_seconds[day] = daily_seconds.get(day, 0) + active
+                completed_cycles += item.status == "FINISHED"
+                goals_reached += item.collected_count >= item.daily_target
+            total_hours_today_seconds += seconds["today"]
+            for channel in user_channels:
+                collected = ensure_utc(channel.first_collected_at)
+                day = collected.strftime("%Y-%m-%d")
+                daily_channels[day] = daily_channels.get(day, 0) + 1
+            channels_today = sum(1 for c in user_channels if ensure_utc(c.first_collected_at) >= today_start)
+            channels_week = sum(1 for c in user_channels if ensure_utc(c.first_collected_at) >= week_start)
+            channels_month = sum(1 for c in user_channels if ensure_utc(c.first_collected_at) >= month_start)
+            active_days = len(set(daily_seconds) | set(daily_channels)) or 1
+            total_hours = seconds["total"] / 3600
+            chart = [{"date": (chart_start + timedelta(days=i)).strftime("%Y-%m-%d"),
+                      "label": (chart_start + timedelta(days=i)).strftime("%d/%m"),
+                      "channels": daily_channels.get((chart_start + timedelta(days=i)).strftime("%Y-%m-%d"), 0)}
+                     for i in range(7)]
 
-            # Music payload
+            last_seen = ensure_utc(u.last_seen_at)
+            presence = "online" if last_seen and last_seen >= now - timedelta(seconds=90) else "offline"
             now_playing = None
-            if m_conn and (p is None or p.show_music_to_team) and m_conn.current_track_name:
-                now_playing = {
-                    "provider": m_conn.provider,
-                    "track_name": m_conn.current_track_name,
-                    "artist": m_conn.current_artist,
-                    "album_art": m_conn.current_album_art,
-                    "is_playing": m_conn.is_playing
-                }
-
-            if sess:
-                if sess.status == "ACTIVE":
-                    users_working_count += 1
-
-                res = WorkSessionService.compute_session_response(sess, u.name)
-                presence = "online" if sess.status in ["ACTIVE", "PAUSED"] else "offline"
-                members.append(TeamStatusItem(
-                    user_id=u.id,
-                    user_name=u.name,
-                    avatar_url=avatar_url,
-                    banner_url=banner_url,
-                    presence=presence,
-                    session_id=sess.id,
-                    session_status=sess.status,
-                    active_seconds=res.current_active_seconds,
-                    formatted_time=res.formatted_active_time,
-                    collected_count=sess.collected_count,
-                    daily_target=sess.daily_target,
-                    current_rate=res.current_rate,
-                    required_rate=res.required_rate,
-                    progress_percentage=res.progress_percentage,
-                    now_playing=now_playing
-                ))
-            else:
-                members.append(TeamStatusItem(
-                    user_id=u.id,
-                    user_name=u.name,
-                    avatar_url=avatar_url,
-                    banner_url=banner_url,
-                    presence="offline",
-                    session_id=None,
-                    session_status="IDLE",
-                    active_seconds=0,
-                    formatted_time="00:00:00",
-                    collected_count=0,
-                    daily_target=160,
-                    current_rate=0.0,
-                    required_rate=0.0,
-                    progress_percentage=0.0,
-                    now_playing=now_playing
-                ))
+            if m_conn and m_conn.is_connected and (p is None or p.show_music_to_team) and m_conn.current_track_name:
+                now_playing = {"provider": m_conn.provider or "spotify", "track_name": m_conn.current_track_name or "--",
+                               "artist": m_conn.current_artist or "--", "album_art": m_conn.current_album_art,
+                               "is_playing": bool(m_conn.is_playing)}
+            res = WorkSessionService.compute_session_response(sess, u.name) if sess else None
+            members.append(TeamStatusItem(
+                user_id=u.id, user_name=u.name or "Usuário", role=u.role or "USER",
+                avatar_url=p.avatar_url if p else None, banner_url=p.banner_url if p else None,
+                presence=presence, session_id=sess.id if sess else None,
+                session_status=sess.status if sess else "IDLE",
+                active_seconds=res.current_active_seconds if res else 0,
+                formatted_time=res.formatted_active_time if res else "00:00:00",
+                collected_count=sess.collected_count if sess else 0,
+                daily_target=sess.daily_target if sess else 0,
+                current_rate=res.current_rate if res else 0.0,
+                required_rate=res.required_rate if res else 0.0,
+                progress_percentage=res.progress_percentage if res else 0.0,
+                projected_finish_display=res.projected_finish_display if res else None,
+                hours_today=round(seconds["today"] / 3600, 1), hours_this_week=round(seconds["week"] / 3600, 1),
+                hours_this_month=round(seconds["month"] / 3600, 1), total_hours_worked=round(total_hours, 1),
+                channels_today=channels_today, channels_this_week=channels_week, channels_this_month=channels_month,
+                total_channels_collected=len(user_channels), daily_avg_hours=round(total_hours / active_days, 1),
+                daily_avg_channels=round(len(user_channels) / active_days, 1),
+                avg_channels_per_hour=round(len(user_channels) / total_hours, 1) if total_hours > .05 else 0.0,
+                completed_cycles_count=completed_cycles, goals_reached_count=goals_reached, chart_7d=chart,
+                now_playing=now_playing,
+                music_status=("Tocando" if now_playing and now_playing["is_playing"] else "Pausado") if now_playing else "Nada tocando"
+            ))
 
         # Calcula média da equipe (canais/h)
         total_active_hours = total_hours_today_seconds / 3600.0

@@ -128,6 +128,10 @@ class ProspectorAPI {
     return await this.request("/auth/me", { method: "GET" });
   }
 
+  async heartbeat() {
+    return await this.request("/auth/heartbeat", { method: "POST" });
+  }
+
   async checkChannels(channelIds) {
     if (!channelIds || channelIds.length === 0) return { channels: {} };
     return await this.request("/channels/check", {

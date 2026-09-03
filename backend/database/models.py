@@ -19,6 +19,7 @@ class User(Base):
     active = Column(Boolean, default=True, nullable=False)
     is_deleted = Column(Boolean, default=False, nullable=False)
     deleted_at = Column(DateTime(timezone=True), nullable=True)
+    last_seen_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
     channels = relationship("Channel", back_populates="first_collector", foreign_keys="Channel.first_collected_by_id")

@@ -473,6 +473,18 @@
       transition: width 0.3s ease;
     }
 
+    .member-presence { font-size: 10px; color: var(--silver-muted); }
+    .member-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .member-metric { background: var(--card-inner); padding: 7px 4px; border-radius: 7px; text-align: center; }
+    .member-chart { height: 45px; display: flex; align-items: end; gap: 4px; padding: 5px; background: var(--card-inner); border-radius: 8px; }
+    .member-chart-bar { flex: 1; min-height: 2px; background: #aeb4be; border-radius: 2px 2px 0 0; }
+    .member-session { padding: 9px; border: 1px solid rgba(255,255,255,.06); border-radius: 9px; }
+    .member-session-head, .member-music { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 10px; }
+    .member-music { padding: 7px; background: var(--card-inner); border-radius: 8px; color: var(--silver-muted); }
+    @media (min-width: 1200px) { .team-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (min-width: 700px) and (max-width: 1199px) { .team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 699px) { .team-grid { grid-template-columns: 1fr; } .member-metrics { grid-template-columns: repeat(3, 1fr); } }
+
     /* Content Cards & Tables */
     .content-card {
       background: var(--card-bg);
@@ -1840,23 +1852,37 @@
 
     function renderTeamGrid(members) {
       const grid = document.getElementById('teamMembersGrid');
-      if (!members || members.length === 0) {
+      if (!Array.isArray(members) || members.length === 0) {
         grid.innerHTML = '<div style="color: var(--silver-muted); padding: 16px;">Nenhum usuário cadastrado.</div>';
         return;
       }
+      const safe = value => {
+        if (value === undefined || value === null || (typeof value === 'number' && !Number.isFinite(value))) return '--';
+        return String(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+      };
+      const num = value => Number.isFinite(Number(value)) ? Number(value) : 0;
+      const asset = value => typeof value === 'string' && /^(data:image\/|\/static\/|https?:\/\/)/.test(value) ? value.replace(/["'()]/g, '') : '';
 
       grid.innerHTML = members.map(m => {
-        const statusClass = (m.session_status || 'idle').toLowerCase();
-        const statusLabel = m.session_status === 'ACTIVE' ? '● TRABALHANDO' : (m.session_status === 'PAUSED' ? '⏸ PAUSADO' : '○ PARADO');
-        const initial = (m.user_name || 'U').charAt(0).toUpperCase();
+        const statusClass = ['ACTIVE', 'PAUSED'].includes(m.session_status) ? m.session_status.toLowerCase() : 'idle';
+        const statusLabel = m.session_status === 'ACTIVE' ? 'TRABALHANDO' : (m.session_status === 'PAUSED' ? 'PAUSADO' : 'PARADO');
+        const name = safe(m.user_name === undefined || m.user_name === null ? 'Usuário' : m.user_name);
+        const initial = name.charAt(0).toUpperCase() || 'U';
         const presenceClass = m.presence === 'online' ? 'online' : 'offline';
-        const bannerStyle = m.banner_url ? `background-image: url('${m.banner_url}');` : `background: linear-gradient(135deg, #181924, #0b0c10);`;
-        const avatarStyle = m.avatar_url ? `background-image: url('${m.avatar_url}');` : ``;
-
-        const timeDisplay = m.formatted_time || '00:00:00';
-        const channelsDisplay = m.collected_count !== undefined && m.collected_count !== null ? m.collected_count : 0;
-        const rateDisplay = (m.current_rate || 0).toFixed(1) + '/h';
-        const progressVal = Math.min(100, Math.max(0, m.progress_percentage || 0));
+        const avatar = asset(m.avatar_url), banner = asset(m.banner_url);
+        const bannerStyle = banner ? `background-image:url('${banner}')` : 'background:#15171b';
+        const avatarStyle = avatar ? `background-image:url('${avatar}')` : '';
+        const progressVal = Math.min(100, Math.max(0, num(m.progress_percentage)));
+        const chart = Array.isArray(m.chart_7d) ? m.chart_7d : [];
+        const maxChart = Math.max(1, ...chart.map(d => num(d.channels)));
+        const metrics = [
+          ['Horas hoje', num(m.hours_today).toFixed(1)], ['Horas semana', num(m.hours_this_week).toFixed(1)],
+          ['Horas mês', num(m.hours_this_month).toFixed(1)], ['Horas total', num(m.total_hours_worked).toFixed(1)],
+          ['Canais hoje', num(m.channels_today)], ['Canais semana', num(m.channels_this_week)],
+          ['Canais mês', num(m.channels_this_month)], ['Canais total', num(m.total_channels_collected)],
+          ['Média h/dia', num(m.daily_avg_hours).toFixed(1)], ['Média canais/dia', num(m.daily_avg_channels).toFixed(1)],
+          ['Média canais/h', num(m.avg_channels_per_hour).toFixed(1)], ['Ciclos / metas', `${num(m.completed_cycles_count)} / ${num(m.goals_reached_count)}`]
+        ];
 
         return `
           <div class="member-card" onclick="openMemberProfileModal(${m.user_id})">
@@ -1865,54 +1891,28 @@
               <div class="member-header">
                 <div class="member-info">
                   <div class="member-avatar-wrapper">
-                    <div class="member-avatar" style="${avatarStyle}">${m.avatar_url ? '' : initial}</div>
+                    <div class="member-avatar" style="${avatarStyle}">${avatar ? '' : initial}</div>
                     <div class="presence-dot ${presenceClass}"></div>
                   </div>
-                  <div>
-                    <div class="member-name">${m.user_name}</div>
-                    <div style="font-size: 10px; color: var(--silver-muted);">${m.session_status === 'ACTIVE' ? 'Em produção' : (m.session_status === 'PAUSED' ? 'Em pausa' : 'Disponível')}</div>
-                  </div>
+                  <div><div class="member-name">${name}</div><div class="member-presence">${safe(m.role || 'USER')} · ${presenceClass === 'online' ? 'Online' : 'Offline'}</div></div>
                 </div>
                 <span class="status-tag ${statusClass}">${statusLabel}</span>
               </div>
 
-              <div class="member-stats-row">
-                <div>
-                  <div class="m-stat-val">${timeDisplay}</div>
-                  <div class="m-stat-lbl">Tempo Ativo</div>
+              ${m.session_id ? `<div class="member-session">
+                <div class="member-session-head"><b>Sessão atual</b><span>${safe(m.formatted_time || '00:00:00')}</span></div>
+                <div class="member-stats-row">
+                  <div><div class="m-stat-val">${num(m.collected_count)}</div><div class="m-stat-lbl">Canais / ${num(m.daily_target)}</div></div>
+                  <div><div class="m-stat-val">${num(m.current_rate).toFixed(1)}/h</div><div class="m-stat-lbl">Ritmo atual</div></div>
+                  <div><div class="m-stat-val">${num(m.required_rate).toFixed(1)}/h</div><div class="m-stat-lbl">Necessário</div></div>
                 </div>
-                <div>
-                  <div class="m-stat-val">${channelsDisplay}</div>
-                  <div class="m-stat-lbl">Canais</div>
-                </div>
-                <div>
-                  <div class="m-stat-val">${rateDisplay}</div>
-                  <div class="m-stat-lbl">Ritmo</div>
-                </div>
-              </div>
+                <div class="member-session-head"><span>${progressVal.toFixed(1)}%</span><span>${safe(m.projected_finish_display || '--')}</span></div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${progressVal}%"></div></div>
+              </div>` : '<div class="member-session member-presence">Sem sessão ativa</div>'}
 
-              <div>
-                <div class="progress-bar-bg">
-                  <div class="progress-bar-fill" style="width: ${progressVal}%;"></div>
-                </div>
-              </div>
-
-              ${m.now_playing && m.now_playing.track_name ? `
-                <div style="display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 6px 8px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px;">
-                  <div style="width: 22px; height: 22px; border-radius: 4px; background: #171822; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; ${m.now_playing.album_art ? `background-image: url('${m.now_playing.album_art}');` : ''}">
-                    ${m.now_playing.album_art ? '' : '🎵'}
-                  </div>
-                  <div style="flex: 1; min-width: 0;">
-                    <div style="font-size: 10px; font-weight: 700; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                      ${m.now_playing.track_name}
-                    </div>
-                    <div style="font-size: 9px; color: var(--silver-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                      ${m.now_playing.artist || 'Música ao vivo'}
-                    </div>
-                  </div>
-                  <span style="font-size: 8px; font-weight: 800; color: #10b981; text-transform: uppercase;">${(m.now_playing.provider || 'SPOTIFY').toUpperCase()}</span>
-                </div>
-              ` : ''}
+              <div class="member-metrics">${metrics.map(([label, value]) => `<div class="member-metric"><div class="m-stat-val">${safe(value)}</div><div class="m-stat-lbl">${label}</div></div>`).join('')}</div>
+              <div><div class="m-stat-lbl">Canais nos últimos 7 dias</div><div class="member-chart">${chart.map(d => `<div class="member-chart-bar" title="${safe(d.label)}: ${num(d.channels)}" style="height:${Math.max(5, num(d.channels) / maxChart * 100)}%"></div>`).join('')}</div></div>
+              ${m.now_playing ? `<div class="member-music"><span>${safe(m.now_playing.track_name)} · ${safe(m.now_playing.artist)}</span><b>${safe(m.now_playing.provider)} · ${safe(m.music_status)}</b></div>` : '<div class="member-music"><span>Nada tocando</span></div>'}
             </div>
           </div>
         `;
@@ -2656,8 +2656,20 @@
       }
     });
 
+    async function sendHeartbeat() {
+      const token = getToken();
+      if (!token) return;
+      try {
+        await fetch('/api/auth/heartbeat', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      } catch (e) {}
+    }
+
     // Initialize Application
-    checkAuthentication();
+    checkAuthentication().then(sendHeartbeat);
+    setInterval(sendHeartbeat, 45000);
     setInterval(loadOverviewData, 10000);
     setInterval(loadUnreadNotifications, 15000);
   </script>

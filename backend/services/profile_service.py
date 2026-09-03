@@ -77,8 +77,11 @@ class ProfileService:
             res = WorkSessionService.compute_session_response(active_sess, user.name)
             active_sess_dict = res.model_dump()
 
-        # Presence: Ativo se tem sessão ativa ou atualizou recentemente
-        presence_status = "online" if active_sess else "offline"
+        # Presença depende somente do heartbeat, nunca da sessão/perfil/música.
+        last_seen = user.last_seen_at
+        if last_seen and last_seen.tzinfo is None:
+            last_seen = last_seen.replace(tzinfo=timezone.utc)
+        presence_status = "online" if last_seen and last_seen >= now - timedelta(seconds=90) else "offline"
 
         # 2. Todas as sessões do usuário
         all_sessions = (

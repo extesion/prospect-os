@@ -68,7 +68,12 @@ def test_rbac_admin_vs_user_protection():
     uid = new_user_data["id"]
     edit_res = client.put(
         f"/api/users/{uid}",
-        json={"name": "Operador Promovido", "role": "ADMIN", "password": "nova_senha_456"},
+        json={
+            "name": "Operador Promovido",
+            "role": "ADMIN",
+            "password": "nova_senha_456",
+            "system_password": "883800",
+        },
         headers=admin_headers
     )
     assert edit_res.status_code == 200
