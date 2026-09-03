@@ -2,6 +2,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Tuple
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, and_, or_
+from sqlalchemy.exc import SQLAlchemyError
 import json
 import logging
 
@@ -142,6 +143,7 @@ class WorkSessionService:
         """
         Inicia uma sessão de trabalho para o usuário.
         Garante que apenas 1 sessão ativa/pausada exista por usuário.
+        Toda falha no fluxo aborta a transação completamente.
         """
         now = utc_now()
 
@@ -190,6 +192,7 @@ class WorkSessionService:
         db.add(new_session)
         db.flush()
 
+        # Agora que session.id existe, criar evento START antes de notificações
         event = WorkSessionEvent(
             session_id=new_session.id,
             user_id=user.id,
@@ -198,16 +201,22 @@ class WorkSessionService:
         )
         db.add(event)
 
-        # Disparar notificação interna de início de turno
+        # Disparar notificação interna de início de turno - savepoint para não deixar transacao abortada
         try:
-            from backend.services.notification_service import NotificationService
-            NotificationService.notify_session_started(
-                db=db, actor=user, session_id=new_session.id,
-                cycle_type=new_session.cycle_type, daily_target=new_session.daily_target,
-            )
+            with db.begin_nested():
+                from backend.services.notification_service import NotificationService
+                NotificationService.notify_session_started(
+                    db=db, actor=user, session_id=new_session.id,
+                    cycle_type=new_session.cycle_type, daily_target=new_session.daily_target,
+                )
+        except SQLAlchemyError:
+            # Schema/constraint failures are primary failures and must abort start.
+            raise
         except Exception as e:
-            logger.warning(f"Erro ao disparar notificação de início de turno: {e}")
+            # Notification delivery is secondary only for non-database failures.
+            logger.warning("start_session notification skipped: %s", type(e).__name__)
 
+        # Commit único no final após todas as operações
         db.commit()
         db.refresh(new_session)
 

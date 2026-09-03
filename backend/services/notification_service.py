@@ -53,13 +53,15 @@ class NotificationService:
             title=title, message=message, metadata_json=json.dumps(metadata) if metadata else None,
             dedupe_key=dedupe_key, created_at=utc_now(),
         )
-        db.add(notif)
         try:
-            db.flush()
+            # Savepoint keeps caller transaction valid on duplicate-key races.
+            with db.begin_nested():
+                db.add(notif)
+                db.flush()
         except IntegrityError:
-            db.rollback()
             if dedupe_key:
                 return db.query(Notification).filter(Notification.dedupe_key == dedupe_key).first()
+            raise
         return notif
 
     @staticmethod

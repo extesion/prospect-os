@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import Optional, List
+import logging
+from sqlalchemy.exc import SQLAlchemyError
 
 from backend.database.connection import get_db
 from backend.database.models import User
@@ -13,6 +15,10 @@ from backend.schemas.work_session import (
 from backend.services.work_session_service import WorkSessionService
 
 router = APIRouter(prefix="/work-sessions", tags=["Work Sessions & Productivity"])
+logger = logging.getLogger(__name__)
+
+# Failures traced at the route boundary (no tokens/passwords logged).
+_SQL_ERRORS = (SQLAlchemyError,)
 
 @router.post("/start", response_model=WorkSessionResponse)
 def start_work_session(
@@ -26,8 +32,25 @@ def start_work_session(
     """
     try:
         return WorkSessionService.start_session(db, current_user, data)
+    except _SQL_ERRORS as e:
+        db.rollback()
+        # SQL statement parameters may contain secrets; log type and driver message only.
+        driver_error = getattr(e, "orig", e)
+        logger.error(
+            "work_session_start_failed stage=database exception_type=%s message=%s",
+            type(e).__name__, str(driver_error)[:500],
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Não foi possível iniciar a sessão de trabalho.",
+        )
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        db.rollback()
+        logger.error("work_session_start_failed stage=application exception_type=%s", type(e).__name__)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Não foi possível iniciar a sessão de trabalho.",
+        )
 
 @router.post("/pause", response_model=WorkSessionResponse)
 def pause_work_session(

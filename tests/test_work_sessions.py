@@ -1,6 +1,8 @@
 import pytest
 import os
 import sys
+from unittest.mock import patch
+from sqlalchemy.exc import OperationalError
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -34,6 +36,28 @@ def setup_database():
     finally:
         db.close()
     yield
+
+def test_start_rolls_back_after_first_sql_failure():
+    token = client.post("/auth/login", json={"email": "carlos@prospector.com", "password": "123"}).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    with patch("backend.services.notification_service.NotificationService.notify_session_started") as notify:
+        notify.side_effect = OperationalError("INSERT INTO notifications", {}, Exception("missing column"))
+        failed = client.post("/work-sessions/start", json={"daily_target": 160, "target_hours": 8, "cycle_type": "8H"}, headers=headers)
+
+    assert failed.status_code == 500
+    assert failed.json()["detail"] == "Não foi possível iniciar a sessão de trabalho."
+    db = SessionLocal()
+    try:
+        assert db.query(WorkSession).count() == 0
+        assert db.query(WorkSessionEvent).count() == 0
+    finally:
+        db.close()
+
+    # Session fornecida por get_db ficou reutilizável após rollback.
+    recovered = client.post("/work-sessions/start", json={"daily_target": 160, "target_hours": 8, "cycle_type": "8H"}, headers=headers)
+    assert recovered.status_code == 200
+
 
 def test_new_session_ignores_historical_channels():
     token = client.post("/auth/login", json={"email": "ana@prospector.com", "password": "123"}).json()["access_token"]
