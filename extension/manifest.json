@@ -52,6 +52,7 @@
     {
       "matches": [
         "*://music.youtube.com/*",
+        "*://www.youtube.com/*",
         "*://open.spotify.com/*"
       ],
       "js": [

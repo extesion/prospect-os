@@ -107,3 +107,47 @@ def test_member_cards_aggregates_rates_chart_and_fallbacks(member_data):
                "channels_today", "channels_this_week", "channels_this_month", "total_channels_collected",
                "daily_avg_hours", "daily_avg_channels", "avg_channels_per_hour"]
     assert all(card[key] is not None for key in numeric)
+
+
+def test_music_snapshot_play_pause_stale_privacy_and_deleted_user(member_data):
+    db = SessionLocal()
+    user_id = member_data[0]
+    db.add(UserMusicConnection(user_id=user_id, provider="youtube_music", is_connected=True,
+        current_track_id="first", current_track_name="First", current_artist=None, position_ms=42000,
+        duration_ms=231000, is_playing=True, captured_at=utc_now(), updated_at=utc_now()))
+    db.commit(); db.close()
+    card = next(x for x in client.get("/work-sessions/team/status").json()["members"] if x["user_id"] == user_id)
+    assert card["music_status"] == "Tocando"
+    assert card["now_playing"]["artist"] == "--"
+    assert card["now_playing"]["position_ms"] == 42000
+    assert card["now_playing"]["duration_ms"] == 231000
+
+    db = SessionLocal(); music = db.query(UserMusicConnection).filter_by(user_id=user_id).one()
+    music.current_track_id = "second"; music.current_track_name = "Second"; music.is_playing = False
+    music.position_ms = 90000; music.captured_at = utc_now(); db.commit(); db.close()
+    card = next(x for x in client.get("/work-sessions/team/status").json()["members"] if x["user_id"] == user_id)
+    assert card["music_status"] == "Pausado" and card["now_playing"]["track_id"] == "second"
+
+    db = SessionLocal(); profile = db.query(UserProfile).filter_by(user_id=user_id).one()
+    profile.show_music_to_team = False; db.commit(); db.close()
+    card = next(x for x in client.get("/work-sessions/team/status").json()["members"] if x["user_id"] == user_id)
+    assert card["now_playing"] is None
+
+    db = SessionLocal(); profile = db.query(UserProfile).filter_by(user_id=user_id).one()
+    profile.show_music_to_team = True
+    db.query(UserMusicConnection).filter_by(user_id=user_id).one().captured_at = utc_now() - timedelta(minutes=3)
+    db.commit(); db.close()
+    card = next(x for x in client.get("/work-sessions/team/status").json()["members"] if x["user_id"] == user_id)
+    assert card["now_playing"] is None
+
+
+def test_music_snapshot_api_spotify_and_youtube():
+    login = client.post("/auth/login", json={"email": "carlos@prospector.com", "password": "123"})
+    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+    for provider in ("spotify", "youtube", "youtube_music"):
+        response = client.post("/music/now-playing", headers=headers, json={"provider": provider,
+            "track_id": provider, "track_name": "Track", "artist": "Artist", "is_playing": True,
+            "position_ms": 12000, "duration_ms": 180000})
+        assert response.status_code == 200
+        snapshot = response.json()["now_playing"]
+        assert (snapshot["provider"], snapshot["position_ms"], snapshot["duration_ms"]) == (provider, 12000, 180000)

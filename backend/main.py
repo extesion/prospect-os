@@ -45,6 +45,12 @@ try:
                     ) THEN
                         ALTER TABLE users ADD COLUMN last_seen_at TIMESTAMP WITH TIME ZONE;
                     END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_music_connections' AND column_name = 'current_track_id') THEN
+                        ALTER TABLE user_music_connections ADD COLUMN current_track_id VARCHAR(255);
+                        ALTER TABLE user_music_connections ADD COLUMN position_ms INTEGER NOT NULL DEFAULT 0;
+                        ALTER TABLE user_music_connections ADD COLUMN duration_ms INTEGER NOT NULL DEFAULT 0;
+                        ALTER TABLE user_music_connections ADD COLUMN captured_at TIMESTAMP WITH TIME ZONE;
+                    END IF;
                 END $$;
             """))
         elif "sqlite" in str(engine.url):
@@ -57,6 +63,11 @@ try:
                 conn.execute(text("ALTER TABLE users ADD COLUMN deleted_at TIMESTAMP"))
             if "last_seen_at" not in col_names:
                 conn.execute(text("ALTER TABLE users ADD COLUMN last_seen_at TIMESTAMP"))
+            music_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(user_music_connections)")).fetchall()]
+            for name, sql_type in (("current_track_id", "VARCHAR(255)"), ("position_ms", "INTEGER NOT NULL DEFAULT 0"),
+                                   ("duration_ms", "INTEGER NOT NULL DEFAULT 0"), ("captured_at", "TIMESTAMP")):
+                if name not in music_cols:
+                    conn.execute(text(f"ALTER TABLE user_music_connections ADD COLUMN {name} {sql_type}"))
 except Exception as e:
     logger.warning(f"Startup DB check: {e}")
 

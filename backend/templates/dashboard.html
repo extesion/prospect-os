@@ -481,6 +481,11 @@
     .member-session { padding: 9px; border: 1px solid rgba(255,255,255,.06); border-radius: 9px; }
     .member-session-head, .member-music { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 10px; }
     .member-music { padding: 7px; background: var(--card-inner); border-radius: 8px; color: var(--silver-muted); }
+    .member-music-cover { width: 38px; height: 38px; border-radius: 6px; flex: none; background: #20232d center/cover; display: grid; place-items: center; }
+    .member-music-info { flex: 1; min-width: 0; }
+    .member-music-title { color: var(--silver-light); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .member-music-progress { height: 3px; margin: 4px 0; border-radius: 2px; background: #343844; overflow: hidden; }
+    .member-music-progress i { display: block; height: 100%; background: #cbd5e1; }
     @media (min-width: 1200px) { .team-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
     @media (min-width: 700px) and (max-width: 1199px) { .team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     @media (max-width: 699px) { .team-grid { grid-template-columns: 1fr; } .member-metrics { grid-template-columns: repeat(3, 1fr); } }
@@ -1884,6 +1889,18 @@
           ['Média canais/h', num(m.avg_channels_per_hour).toFixed(1)], ['Ciclos / metas', `${num(m.completed_cycles_count)} / ${num(m.goals_reached_count)}`]
         ];
 
+        const music = m.now_playing;
+        const duration = music ? Math.max(0, num(music.duration_ms)) : 0;
+        const captured = music ? Date.parse(music.captured_at || '') : NaN;
+        const elapsed = music && music.is_playing && Number.isFinite(captured) ? Math.max(0, Date.now() - captured) : 0;
+        const position = music ? Math.min(duration || Infinity, Math.max(0, num(music.position_ms) + elapsed)) : 0;
+        const formatMusicTime = ms => `${Math.floor(ms / 60000).toString().padStart(2, '0')}:${Math.floor(ms / 1000 % 60).toString().padStart(2, '0')}`;
+        const providerLabel = { spotify: 'Spotify', youtube: 'YouTube', youtube_music: 'YouTube Music' }[music?.provider] || 'Música';
+        const musicHtml = music ? `<div class="member-music" data-music-position="${position}" data-music-duration="${duration}" data-music-playing="${music.is_playing}" data-music-captured="${Date.now()}">
+          <div class="member-music-cover"${music.album_art ? ` style="background-image:url('${asset(music.album_art)}')"` : ''}>${music.album_art ? '' : '♫'}</div>
+          <div class="member-music-info"><div class="member-music-title">${safe(music.track_name || 'Nada tocando')}</div><div>${safe(music.artist || '--')} · ${providerLabel} · ${music.is_playing ? 'Tocando' : 'Pausado'}</div>
+          <div class="member-music-progress"><i class="music-bar-fill" style="width:${duration ? Math.min(100, position / duration * 100) : 0}%"></i></div><div>${music.is_playing ? '▶' : '⏸'} <span class="music-current">${formatMusicTime(position)}</span> ━ <span>${formatMusicTime(duration)}</span></div></div></div>` : '<div class="member-music"><span>Nada tocando</span></div>';
+
         return `
           <div class="member-card" onclick="openMemberProfileModal(${m.user_id})">
             <div class="member-card-banner" style="${bannerStyle}"></div>
@@ -1912,7 +1929,7 @@
 
               <div class="member-metrics">${metrics.map(([label, value]) => `<div class="member-metric"><div class="m-stat-val">${safe(value)}</div><div class="m-stat-lbl">${label}</div></div>`).join('')}</div>
               <div><div class="m-stat-lbl">Canais nos últimos 7 dias</div><div class="member-chart">${chart.map(d => `<div class="member-chart-bar" title="${safe(d.label)}: ${num(d.channels)}" style="height:${Math.max(5, num(d.channels) / maxChart * 100)}%"></div>`).join('')}</div></div>
-              ${m.now_playing ? `<div class="member-music"><span>${safe(m.now_playing.track_name)} · ${safe(m.now_playing.artist)}</span><b>${safe(m.now_playing.provider)} · ${safe(m.music_status)}</b></div>` : '<div class="member-music"><span>Nada tocando</span></div>'}
+              ${musicHtml}
             </div>
           </div>
         `;
@@ -2672,6 +2689,32 @@
     setInterval(sendHeartbeat, 45000);
     setInterval(loadOverviewData, 10000);
     setInterval(loadUnreadNotifications, 15000);
+
+    // Global music progress ticker — no extra requests, no extra writes
+    // Reads data-* attrs stamped at render time and advances locally
+    (function startMusicTicker() {
+      const STALE_MS = 35000; // snapshot older than 35s → stop advancing
+      function fmtMs(ms) {
+        const s = Math.floor(ms / 1000);
+        return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+      }
+      setInterval(function () {
+        document.querySelectorAll('.member-music[data-music-playing="true"]').forEach(function (el) {
+          const duration   = parseFloat(el.dataset.musicDuration)  || 0;
+          const snapPos    = parseFloat(el.dataset.musicPosition)   || 0;
+          const captured   = parseFloat(el.dataset.musicCaptured)   || 0;
+          if (!duration || !captured) return;
+          const age = Date.now() - captured;
+          if (age > STALE_MS) return; // snapshot stale — wait for next poll
+          const current = Math.min(duration, snapPos + age);
+          const pct = (current / duration * 100).toFixed(2);
+          const bar = el.querySelector('.music-bar-fill');
+          if (bar) bar.style.width = pct + '%';
+          const ts = el.querySelector('.music-current');
+          if (ts) ts.textContent = fmtMs(current);
+        });
+      }, 1000);
+    })();
   </script>
 </body>
 </html>

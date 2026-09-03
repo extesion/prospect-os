@@ -589,10 +589,14 @@ class WorkSessionService:
             last_seen = ensure_utc(u.last_seen_at)
             presence = "online" if last_seen and last_seen >= now - timedelta(seconds=90) else "offline"
             now_playing = None
-            if m_conn and m_conn.is_connected and (p is None or p.show_music_to_team) and m_conn.current_track_name:
-                now_playing = {"provider": m_conn.provider or "spotify", "track_name": m_conn.current_track_name or "--",
-                               "artist": m_conn.current_artist or "--", "album_art": m_conn.current_album_art,
-                               "is_playing": bool(m_conn.is_playing)}
+            captured_at = ensure_utc(m_conn.captured_at or m_conn.updated_at) if m_conn else None
+            fresh_music = captured_at and captured_at >= now - timedelta(minutes=2)
+            if m_conn and m_conn.is_connected and (p is None or p.show_music_to_team) and m_conn.current_track_name and fresh_music:
+                now_playing = {"provider": m_conn.provider or "spotify", "track_id": m_conn.current_track_id,
+                               "track_name": m_conn.current_track_name or "--", "artist": m_conn.current_artist or "--",
+                               "album_art": m_conn.current_album_art, "is_playing": bool(m_conn.is_playing),
+                               "position_ms": max(0, m_conn.position_ms or 0), "duration_ms": max(0, m_conn.duration_ms or 0),
+                               "captured_at": captured_at.isoformat()}
             res = WorkSessionService.compute_session_response(sess, u.name) if sess else None
             members.append(TeamStatusItem(
                 user_id=u.id, user_name=u.name or "Usuário", role=u.role or "USER",

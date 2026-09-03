@@ -211,14 +211,14 @@ class ProfileService:
         most_played = None
         music_conn = db.query(UserMusicConnection).filter(UserMusicConnection.user_id == user_id).first()
         if music_conn and music_conn.is_connected and profile.show_music_to_team:
-            if music_conn.is_playing and music_conn.current_track_name:
+            captured_at = ensure_utc(music_conn.captured_at or music_conn.updated_at)
+            if music_conn.current_track_name and captured_at and captured_at >= utc_now() - timedelta(minutes=2):
                 now_playing = {
-                    "provider": music_conn.provider,
-                    "track_name": music_conn.current_track_name,
-                    "artist": music_conn.current_artist,
-                    "album_art": music_conn.current_album_art,
-                    "track_url": music_conn.current_track_url,
-                    "is_playing": True
+                    "provider": music_conn.provider or "spotify", "track_id": music_conn.current_track_id,
+                    "track_name": music_conn.current_track_name or "--", "artist": music_conn.current_artist or "--",
+                    "album_art": music_conn.current_album_art, "track_url": music_conn.current_track_url,
+                    "is_playing": bool(music_conn.is_playing), "position_ms": max(0, music_conn.position_ms or 0),
+                    "duration_ms": max(0, music_conn.duration_ms or 0), "captured_at": captured_at.isoformat()
                 }
             if music_conn.most_played_track:
                 most_played = {

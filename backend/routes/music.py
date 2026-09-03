@@ -132,14 +132,15 @@ def disconnect_spotify(
 from pydantic import BaseModel
 
 class MusicNowPlayingUpdate(BaseModel):
-    provider: str = "spotify" # 'spotify', 'youtube_music'
+    provider: str = "spotify"
+    track_id: Optional[str] = None
     track_name: Optional[str] = None
     artist: Optional[str] = None
     album_art: Optional[str] = None
     track_url: Optional[str] = None
     is_playing: bool = True
-    position_ms: Optional[int] = None
-    duration_ms: Optional[int] = None
+    position_ms: int = 0
+    duration_ms: int = 0
 
 @router.post("/now-playing")
 def update_now_playing(
@@ -148,36 +149,35 @@ def update_now_playing(
     current_user: User = Depends(get_current_user)
 ):
     """Atualiza o snapshot de música sendo reproduzida (YouTube Music ou Spotify) pelo cliente/extensão."""
+    provider = data.provider.lower()
+    if provider not in {"spotify", "youtube", "youtube_music"}:
+        raise HTTPException(status_code=422, detail="Provider de música inválido.")
+    position_ms = max(0, data.position_ms)
+    duration_ms = max(0, data.duration_ms)
+    if duration_ms:
+        position_ms = min(position_ms, duration_ms)
+    captured_at = utc_now()
     conn = db.query(UserMusicConnection).filter(UserMusicConnection.user_id == current_user.id).first()
     if not conn:
-        conn = UserMusicConnection(
-            user_id=current_user.id,
-            provider=data.provider.lower(),
-            is_connected=True,
-            current_track_name=data.track_name,
-            current_artist=data.artist,
-            current_album_art=data.album_art,
-            current_track_url=data.track_url,
-            is_playing=data.is_playing,
-            updated_at=utc_now()
-        )
+        conn = UserMusicConnection(user_id=current_user.id)
         db.add(conn)
-    else:
-        conn.provider = data.provider.lower()
-        conn.is_connected = True
-        conn.current_track_name = data.track_name
-        conn.current_artist = data.artist
-        if data.album_art:
-            conn.current_album_art = data.album_art
-        if data.track_url:
-            conn.current_track_url = data.track_url
-        conn.is_playing = data.is_playing
-        conn.updated_at = utc_now()
-
+    conn.provider = provider
+    conn.is_connected = True
+    conn.current_track_id = data.track_id
+    conn.current_track_name = data.track_name.strip()[:255] if data.track_name else None
+    conn.current_artist = data.artist.strip()[:255] if data.artist else None
+    conn.current_album_art = data.album_art
+    conn.current_track_url = data.track_url
+    conn.position_ms = position_ms
+    conn.duration_ms = duration_ms
+    conn.captured_at = captured_at
+    conn.is_playing = data.is_playing
+    conn.updated_at = captured_at
     db.commit()
     return {"success": True, "now_playing": {
-        "provider": conn.provider,
-        "track_name": conn.current_track_name,
-        "artist": conn.current_artist,
-        "is_playing": conn.is_playing
+        "provider": conn.provider, "track_id": conn.current_track_id,
+        "track_name": conn.current_track_name, "artist": conn.current_artist or "--",
+        "album_art": conn.current_album_art, "is_playing": conn.is_playing,
+        "position_ms": conn.position_ms, "duration_ms": conn.duration_ms,
+        "captured_at": captured_at.isoformat()
     }}
