@@ -7,6 +7,7 @@ import threading
 from functools import lru_cache
 from sqlalchemy.orm import Session
 
+from backend.database.models import YouTubeApiConfig, utc_now
 from qualifier.config.qualification_config import qualification_config
 from qualifier.services.youtube_api_manager import YouTubeApiManager, YouTubeQuotaExceededException
 
@@ -61,42 +62,128 @@ def _clear_cache() -> None:
 
 
 # -------------------------------------------------------------------------
-# Decorator to add retry/backoff around API calls
+# Helper functions for error classification and key fallback
 # -------------------------------------------------------------------------
-def _call_with_retry(db: Session, endpoint: str, operation: str, params: Dict[str, Any],
-                     max_retries: int = 3, base_delay: float = 1.0) -> Tuple[Dict[str, Any], int]:
-    """Executes a tracked YouTube request with retry for temporary failures."""
+def _is_invalid_key_error(status_code: int, response_text: str) -> bool:
+    """Checks if HTTP response indicates an invalid or revoked API key."""
+    if status_code == 400:
+        lower = response_text.lower()
+        if any(term in lower for term in ["api_key_invalid", "keyinvalid", "api key not valid", "invalid_argument", "badrequest"]):
+            return True
+        return True  # Any 400 with key parameter on YouTube API is bad request/key argument
+    if status_code == 403:
+        lower = response_text.lower()
+        if any(term in lower for term in ["keyinvalid", "api_key_invalid", "api key not valid", "accessnotconfigured", "servicedisabled"]):
+            return True
+    return False
+
+
+def _is_quota_exceeded_error(status_code: int, response_text: str) -> bool:
+    """Checks if HTTP response indicates quota exhaustion."""
+    if status_code == 403:
+        lower = response_text.lower()
+        if any(term in lower for term in ["quotaexceeded", "daily limit", "ratelimitexceeded", "user_rate_limit"]):
+            return True
+    return False
+
+
+# -------------------------------------------------------------------------
+# Robust tracked YouTube API execution with Multi-Key Fallback
+# -------------------------------------------------------------------------
+def _call_with_retry(
+    db: Session,
+    endpoint: str,
+    operation: str,
+    params: Dict[str, Any],
+    max_retries_per_key: int = 3,
+    base_delay: float = 1.0
+) -> Tuple[Dict[str, Any], int]:
+    """
+    Executes a tracked YouTube request with multi-key fallback and transient retry.
+    - If a key returns API_KEY_INVALID: marks key as ERROR in DB immediately, skips 3x retry, falls back to next key.
+    - If a key returns QUOTA_EXCEEDED: marks key as QUOTA_EXCEEDED in DB, falls back to next key.
+    - If transient failure (5xx, 429, timeout): retries current key up to max_retries_per_key with backoff.
+    - Quota is recorded ONLY for valid successful calls (never for invalid keys).
+    - Masks secrets in logs.
+    """
     import time
 
+    exclude_config_ids: List[int] = []
     last_exc: Optional[Exception] = None
-    for attempt in range(max_retries):
-        config, api_key = YouTubeApiManager.get_active_config(db)
-        config_id = getattr(config, "id", None)
+
+    while True:
         try:
-            response = requests.get(
-                YouTubeService.BASE_URL + endpoint,
-                params={"key": api_key, **params},
-                timeout=15,
-            )
-            if response.ok:
-                YouTubeApiManager.record_usage(db, config_id, operation, ENDPOINT_COSTS.get(operation, 1))
-                return response.json(), config_id
+            config, api_key = YouTubeApiManager.select_active_config(db, exclude_ids=exclude_config_ids)
+        except (ValueError, YouTubeQuotaExceededException) as e:
+            if exclude_config_ids and last_exc:
+                logger.error(f"[YOUTUBE_API] Todas as chaves ativas falharam. Último erro: {last_exc}")
+            raise e
 
-            error = f"HTTP {response.status_code}: {response.text}"
-            YouTubeApiManager.record_usage(db, config_id, operation, ENDPOINT_COSTS.get(operation, 1), False, error)
-            if 400 <= response.status_code < 500 and response.status_code != 429:
-                response.raise_for_status()
-            last_exc = requests.HTTPError(error, response=response)
-        except requests.RequestException as exc:
-            last_exc = exc
-            YouTubeApiManager.record_usage(db, config_id, operation, ENDPOINT_COSTS.get(operation, 1), False, str(exc))
+        config_id = getattr(config, "id", None)
+        masked_key = YouTubeApiManager.mask_api_key(api_key)
 
-        if attempt + 1 < max_retries:
-            time.sleep(base_delay * (2 ** attempt))
+        for attempt in range(max_retries_per_key):
+            try:
+                url = YouTubeService.BASE_URL + endpoint
+                req_params = {"key": api_key, **params}
 
-    raise YouTubeQuotaExceededException(
-        f"Retry exhausted after {max_retries} attempts: {last_exc}"
-    ) from last_exc
+                response = requests.get(url, params=req_params, timeout=15)
+
+                if response.ok:
+                    cost = ENDPOINT_COSTS.get(operation, 1)
+                    YouTubeApiManager.record_usage(db, config_id, operation, cost, success=True)
+                    return response.json(), (config_id or 0)
+
+                # Check if API_KEY_INVALID
+                if _is_invalid_key_error(response.status_code, response.text):
+                    logger.warning(
+                        f"[YOUTUBE_API] API key {masked_key} (ID {config_id}) retornou API_KEY_INVALID ({response.status_code}). Marcando como ERROR no DB e tentando próxima chave imediatamente."
+                    )
+                    if config_id and config_id > 0:
+                        cfg = db.query(YouTubeApiConfig).filter(YouTubeApiConfig.id == config_id).first()
+                        if cfg:
+                            cfg.status = "ERROR"
+                            cfg.error_message = f"API_KEY_INVALID: Chave de API inválida ou revogada (HTTP {response.status_code})"
+                            cfg.updated_at = utc_now()
+                            db.commit()
+                    last_exc = requests.HTTPError(f"API_KEY_INVALID ({response.status_code})", response=response)
+                    break  # Never retry same invalid key 3x; break to fallback to next key immediately
+
+                # Check if QUOTA_EXCEEDED
+                if _is_quota_exceeded_error(response.status_code, response.text):
+                    logger.warning(
+                        f"[YOUTUBE_API] API key {masked_key} (ID {config_id}) atingiu quota (403 quotaExceeded). Marcando como QUOTA_EXCEEDED e tentando próxima chave."
+                    )
+                    if config_id and config_id > 0:
+                        cfg = db.query(YouTubeApiConfig).filter(YouTubeApiConfig.id == config_id).first()
+                        if cfg:
+                            cfg.status = "QUOTA_EXCEEDED"
+                            cfg.error_message = "Cota diária esgotada (403 quotaExceeded)"
+                            cfg.updated_at = utc_now()
+                            db.commit()
+                    last_exc = YouTubeQuotaExceededException(f"Quota exceeded on config {config_id}")
+                    break  # Break to fallback to next key
+
+                # Other HTTP 4xx (e.g. 404)
+                if 400 <= response.status_code < 500 and response.status_code != 429:
+                    error_msg = f"HTTP {response.status_code}: {response.text}"
+                    YouTubeApiManager.record_usage(db, config_id, operation, ENDPOINT_COSTS.get(operation, 1), success=False, error_message=error_msg)
+                    response.raise_for_status()
+
+                # Transient 5xx or 429
+                last_exc = requests.HTTPError(f"HTTP {response.status_code}: {response.text}", response=response)
+
+            except (requests.Timeout, requests.ConnectionError) as net_err:
+                last_exc = net_err
+                logger.warning(f"[YOUTUBE_API] Falha de rede temporária na tentativa {attempt + 1}/{max_retries_per_key}: {str(net_err)}")
+
+            if attempt + 1 < max_retries_per_key:
+                time.sleep(base_delay * (2 ** attempt))
+
+        if config_id is not None:
+            exclude_config_ids.append(config_id)
+        elif 0 not in exclude_config_ids:
+            exclude_config_ids.append(0)
 
 
 class YouTubeService:
@@ -122,7 +209,7 @@ class YouTubeService:
     def _ensure_api_key(self):
         if self.db:
             try:
-                cfg, key = YouTubeApiManager.get_active_config(self.db)
+                cfg, key = YouTubeApiManager.select_active_config(self.db)
                 self.api_key = key
                 self.config_id = cfg.id if cfg else None
                 return
@@ -130,9 +217,11 @@ class YouTubeService:
                 logger.warning(f"[YOUTUBE_MANAGER] Manager resolution notice: {str(e)}")
 
         if not self.api_key:
-            self.api_key = qualification_config.YOUTUBE_API_KEY or os.getenv("YOUTUBE_API_KEY", "")
-            if not self.api_key:
-                raise ValueError("Chave da YouTube API (YOUTUBE_API_KEY) não configurada.")
+            env_key = qualification_config.YOUTUBE_API_KEY or os.getenv("YOUTUBE_API_KEY", "")
+            if env_key and not YouTubeApiManager.is_dummy_or_placeholder_key(env_key):
+                self.api_key = env_key
+            else:
+                raise ValueError("Nenhuma YouTube API key válida configurada")
 
     def fetch_channels_batch(self, channel_ids: List[str], force: bool = False) -> Dict[str, Dict[str, Any]]:
         """

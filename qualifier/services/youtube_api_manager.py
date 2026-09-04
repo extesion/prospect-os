@@ -29,16 +29,33 @@ class YouTubeApiManager:
             return "********"
         return f"{api_key[:4]}************{api_key[-3:]}"
 
+    @staticmethod
+    def is_dummy_or_placeholder_key(key: Optional[str]) -> bool:
+        """Checks if a key is empty, dummy or a mock placeholder."""
+        if not key:
+            return True
+        k = str(key).strip()
+        if not k or len(k) < 10:
+            return True
+        lower = k.lower()
+        if lower in ("your_youtube_api_key_here", "dummy", "test", "mock", "none", "null", "undefined", "aizasymock"):
+            return True
+        if lower.startswith(("test_", "mock_", "dummy_", "fake_")) and not lower.startswith("aizasy"):
+            return True
+        if "mockkeyfor" in lower:
+            return True
+        return False
+
     @classmethod
     def ensure_default_config(cls, db: Session) -> Optional[YouTubeApiConfig]:
-        """Ensures at least one default active configuration exists in DB if env key is present."""
+        """Ensures at least one default active configuration exists in DB if a real env key is present."""
         count = db.query(func.count(YouTubeApiConfig.id)).scalar() or 0
         if count == 0:
             key = qualification_config.YOUTUBE_API_KEY or os.getenv("YOUTUBE_API_KEY", "")
-            if key:
+            if key and not cls.is_dummy_or_placeholder_key(key):
                 default_cfg = YouTubeApiConfig(
                     name="Projeto Principal (Padrão)",
-                    api_key=key,
+                    api_key=key.strip(),
                     status="ACTIVE",
                     daily_limit=qualification_config.DAILY_QUOTA_LIMIT or 10000,
                     created_at=utc_now(),
@@ -76,40 +93,9 @@ class YouTubeApiManager:
         return int(total)
 
     @classmethod
-    def get_active_config(cls, db: Session) -> Tuple[Any, str]:
-        """
-        Selects an available active API configuration that has remaining daily quota.
-        Returns a tuple: (YouTubeApiConfig, api_key_str).
-        """
-        cls.ensure_default_config(db)
-        
-        active_configs = (
-            db.query(YouTubeApiConfig)
-            .filter(YouTubeApiConfig.status == "ACTIVE")
-            .order_by(YouTubeApiConfig.id.asc())
-            .all()
-        )
-
-        if not active_configs:
-            # Fallback to .env directly if no DB config is active
-            env_key = qualification_config.YOUTUBE_API_KEY or os.getenv("YOUTUBE_API_KEY", "")
-            if env_key:
-                dummy = YouTubeApiConfig(id=0, name="Ambiente .env", api_key=env_key, daily_limit=10000, status="ACTIVE")
-                return dummy, env_key
-            raise ValueError("Nenhuma chave da YouTube API ativa configurada no sistema.")
-
-        for cfg in active_configs:
-            usage_today = cls.get_today_usage_for_config(db, cfg.id)
-            if usage_today < cfg.daily_limit:
-                return cfg, cfg.api_key
-            else:
-                # Mark as QUOTA_EXCEEDED for UI clarity
-                cfg.status = "QUOTA_EXCEEDED"
-                cfg.updated_at = utc_now()
-                db.commit()
-
-        # If all active configs exceeded quota, raise quota exception
-        raise YouTubeQuotaExceededException("Limite diário de quota atingido em todas as configurações ativas da YouTube API.")
+    def get_active_config(cls, db: Session, exclude_ids: Optional[List[int]] = None) -> Tuple[Any, str]:
+        """Convenience alias for select_active_config."""
+        return cls.select_active_config(db, exclude_ids=exclude_ids)
 
     @classmethod
     def select_active_config(
@@ -120,11 +106,12 @@ class YouTubeApiManager:
     ) -> Tuple[Any, str]:
         """
         Selects next usable active configuration.
-
         - Honors preferred config id if eligible.
-        - Skips ids in exclude_ids (used during fallback to avoid retrying the same key).
+        - Skips ids in exclude_ids (used during fallback).
+        - Skips/marks placeholder/mock keys as ERROR.
         - Marks configs that hit daily limit as QUOTA_EXCEEDED.
         - Falls back to .env key if no DB row is active.
+        - Raises clear exception if no valid keys exist.
         """
         exclude_ids = exclude_ids or []
         cls.ensure_default_config(db)
@@ -136,16 +123,30 @@ class YouTubeApiManager:
         )
         candidates = [c for c in query.all() if c.id not in exclude_ids]
 
+        valid_candidates = []
+        for cfg in candidates:
+            if cls.is_dummy_or_placeholder_key(cfg.api_key):
+                cfg.status = "ERROR"
+                cfg.error_message = "Chave de teste/placeholder inválida para produção."
+                cfg.updated_at = utc_now()
+                db.commit()
+                continue
+            valid_candidates.append(cfg)
+
         # Prefer specific id if eligible
         if prefer_config_id is not None:
-            for cfg in candidates:
+            for cfg in valid_candidates:
                 if cfg.id == prefer_config_id:
                     usage_today = cls.get_today_usage_for_config(db, cfg.id)
                     if usage_today < cfg.daily_limit:
                         return cfg, cfg.api_key
+                    else:
+                        cfg.status = "QUOTA_EXCEEDED"
+                        cfg.updated_at = utc_now()
+                        db.commit()
                     break
 
-        for cfg in candidates:
+        for cfg in valid_candidates:
             usage_today = cls.get_today_usage_for_config(db, cfg.id)
             if usage_today < cfg.daily_limit:
                 return cfg, cfg.api_key
@@ -153,18 +154,25 @@ class YouTubeApiManager:
             cfg.updated_at = utc_now()
             db.commit()
 
-        # Fallback to .env directly if no DB config is active
+        # Fallback to .env directly if valid and not excluded
         env_key = qualification_config.YOUTUBE_API_KEY or os.getenv("YOUTUBE_API_KEY", "")
-        if env_key:
+        if env_key and not cls.is_dummy_or_placeholder_key(env_key) and 0 not in exclude_ids:
             dummy = YouTubeApiConfig(
                 id=0,
                 name="Ambiente .env",
-                api_key=env_key,
+                api_key=env_key.strip(),
                 daily_limit=10000,
                 status="ACTIVE",
             )
-            return dummy, env_key
-        raise ValueError("Nenhuma chave da YouTube API ativa configurada no sistema.")
+            return dummy, env_key.strip()
+
+        # Check if all active configs exceeded quota
+        has_quota_exceeded = db.query(YouTubeApiConfig).filter(YouTubeApiConfig.status == "QUOTA_EXCEEDED").first() is not None
+        has_active = db.query(YouTubeApiConfig).filter(YouTubeApiConfig.status == "ACTIVE").first() is not None
+        if has_quota_exceeded and not has_active:
+            raise YouTubeQuotaExceededException("Limite diário de quota atingido em todas as configurações ativas da YouTube API.")
+
+        raise ValueError("Nenhuma YouTube API key válida configurada")
 
     @classmethod
     def record_usage(
