@@ -557,8 +557,8 @@ class WorkSessionService:
     @staticmethod
     def get_ranking(db: Session, period: str = "today") -> List[UserRankingItem]:
         """
-        Retorna o ranking de membros ordenado EXCLUSIVAMENTE por HORAS TRABALHADAS.
-        Ignora usuários excluídos e sessões órfãs.
+        Retorna o ranking de membros ordenado EXCLUSIVAMENTE por HORAS TRABALHADAS de sessões finalizadas.
+        Ignora usuários excluídos e sessões órfãs ou não finalizadas.
         """
         now = utc_now()
         if period == "today":
@@ -575,11 +575,12 @@ class WorkSessionService:
         user_map = {u.id: u for u in all_users}
         valid_user_ids = set(user_map.keys())
 
-        # Consulta todas as sessões dentro do período pertencentes a usuários válidos
+        # Consulta apenas sessões FINALIZADAS dentro do período pertencentes a usuários válidos
         sessions = (
             db.query(WorkSession)
             .filter(WorkSession.started_at >= start_date)
             .filter(WorkSession.user_id.in_(valid_user_ids) if valid_user_ids else False)
+            .filter(WorkSession.status == "FINISHED")
             .all()
         )
 
@@ -603,15 +604,7 @@ class WorkSessionService:
             if uid not in user_totals:
                 continue
 
-            # Calcula tempo ativo da sessão
-            active = s.active_seconds
-            if s.status == "ACTIVE":
-                last_resumed = ensure_utc(s.last_resumed_at) or now
-                elapsed = int((now - last_resumed).total_seconds())
-                if elapsed > 0:
-                    active += elapsed
-
-            user_totals[uid]["total_active_seconds"] += active
+            user_totals[uid]["total_active_seconds"] += s.active_seconds
             user_totals[uid]["channels_collected"] += s.collected_count
 
         # Ordena ESTRITAMENTE por total_active_seconds DESC
@@ -639,8 +632,8 @@ class WorkSessionService:
     @staticmethod
     def get_team_summary(db: Session) -> TeamSummaryResponse:
         """
-        Retorna visão geral da equipe em tempo real (usuários trabalhando, horas totais hoje, média de canais/h).
-        Garante que apenas membros ativos e não excluídos façam parte dos cards e métricas.
+        Retorna visão geral da equipe baseada em dados finalizados.
+        Sessões ACTIVE/PAUSED não expõem métricas parciais antes do término da sessão.
         """
         now = utc_now()
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -685,17 +678,18 @@ class WorkSessionService:
             daily_seconds, daily_channels = {}, {}
             completed_cycles = goals_reached = 0
             for item in user_sessions:
+                # Contabiliza somente sessões finalizadas
+                if item.status != "FINISHED":
+                    continue
                 started = ensure_utc(item.started_at)
                 active = item.active_seconds
-                if item.status == "ACTIVE":
-                    active += max(0, int((now - (ensure_utc(item.last_resumed_at) or now)).total_seconds()))
                 seconds["total"] += active
                 if started >= today_start: seconds["today"] += active
                 if started >= week_start: seconds["week"] += active
                 if started >= month_start: seconds["month"] += active
                 day = started.strftime("%Y-%m-%d")
                 daily_seconds[day] = daily_seconds.get(day, 0) + active
-                completed_cycles += item.status == "FINISHED"
+                completed_cycles += 1
                 goals_reached += item.collected_count >= item.daily_target
             total_hours_today_seconds += seconds["today"]
             for channel in user_channels:
@@ -723,20 +717,21 @@ class WorkSessionService:
                                "album_art": m_conn.current_album_art, "is_playing": bool(m_conn.is_playing),
                                "position_ms": max(0, m_conn.position_ms or 0), "duration_ms": max(0, m_conn.duration_ms or 0),
                                "captured_at": captured_at.isoformat()}
-            res = WorkSessionService.compute_session_response(sess, u.name) if sess else None
+
+            # Durante ACTIVE/PAUSED, NÃO enviar dados de horas/ritmo da sessão em andamento na dashboard
             members.append(TeamStatusItem(
                 user_id=u.id, user_name=u.name or "Usuário", role=u.role or "USER",
                 avatar_url=p.avatar_url if p else None, banner_url=p.banner_url if p else None,
                 presence=presence, session_id=sess.id if sess else None,
                 session_status=sess.status if sess else "IDLE",
-                active_seconds=res.current_active_seconds if res else 0,
-                formatted_time=res.formatted_active_time if res else "00:00:00",
-                collected_count=sess.collected_count if sess else 0,
+                active_seconds=0,
+                formatted_time="00:00:00",
+                collected_count=0,
                 daily_target=sess.daily_target if sess else 0,
-                current_rate=res.current_rate if res else 0.0,
-                required_rate=res.required_rate if res else 0.0,
-                progress_percentage=res.progress_percentage if res else 0.0,
-                projected_finish_display=res.projected_finish_display if res else None,
+                current_rate=0.0,
+                required_rate=0.0,
+                progress_percentage=0.0,
+                projected_finish_display=None,
                 hours_today=round(seconds["today"] / 3600, 1), hours_this_week=round(seconds["week"] / 3600, 1),
                 hours_this_month=round(seconds["month"] / 3600, 1), total_hours_worked=round(total_hours, 1),
                 channels_today=channels_today, channels_this_week=channels_week, channels_this_month=channels_month,

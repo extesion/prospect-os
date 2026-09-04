@@ -61,7 +61,7 @@ class ProfileService:
         profile = ProfileService.get_or_create_profile(db, user_id)
         now = utc_now()
 
-        # 1. Sessão Atual
+        # 1. Sessão Atual: status apenas, sem expor métricas não finalizadas
         active_sess = (
             db.query(WorkSession)
             .filter(WorkSession.user_id == user_id)
@@ -74,8 +74,6 @@ class ProfileService:
         work_session_status = "PARADO"
         if active_sess:
             work_session_status = active_sess.status
-            res = WorkSessionService.compute_session_response(active_sess, user.name)
-            active_sess_dict = res.model_dump()
 
         # Presença depende somente do heartbeat, nunca da sessão/perfil/música.
         last_seen = user.last_seen_at
@@ -83,10 +81,11 @@ class ProfileService:
             last_seen = last_seen.replace(tzinfo=timezone.utc)
         presence_status = "online" if last_seen and last_seen >= now - timedelta(seconds=90) else "offline"
 
-        # 2. Todas as sessões do usuário
+        # 2. Todas as sessões finalizadas do usuário
         all_sessions = (
             db.query(WorkSession)
             .filter(WorkSession.user_id == user_id)
+            .filter(WorkSession.status == "FINISHED")
             .order_by(WorkSession.started_at.asc())
             .all()
         )
@@ -115,19 +114,12 @@ class ProfileService:
 
             date_key = s_started.strftime("%Y-%m-%d")
 
-            # Tempo da sessão
+            # Tempo da sessão já finalizada
             s_active_secs = s.active_seconds
-            if s.status == "ACTIVE":
-                s_resumed = ensure_utc(s.last_resumed_at) or now
-                elapsed = int((now - s_resumed).total_seconds())
-                if elapsed > 0:
-                    s_active_secs += elapsed
 
             total_secs += s_active_secs
             longest_sess_secs = max(longest_sess_secs, s_active_secs)
-
-            if s.status == "FINISHED":
-                completed_cycles += 1
+            completed_cycles += 1
             if s.collected_count >= s.daily_target:
                 goals_reached += 1
 

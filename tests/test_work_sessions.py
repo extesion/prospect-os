@@ -277,3 +277,61 @@ def test_cycle_settings():
     data = settings_resp.json()
     assert data["default_daily_target"] == 160
     assert len(data["presets"]) >= 3
+
+def test_active_session_does_not_leak_live_hours_until_finished():
+    login = client.post("/auth/login", json={"email": "carlos@prospector.com", "password": "123"})
+    token = login.json()["access_token"]
+    user_id = login.json()["user"]["id"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 1. Start session
+    start_resp = client.post("/work-sessions/start", json={"daily_target": 100, "target_hours": 8.0, "cycle_type": "8H"}, headers=headers)
+    assert start_resp.status_code == 200
+
+    # 2. Team status during ACTIVE has zero session hours
+    team_data = client.get("/work-sessions/team/status").json()
+    carlos_card = next(m for m in team_data["members"] if m["user_id"] == user_id)
+    assert carlos_card["session_status"] == "ACTIVE"
+    assert carlos_card["active_seconds"] == 0
+    assert carlos_card["hours_today"] == 0.0
+    assert carlos_card["current_rate"] == 0.0
+
+    # 3. Ranking during ACTIVE has zero active seconds
+    ranking = client.get("/work-sessions/ranking?period=today").json()
+    carlos_rank = next((r for r in ranking if r["user_id"] == user_id), None)
+    if carlos_rank:
+        assert carlos_rank["total_active_seconds"] == 0
+
+    # 4. Simulate elapsed session time in DB to pass wall-clock security check
+    from datetime import timedelta
+    from backend.database.models import utc_now
+    db = SessionLocal()
+    try:
+        s = db.query(WorkSession).filter(WorkSession.user_id == user_id, WorkSession.status == "ACTIVE").one()
+        s.started_at = utc_now() - timedelta(hours=2)
+        s.last_resumed_at = utc_now() - timedelta(hours=1)
+        s.active_seconds = 3600
+        db.commit()
+    finally:
+        db.close()
+
+    # Finish session with batch and active seconds
+    finish_resp = client.post("/work-sessions/finish", json={
+        "active_seconds": 7200,
+        "channels": [
+            {"channel_id": "UC_TEST_FINAL_1", "channel_name": "Final 1"}
+        ]
+    }, headers=headers)
+    assert finish_resp.status_code == 200
+    assert finish_resp.json()["status"] == "FINISHED"
+    assert finish_resp.json()["active_seconds"] == 7200
+
+    # 5. Team status now shows updated finalized metrics
+    team_after = client.get("/work-sessions/team/status").json()
+    carlos_after = next(m for m in team_after["members"] if m["user_id"] == user_id)
+    assert carlos_after["session_status"] == "IDLE"
+    assert carlos_after["hours_today"] == 2.0
+    assert carlos_after["total_hours_worked"] == 2.0
+    assert carlos_after["completed_cycles_count"] == 1
+    assert carlos_after["total_channels_collected"] >= 1
+

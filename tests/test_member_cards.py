@@ -96,9 +96,9 @@ def test_member_cards_aggregates_rates_chart_and_fallbacks(member_data):
     cards = {card["user_id"]: card for card in client.get("/work-sessions/team/status").json()["members"]}
     card = cards[member_data[1]]
     assert card["role"] == "ADMIN"
-    assert card["current_rate"] == 20.0
-    assert card["required_rate"] == 30.0
-    assert card["total_hours_worked"] == 3.0
+    assert card["current_rate"] == 0.0
+    assert card["required_rate"] == 0.0
+    assert card["total_hours_worked"] == 1.0
     assert card["channels_today"] == card["total_channels_collected"] == 3
     assert card["completed_cycles_count"] == card["goals_reached_count"] == 1
     assert len(card["chart_7d"]) == 7 and card["chart_7d"][-1]["channels"] == 3
