@@ -71,6 +71,12 @@ class QualificationWorker:
         if qualification_config.QUEUE_PAUSED:
             return {"processed": 0, "completed": 0, "failed": 0, "retried": 0, "message": "Queue paused"}
 
+        try:
+            if hasattr(self.yt_service, "db") and getattr(self.yt_service, "db", None) is None:
+                self.yt_service.db = db
+        except Exception:
+            pass
+
         candidates = self.fetch_pending_jobs(db, limit=limit)
         if not candidates:
             return {"processed": 0, "completed": 0, "failed": 0, "retried": 0, "message": "No pending jobs"}

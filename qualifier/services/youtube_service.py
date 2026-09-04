@@ -34,11 +34,11 @@ def _init_cache() -> None:
         _YT_CACHE = {}
 
 
-def _get_cached(key: str) -> Optional[tuple]:
+def _get_cached(key: str) -> Optional[Any]:
     if _YT_CACHE is None:
         return None
-    val, expiry = _YT_CACHE.get(key, (None, 0))
-    if datetime.now(timezone.utc) < expiry:
+    val, expiry = _YT_CACHE.get(key, (None, None))
+    if expiry and datetime.now(timezone.utc) < expiry:
         return val
     return None
 
@@ -50,7 +50,12 @@ def _set_cached(key: str, value: Any, ttl_seconds: int = CACHE_TTL_SECONDS) -> N
     _YT_CACHE[key] = (value, expiry)
 
 
+_cache_get = _get_cached
+_cache_set = _set_cached
+
+
 def _clear_cache() -> None:
+    global _YT_CACHE
     with _CACHE_LOCK:
         _YT_CACHE = {}
 
@@ -66,7 +71,7 @@ def _call_with_retry(db: Session, endpoint: str, operation: str, params: Dict[st
     last_exc: Optional[Exception] = None
     for attempt in range(max_retries):
         config, api_key = YouTubeApiManager.get_active_config(db)
-        config_id = config.id
+        config_id = getattr(config, "id", None)
         try:
             response = requests.get(
                 YouTubeService.BASE_URL + endpoint,
@@ -74,17 +79,17 @@ def _call_with_retry(db: Session, endpoint: str, operation: str, params: Dict[st
                 timeout=15,
             )
             if response.ok:
-                YouTubeApiManager.record_usage(db, config_id, operation, ENDPOINT_COSTS[operation])
+                YouTubeApiManager.record_usage(db, config_id, operation, ENDPOINT_COSTS.get(operation, 1))
                 return response.json(), config_id
 
             error = f"HTTP {response.status_code}: {response.text}"
-            YouTubeApiManager.record_usage(db, config_id, operation, ENDPOINT_COSTS[operation], False, error)
+            YouTubeApiManager.record_usage(db, config_id, operation, ENDPOINT_COSTS.get(operation, 1), False, error)
             if 400 <= response.status_code < 500 and response.status_code != 429:
                 response.raise_for_status()
             last_exc = requests.HTTPError(error, response=response)
         except requests.RequestException as exc:
             last_exc = exc
-            YouTubeApiManager.record_usage(db, config_id, operation, ENDPOINT_COSTS[operation], False, str(exc))
+            YouTubeApiManager.record_usage(db, config_id, operation, ENDPOINT_COSTS.get(operation, 1), False, str(exc))
 
         if attempt + 1 < max_retries:
             time.sleep(base_delay * (2 ** attempt))
@@ -98,11 +103,15 @@ class YouTubeService:
     BASE_URL = "https://www.googleapis.com/youtube/v3"
 
     # Cache entry templates
+    _CACHE_CHANNEL_PREFIX = "channel:"
     _CACHE_CHANNEL_KEY_PREFIX = "channel:"
     _CACHE_PLAYLIST_PREFIX = "playlist:"
+    _CACHE_VIDEO_PREFIX = "video:"
 
     @classmethod
-    def get_quota_used_today(cls) -> int:
+    def get_quota_used_today(cls, db: Optional[Session] = None) -> int:
+        if db:
+            return YouTubeApiManager.get_today_usage_total(db)
         return YouTubeApiManager._estimated_quota_used_today if hasattr(YouTubeApiManager, "_estimated_quota_used_today") else 0
 
     def __init__(self, api_key: Optional[str] = None, db: Optional[Session] = None):

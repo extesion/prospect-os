@@ -96,7 +96,7 @@ def get_status_overview(db: Session = Depends(get_db)):
             "pending_jobs": pending_jobs,
             "processing_jobs": processing_jobs,
             "retry_jobs": retry_jobs,
-            "quota_used_today": YouTubeService.get_quota_used_today(),
+            "quota_used_today": YouTubeService.get_quota_used_today(db),
             "daily_quota_limit": qualification_config.DAILY_QUOTA_LIMIT
         }
     }
