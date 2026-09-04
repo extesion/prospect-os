@@ -2802,19 +2802,8 @@
       loadExtensionInfo();
     });
 
-    // Economical polling intervals (reducing Vercel function invocations)
-    setInterval(() => {
-      if (shouldPoll()) sendHeartbeat();
-    }, 60000); // 60s
-
-    setInterval(() => {
-      if (shouldPoll() && activeTab === 'overview') loadOverviewData();
-    }, 30000); // 30s
-
-    setInterval(() => {
-      if (shouldPoll()) loadUnreadNotifications();
-    }, 30000); // 30s
-
+    // Zero periodic polling to minimize Vercel bandwidth and function invocations.
+    // Data is loaded on initial auth check, on tab changes, on manual refresh, and on tab visibility.
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && Boolean(getToken())) {
         sendHeartbeat();

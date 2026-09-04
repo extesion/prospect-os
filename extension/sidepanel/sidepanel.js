@@ -132,18 +132,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     updatePageChannelsStats();
     updateLiveMusic();
 
-    // Start economical intervals (relaxed polling to save Vercel bandwidth)
-    clearInterval(pollInterval);
-    clearInterval(heartbeatInterval);
-
+    // Zero periodic polling: metrics are loaded on open and updated on user actions
     window.prospectorAPI.heartbeat().catch(() => {});
-    heartbeatInterval = setInterval(() => {
-      window.prospectorAPI.heartbeat().catch(() => {});
-    }, 60000); // 60s economical heartbeat
-
-    pollInterval = setInterval(() => {
-      updateLiveMusic();
-    }, 60000); // 60s relaxed music poll
   }
 
   async function updateLiveMusic() {

@@ -68,5 +68,4 @@
   new MutationObserver(() => { bindMedia(); schedule(); })
     .observe(document.documentElement, { childList: true, subtree: true });
   bindMedia();
-  setInterval(() => sync(true), 30000);
 })();

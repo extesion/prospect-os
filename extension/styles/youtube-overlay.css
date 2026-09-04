@@ -57,6 +57,14 @@
   border: 1px solid rgba(46, 204, 113, 0.3);
 }
 
+.yp-status-pill.yp-collected {
+  background: rgba(46, 204, 113, 0.2);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.6);
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
 .yp-status-pill.yp-exists {
   background: rgba(52, 152, 219, 0.12);
   color: #5dade2;

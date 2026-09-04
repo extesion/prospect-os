@@ -41,6 +41,7 @@
 
   /**
    * Atualiza ou injeta o badge visual dentro do elemento do canal
+   * Garante EXATAMENTE 1 badge por canal/container
    */
   function renderBadge(containerObj, statusData) {
     const { element, data } = containerObj;
@@ -55,8 +56,17 @@
       targetMount = element;
     }
 
-    let badge = element.querySelector(`.yp-badge-container[data-channel-id="${data.channel_id}"]`);
-    if (!badge) {
+    // 1. Remove quaisquer badges duplicados existentes no elemento ou no targetMount
+    const allBadgesInElement = element.querySelectorAll(".yp-badge-container");
+    let badge = null;
+
+    if (allBadgesInElement.length > 0) {
+      badge = allBadgesInElement[0];
+      for (let i = 1; i < allBadgesInElement.length; i++) {
+        allBadgesInElement[i].remove();
+      }
+      badge.setAttribute("data-channel-id", data.channel_id);
+    } else {
       badge = document.createElement("div");
       badge.className = "yp-badge-container";
       badge.setAttribute("data-channel-id", data.channel_id);
@@ -65,7 +75,7 @@
 
     containerObj.badgeElement = badge;
 
-    // Renderiza o estado correspondente
+    // 2. Renderiza o estado correspondente
     if (statusData.state === "VERIFYING") {
       badge.innerHTML = `
         <span class="yp-status-pill yp-verifying">
@@ -77,18 +87,18 @@
         <span class="yp-status-pill yp-available">
           🟢 Não coletado
         </span>
-        <button class="yp-btn-collect" title="Coletar este canal para o banco central">
+        <button class="yp-btn-collect" title="Coletar este canal">
           + COLETAR
         </button>
       `;
 
       const btn = badge.querySelector(".yp-btn-collect");
       if (btn) {
-        btn.addEventListener("click", (e) => {
+        btn.onclick = (e) => {
           e.preventDefault();
           e.stopPropagation();
           handleCollectChannel(data.channel_id);
-        });
+        };
       }
     } else if (statusData.state === "EXISTS") {
       const collectorName = statusData.collected_by?.name || "Outro usuário";
@@ -110,10 +120,10 @@
           ⏳ Salvando...
         </span>
       `;
-    } else if (statusData.state === "COLLECTED_NOW") {
+    } else if (statusData.state === "COLLECTED_NOW" || statusData.state === "COLLECTED") {
       badge.innerHTML = `
-        <span class="yp-status-pill yp-available" style="border-color: rgba(46,204,113,0.8);">
-          ✓ Coletado por você
+        <span class="yp-status-pill yp-collected">
+          ✓ COLETADO
         </span>
       `;
     } else if (statusData.state === "ERROR") {
@@ -125,11 +135,11 @@
       `;
       const btn = badge.querySelector(".yp-btn-retry");
       if (btn) {
-        btn.addEventListener("click", (e) => {
+        btn.onclick = (e) => {
           e.preventDefault();
           e.stopPropagation();
           handleCollectChannel(data.channel_id);
-        });
+        };
       }
     }
   }
@@ -160,25 +170,23 @@
       return;
     }
 
-    // 2. Atualiza para SAVING temporariamente
-    updateAllBadgesForChannel(channelId, { state: "SAVING" });
+    // 2. Atualiza imediatamente para COLLECTED_NOW (feedback visual instantâneo)
+    const nowIso = new Date().toISOString();
+    window.prospectorCache.set(channelId, {
+      exists: true,
+      collected_by: { name: "Você" },
+      collected_at: nowIso
+    });
+
+    updateAllBadgesForChannel(channelId, {
+      state: "COLLECTED_NOW",
+      collected_by: { name: "Você" },
+      collected_at: nowIso
+    });
 
     try {
-      // 3. Enfileira canal localmente com dedupe
+      // 3. Enfileira canal localmente com dedupe no chrome.storage.local
       await window.prospectorAPI.addPendingChannel(sample);
-
-      const nowIso = new Date().toISOString();
-      window.prospectorCache.set(channelId, {
-        exists: true,
-        collected_by: { name: "Você (Pendente)" },
-        collected_at: nowIso
-      });
-
-      updateAllBadgesForChannel(channelId, {
-        state: "COLLECTED_NOW",
-        collected_by: { name: "Você" },
-        collected_at: nowIso
-      });
 
       // 4. Notifica SidePanel / Popup para atualizar contadores locais
       try {
@@ -216,28 +224,25 @@
       return;
     }
 
-    // Marca todos como Salvando...
+    const nowIso = new Date().toISOString();
+
+    // Marca todos imediatamente como ✓ COLETADO
     newChannels.forEach((ch) => {
-      updateAllBadgesForChannel(ch.channel_id, { state: "SAVING" });
+      const cid = ch.channel_id;
+      window.prospectorCache.set(cid, {
+        exists: true,
+        collected_by: { name: "Você" },
+        collected_at: nowIso
+      });
+      updateAllBadgesForChannel(cid, {
+        state: "COLLECTED_NOW",
+        collected_by: { name: "Você" },
+        collected_at: nowIso
+      });
     });
 
     try {
       await window.prospectorAPI.addPendingBulk(newChannels);
-      const nowIso = new Date().toISOString();
-
-      newChannels.forEach((ch) => {
-        const cid = ch.channel_id;
-        window.prospectorCache.set(cid, {
-          exists: true,
-          collected_by: { name: "Você (Pendente)" },
-          collected_at: nowIso
-        });
-        updateAllBadgesForChannel(cid, {
-          state: "COLLECTED_NOW",
-          collected_by: { name: "Você" },
-          collected_at: nowIso
-        });
-      });
 
       // Notifica SidePanel / Popup para atualizar contadores locais
       try {
@@ -391,6 +396,7 @@
    * Limpa o estado ao navegar entre páginas no YouTube SPA
    */
   function handlePageNavigation() {
+    document.querySelectorAll(".yp-badge-container").forEach((b) => b.remove());
     pageState.detectedChannels.clear();
     if (pageState.toolbarElement) {
       pageState.toolbarElement.style.display = "none";
