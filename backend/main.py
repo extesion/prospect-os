@@ -16,74 +16,75 @@ logging.basicConfig(
 )
 logger = logging.getLogger("youtube_prospector")
 
-# Auto-create tables safely (ignore on read-only serverless if connection fails at startup)
-try:
-    Base.metadata.create_all(bind=engine)
-    with engine.begin() as conn:
-        # PostgreSQL column text upgrade
-        if "postgresql" in str(engine.url):
-            conn.execute(text("""
-                DO $$ 
-                BEGIN 
-                    IF EXISTS (
-                        SELECT 1 FROM information_schema.columns 
-                        WHERE table_name = 'user_profiles' AND column_name = 'avatar_url' AND data_type = 'character varying'
-                    ) THEN 
-                        ALTER TABLE user_profiles ALTER COLUMN avatar_url TYPE TEXT;
-                        ALTER TABLE user_profiles ALTER COLUMN banner_url TYPE TEXT;
-                    END IF;
-                    IF NOT EXISTS (
-                        SELECT 1 FROM information_schema.columns 
-                        WHERE table_name = 'users' AND column_name = 'is_deleted'
-                    ) THEN 
-                        ALTER TABLE users ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE;
-                        ALTER TABLE users ADD COLUMN deleted_at TIMESTAMP WITH TIME ZONE;
-                    END IF;
-                    IF NOT EXISTS (
-                        SELECT 1 FROM information_schema.columns
-                        WHERE table_name = 'users' AND column_name = 'last_seen_at'
-                    ) THEN
-                        ALTER TABLE users ADD COLUMN last_seen_at TIMESTAMP WITH TIME ZONE;
-                    END IF;
-                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'qualification_results' AND column_name = 'qualification_config_snapshot') THEN
-                        ALTER TABLE qualification_results ADD COLUMN qualification_config_snapshot JSONB;
-                        ALTER TABLE qualification_results ADD COLUMN qualification_config_version INTEGER;
-                    END IF;
-                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_music_connections' AND column_name = 'current_track_id') THEN
-                        ALTER TABLE user_music_connections ADD COLUMN current_track_id VARCHAR(255);
-                        ALTER TABLE user_music_connections ADD COLUMN position_ms INTEGER NOT NULL DEFAULT 0;
-                        ALTER TABLE user_music_connections ADD COLUMN duration_ms INTEGER NOT NULL DEFAULT 0;
-                        ALTER TABLE user_music_connections ADD COLUMN captured_at TIMESTAMP WITH TIME ZONE;
-                    END IF;
-                END $$;
-            """))
-        elif "sqlite" in str(engine.url):
-            # SQLite safe column migration
-            res = conn.execute(text("PRAGMA table_info(users)")).fetchall()
-            col_names = [r[1] for r in res] if res else []
-            if "is_deleted" not in col_names:
-                conn.execute(text("ALTER TABLE users ADD COLUMN is_deleted BOOLEAN DEFAULT 0"))
-            if "deleted_at" not in col_names:
-                conn.execute(text("ALTER TABLE users ADD COLUMN deleted_at TIMESTAMP"))
-            if "last_seen_at" not in col_names:
-                conn.execute(text("ALTER TABLE users ADD COLUMN last_seen_at TIMESTAMP"))
-            music_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(user_music_connections)")).fetchall()]
-            for name, sql_type in (("current_track_id", "VARCHAR(255)"), ("position_ms", "INTEGER NOT NULL DEFAULT 0"),
-                                   ("duration_ms", "INTEGER NOT NULL DEFAULT 0"), ("captured_at", "TIMESTAMP")):
-                if name not in music_cols:
-                    conn.execute(text(f"ALTER TABLE user_music_connections ADD COLUMN {name} {sql_type}"))
-            qual_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(qualification_results)")).fetchall()]
-            if "qualification_config_snapshot" not in qual_cols:
-                conn.execute(text("ALTER TABLE qualification_results ADD COLUMN qualification_config_snapshot JSON"))
-            if "qualification_config_version" not in qual_cols:
-                conn.execute(text("ALTER TABLE qualification_results ADD COLUMN qualification_config_version INTEGER"))
-            notif_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(notifications)")).fetchall()]
-            if "dedupe_key" not in notif_cols:
-                conn.execute(text("ALTER TABLE notifications ADD COLUMN dedupe_key VARCHAR(200)"))
-            if "target_user_id" in notif_cols:
-                pass  # already exists
-except Exception as e:
-    logger.warning(f"Startup DB check: {e}")
+# Auto-create tables for development/CI; production uses migrations only
+# (Commented out to avoid drift between model and migrations)
+# try:
+#     Base.metadata.create_all(bind=engine)
+#     with engine.begin() as conn:
+#         # PostgreSQL column text upgrade
+#         if "postgresql" in str(engine.url):
+#             conn.execute(text("""
+#                 DO $$
+#                 BEGIN
+#                     IF EXISTS (
+#                         SELECT 1 FROM information_schema.columns
+#                         WHERE table_name = 'user_profiles' AND column_name = 'avatar_url' AND data_type = 'character varying'
+#                     ) THEN
+#                         ALTER TABLE user_profiles ALTER COLUMN avatar_url TYPE TEXT;
+#                         ALTER TABLE user_profiles ALTER COLUMN banner_url TYPE TEXT;
+#                     END IF;
+#                     IF NOT EXISTS (
+#                         SELECT 1 FROM information_schema.columns
+#                         WHERE table_name = 'users' AND column_name = 'is_deleted'
+#                     ) THEN
+#                         ALTER TABLE users ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE;
+#                         ALTER TABLE users ADD COLUMN deleted_at TIMESTAMP WITH TIME ZONE;
+#                     END IF;
+#                     IF NOT EXISTS (
+#                         SELECT 1 FROM information_schema.columns
+#                         WHERE table_name = 'users' AND column_name = 'last_seen_at'
+#                     ) THEN
+#                         ALTER TABLE users ADD COLUMN last_seen_at TIMESTAMP WITH TIME ZONE;
+#                     END IF;
+#                     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'qualification_results' AND column_name = 'qualification_config_snapshot') THEN
+#                         ALTER TABLE qualification_results ADD COLUMN qualification_config_snapshot JSONB;
+#                         ALTER TABLE qualification_results ADD COLUMN qualification_config_version INTEGER;
+#                     END IF;
+#                     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_music_connections' AND column_name = 'current_track_id') THEN
+#                         ALTER TABLE user_music_connections ADD COLUMN current_track_id VARCHAR(255);
+#                         ALTER TABLE user_music_connections ADD COLUMN position_ms INTEGER NOT NULL DEFAULT 0;
+#                         ALTER TABLE user_music_connections ADD COLUMN duration_ms INTEGER NOT NULL DEFAULT 0;
+#                         ALTER TABLE user_music_connections ADD COLUMN captured_at TIMESTAMP WITH TIME ZONE;
+#                     END IF;
+#                 END $$;
+#             """))
+#         elif "sqlite" in str(engine.url):
+#             # SQLite safe column migration
+#             res = conn.execute(text("PRAGMA table_info(users)")).fetchall()
+#             col_names = [r[1] for r in res] if res else []
+#             if "is_deleted" not in col_names:
+#                 conn.execute(text("ALTER TABLE users ADD COLUMN is_deleted BOOLEAN DEFAULT 0"))
+#             if "deleted_at" not in col_names:
+#                 conn.execute(text("ALTER TABLE users ADD COLUMN deleted_at TIMESTAMP"))
+#             if "last_seen_at" not in col_names:
+#                 conn.execute(text("ALTER TABLE users ADD COLUMN last_seen_at TIMESTAMP"))
+#             music_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(user_music_connections)")).fetchall()]
+#             for name, sql_type in (("current_track_id", "VARCHAR(255)"), ("position_ms", "INTEGER NOT NULL DEFAULT 0"),
+#                                    ("duration_ms", "INTEGER NOT NULL DEFAULT 0"), ("captured_at", "TIMESTAMP")):
+#                 if name not in music_cols:
+#                     conn.execute(text(f"ALTER TABLE user_music_connections ADD COLUMN {name} {sql_type}"))
+#             qual_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(qualification_results)")).fetchall()]
+#             if "qualification_config_snapshot" not in qual_cols:
+#                 conn.execute(text("ALTER TABLE qualification_results ADD COLUMN qualification_config_snapshot JSON"))
+#             if "qualification_config_version" not in qual_cols:
+#                 conn.execute(text("ALTER TABLE qualification_results ADD COLUMN qualification_config_version INTEGER"))
+#             notif_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(notifications)")).fetchall()]
+#             if "dedupe_key" not in notif_cols:
+#                 conn.execute(text("ALTER TABLE notifications ADD COLUMN dedupe_key VARCHAR(200)"))
+#             if "target_user_id" in notif_cols:
+#                 pass  # already exists
+# except Exception as e:
+#     logger.warning(f"Startup DB check: {e}")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -154,7 +155,7 @@ def health_check(db: Session = Depends(get_db)):
         db_status = "connected"
     except Exception as e:
         logger.error(f"Database connection error in health check: {str(e)}")
-        db_status = f"error: {str(e)}"
+        db_status = "error"
 
     return {
         "status": "online" if db_status == "connected" else "degraded",

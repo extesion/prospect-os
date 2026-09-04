@@ -34,6 +34,22 @@ def get_password_hash(password: str) -> str:
     salt = bcrypt.gensalt()
     return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
 
+
+class AuthService:
+    @staticmethod
+    def authenticate(db: Session, email: str, password: str) -> Optional[User]:
+        user = db.query(User).filter(
+            User.email == email.lower().strip(),
+            User.is_deleted.is_(False),
+        ).first()
+        if not user or not verify_password(password, user.password_hash):
+            return None
+        return user
+
+
+auth_service = AuthService()
+
+
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
     if expires_delta:

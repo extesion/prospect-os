@@ -26,12 +26,8 @@ class Settings(BaseSettings):
     VERSION: str = "2.0.0"
     API_V1_STR: str = "/api"
     
-    # Database
-    # Default to production Supabase PostgreSQL pooler, or environment variable if set
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL", 
-        "postgresql://postgres.lgiyzhksiqerlzyzfocl:%40Dexter883800@aws-0-us-east-2.pooler.supabase.com:5432/postgres"
-    )
+    # Database URL must be supplied by environment in production.
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./prospector.db")
     
     # JWT & Security
     SECRET_KEY: str = os.getenv("SECRET_KEY", "prospector-super-secret-key-change-in-production-2026")

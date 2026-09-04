@@ -113,8 +113,8 @@ def reset_system_operational_data(
         }
     except Exception as e:
         db.rollback()
-        logger.error(f"Erro durante o reset operacional do sistema: {str(e)}", exc_info=True)
+        logger.error("system_reset_failed exception_type=%s", type(e).__name__, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Falha na execução do reset: {str(e)}"
+            detail="Falha na execução do reset operacional.",
         )

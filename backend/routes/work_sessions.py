@@ -64,8 +64,13 @@ def pause_work_session(
         return WorkSessionService.pause_session(db, current_user)
     except ValueError as ve:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    except Exception:
+        db.rollback()
+        logger.error("work_session_pause_failed exception_type=%s", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Não foi possível pausar a sessão de trabalho.",
+        )
 
 @router.post("/resume", response_model=WorkSessionResponse)
 def resume_work_session(
@@ -79,8 +84,13 @@ def resume_work_session(
         return WorkSessionService.resume_session(db, current_user)
     except ValueError as ve:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    except Exception:
+        db.rollback()
+        logger.error("work_session_resume_failed exception_type=%s", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Não foi possível retomar a sessão de trabalho.",
+        )
 
 @router.post("/finish", response_model=WorkSessionResponse)
 def finish_work_session(
@@ -94,8 +104,13 @@ def finish_work_session(
         return WorkSessionService.finish_session(db, current_user)
     except ValueError as ve:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    except Exception:
+        db.rollback()
+        logger.error("work_session_finish_failed exception_type=%s", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Não foi possível finalizar a sessão de trabalho.",
+        )
 
 @router.get("/current", response_model=Optional[WorkSessionResponse])
 def get_current_session(

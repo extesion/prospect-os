@@ -5,7 +5,7 @@ from datetime import timedelta
 from backend.database.connection import get_db
 from backend.database.models import User, utc_now
 from backend.schemas.auth import UserLogin, UserCreate, UserResponse, TokenResponse
-from backend.security.auth import verify_password, get_password_hash, create_access_token, get_current_user
+from backend.security.auth import auth_service, get_password_hash, create_access_token, get_current_user
 from backend.config.settings import settings
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -22,9 +22,8 @@ def heartbeat(
 
 @router.post("/login", response_model=TokenResponse)
 def login(login_data: UserLogin, db: Session = Depends(get_db)):
-    email_clean = login_data.email.lower().strip()
-    user = db.query(User).filter(User.email == email_clean, User.is_deleted == False).first()
-    if not user or not verify_password(login_data.password, user.password_hash):
+    user = auth_service.authenticate(db, login_data.email, login_data.password)
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="E-mail ou senha incorretos.",

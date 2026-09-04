@@ -135,6 +135,11 @@ def restore_qualification_config_defaults(
 # 3. LEADS LIST WITH ADVANCED FILTERS
 # ----------------------------------------------------------------------------
 
+
+# ----------------------------------------------------------------------------
+# 3. LEADS LIST WITH ADVANCED FILTERS
+# ----------------------------------------------------------------------------
+
 @router.get("/leads", response_model=LeadsPaginationResponse)
 def list_leads(
     page: int = Query(1, ge=1),
@@ -576,29 +581,6 @@ def get_qualification_stats(db: Session = Depends(get_db)):
 def backfill_channels(db: Session = Depends(get_db)):
     count = QualificationService.backfill_unqualified_channels(db)
     return {"message": f"{count} canais enfileirados para qualificação.", "enqueued_count": count}
-
-@router.get("/config")
-def get_qualification_config():
-    return qualification_config.model_dump()
-
-@router.put("/config")
-def update_qualification_config(body: ConfigUpdateRequest):
-    if body.daily_quota_limit is not None:
-        qualification_config.DAILY_QUOTA_LIMIT = body.daily_quota_limit
-    if body.videos_to_analyze is not None:
-        qualification_config.VIDEOS_TO_ANALYZE = body.videos_to_analyze
-    if body.requalification_interval_days is not None:
-        qualification_config.REQUALIFICATION_INTERVAL_DAYS = body.requalification_interval_days
-    if body.score_qualified_threshold is not None:
-        qualification_config.SCORE_QUALIFIED_THRESHOLD = body.score_qualified_threshold
-    if body.score_review_threshold is not None:
-        qualification_config.SCORE_REVIEW_THRESHOLD = body.score_review_threshold
-    if body.active_days_threshold is not None:
-        qualification_config.ACTIVE_DAYS_THRESHOLD = body.active_days_threshold
-    if body.inactive_days_threshold is not None:
-        qualification_config.LOW_ACTIVITY_DAYS_THRESHOLD = body.inactive_days_threshold
-
-    return {"message": "Configurações atualizadas com sucesso", "config": qualification_config.model_dump()}
 
 @router.get("/{channel_id}/email-data", response_model=EmailTemplateDataResponse)
 def get_channel_email_template_data(
