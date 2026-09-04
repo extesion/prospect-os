@@ -1,6 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from datetime import timedelta
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 from backend.database.connection import get_db
 from backend.database.models import User, utc_now
@@ -16,9 +20,17 @@ def heartbeat(
     current_user: User = Depends(get_current_user)
 ):
     """Registra presença recente do usuário autenticado."""
-    current_user.last_seen_at = utc_now()
-    db.commit()
-    return {"status": "ok"}
+    try:
+        current_user.last_seen_at = utc_now()
+        db.commit()
+        return {"status": "ok"}
+    except Exception:
+        db.rollback()
+        logger.exception("Database error while recording heartbeat for user_id=%s", current_user.id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erro interno ao registrar presença.",
+        )
 
 @router.post("/login", response_model=TokenResponse)
 def login(login_data: UserLogin, db: Session = Depends(get_db)):

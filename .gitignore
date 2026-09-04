@@ -22,3 +22,7 @@ node_modules/
 *.zip
 
 backend/static/uploads/
+.env.*
+!.env.example
+!backend/.env.example
+*.log
