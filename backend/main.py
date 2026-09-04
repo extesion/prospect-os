@@ -131,6 +131,7 @@ app.include_router(notifications.router, prefix=settings.API_V1_STR)
 app.include_router(profiles.router, prefix=settings.API_V1_STR)
 app.include_router(music.router, prefix=settings.API_V1_STR)
 app.include_router(system.router, prefix=settings.API_V1_STR)
+app.include_router(system.system_router, prefix=settings.API_V1_STR)
 
 # Also expose without /api prefix for convenience
 app.include_router(auth.router)
@@ -144,6 +145,7 @@ app.include_router(notifications.router)
 app.include_router(profiles.router)
 app.include_router(music.router)
 app.include_router(system.router)
+app.include_router(system.system_router)
 
 
 @app.get("/health", tags=["Health"])

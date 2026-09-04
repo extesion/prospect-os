@@ -2,10 +2,23 @@ from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 
+from backend.schemas.channel import ChannelCreate
+
 class WorkSessionStart(BaseModel):
     daily_target: int = Field(160, ge=1, le=5000)
     target_hours: float = Field(8.0, ge=0.5, le=24.0)
     cycle_type: str = Field("8H", max_length=50)
+
+class WorkSessionFinishRequest(BaseModel):
+    session_id: Optional[int] = None
+    active_seconds: Optional[int] = None
+    paused_seconds: Optional[int] = None
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+    daily_target: Optional[int] = None
+    target_hours: Optional[float] = None
+    cycle_type: Optional[str] = None
+    channels: Optional[List[ChannelCreate]] = Field(default_factory=list)
 
 class WorkSessionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -37,6 +50,9 @@ class WorkSessionResponse(BaseModel):
     status_indicator: str  # 'IN_TARGET', 'ABOVE_TARGET', 'BELOW_TARGET'
     is_target_completed: bool
     is_cycle_time_exceeded: bool
+    inserted_count: Optional[int] = None
+    already_exists_count: Optional[int] = None
+    errors: Optional[List[str]] = None
 
 class UserRankingItem(BaseModel):
     rank_position: int

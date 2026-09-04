@@ -196,7 +196,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function loadSessionData() {
     try {
-      currentSession = await window.prospectorAPI.getCurrentWorkSession();
+      let session = await window.prospectorAPI.getLocalSession();
+      if (!session) {
+        session = await window.prospectorAPI.getCurrentWorkSession();
+      }
+      if (session) {
+        const pending = await window.prospectorAPI.getPendingChannels();
+        if (pending.length > 0 && (session.collected_count == null || session.collected_count < pending.length)) {
+          session.collected_count = pending.length;
+        }
+      }
+      currentSession = session;
       renderSessionState();
     } catch (err) {
       console.warn("Erro ao carregar sessão:", err);
@@ -378,7 +388,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     btnConfirmFinish.textContent = "FINALIZANDO...";
 
     try {
-      await window.prospectorAPI.finishWorkSession();
+      let activeSecs = currentSession ? (currentSession.current_active_seconds || currentSession.active_seconds || 0) : 0;
+      const pendingChannels = await window.prospectorAPI.getPendingChannels();
+
+      const finishPayload = {
+        session_id: currentSession ? currentSession.id : null,
+        active_seconds: activeSecs,
+        ended_at: new Date().toISOString(),
+        channels: pendingChannels
+      };
+
+      await window.prospectorAPI.finishWorkSession(finishPayload);
       finishModal.style.display = "none";
       currentSession = null;
       renderSessionState();

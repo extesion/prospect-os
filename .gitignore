@@ -20,6 +20,7 @@ node_modules/
 .DS_Store
 *.rar
 *.zip
+!backend/static/prospect-os-extension.zip
 
 backend/static/uploads/
 .env.*

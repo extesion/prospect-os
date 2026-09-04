@@ -13,9 +13,50 @@ from qualifier.models.qualification_job import QualificationJob
 from qualifier.models.analyzed_video import AnalyzedVideo
 from backend.security.auth import get_current_admin_user, verify_system_password
 
+from typing import List, Optional
+import json
+from pathlib import Path
+from backend.config.settings import settings
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin/system", tags=["System Administration (Admin Only)"])
+system_router = APIRouter(prefix="/system", tags=["System"])
+
+def get_extension_version() -> str:
+    manifest_path = Path(__file__).resolve().parent.parent.parent / "extension" / "manifest.json"
+    if manifest_path.exists():
+        try:
+            data = json.loads(manifest_path.read_text(encoding="utf-8"))
+            return data.get("version", settings.VERSION)
+        except Exception:
+            pass
+    return settings.VERSION
+
+class ExtensionInfoResponse(BaseModel):
+    name: str
+    version: str
+    download_url: str
+    instructions: List[str]
+
+@system_router.get("/extension-info", response_model=ExtensionInfoResponse)
+@router.get("/extension-info", response_model=ExtensionInfoResponse)
+def get_extension_info():
+    """Retorna a versão e URL segura de download do pacote ZIP estático da extensão."""
+    version = get_extension_version()
+    return ExtensionInfoResponse(
+        name="PROSPECT OS — Coletor & Produtividade",
+        version=version,
+        download_url="/static/prospect-os-extension.zip",
+        instructions=[
+            "1. Baixe o arquivo ZIP da extensão.",
+            "2. Extraia o arquivo ZIP para uma pasta no seu computador.",
+            "3. Abra o Google Chrome e acesse chrome://extensions.",
+            "4. Ative a opção 'Modo do desenvolvedor' no canto superior direito.",
+            "5. Clique no botão 'Carregar sem compactação' (Load unpacked).",
+            "6. Selecione a pasta onde você extraiu a extensão."
+        ]
+    )
 
 class SystemResetRequest(BaseModel):
     system_password: str = Field(..., description="Senha mestra do sistema")

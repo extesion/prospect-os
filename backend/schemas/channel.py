@@ -24,6 +24,7 @@ class ChannelCreate(BaseModel):
     channel_url: Optional[str] = Field("", max_length=500)
     source: Optional[str] = Field("youtube_search", max_length=100)
     search_term: Optional[str] = Field(None, max_length=255)
+    collected_at: Optional[datetime] = None
 
 class ChannelBulkCreate(BaseModel):
     channels: List[ChannelCreate] = Field(..., max_length=500)

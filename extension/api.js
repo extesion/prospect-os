@@ -130,11 +130,125 @@ class ProspectorAPI {
   }
 
   async getMe() {
+    const token = await this.getToken();
+    if (!token) return null;
     return await this.request("/auth/me", { method: "GET" });
   }
 
   async heartbeat() {
+    const token = await this.getToken();
+    if (!token) return null;
     return await this.request("/auth/heartbeat", { method: "POST" });
+  }
+
+  // --- LOCAL-FIRST STORAGE HELPERS ---
+
+  async getLocalSession() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(["currentSession"], (result) => {
+        resolve(result.currentSession || null);
+      });
+    });
+  }
+
+  async setLocalSession(sessionData) {
+    return new Promise((resolve) => {
+      chrome.storage.local.set({ currentSession: sessionData }, () => {
+        resolve(sessionData);
+      });
+    });
+  }
+
+  async clearLocalSession() {
+    return new Promise((resolve) => {
+      chrome.storage.local.remove(["currentSession"], () => {
+        resolve();
+      });
+    });
+  }
+
+  async getPendingChannels() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(["pendingChannels"], (result) => {
+        resolve(Array.isArray(result.pendingChannels) ? result.pendingChannels : []);
+      });
+    });
+  }
+
+  async addPendingChannel(channelData) {
+    if (!channelData || !channelData.channel_id) {
+      throw new Error("Dados do canal inválidos.");
+    }
+
+    const cid = channelData.channel_id.trim();
+    const list = await this.getPendingChannels();
+    const alreadyInQueue = list.some((ch) => ch.channel_id === cid);
+
+    if (!alreadyInQueue) {
+      const entry = {
+        ...channelData,
+        channel_id: cid,
+        collected_at: new Date().toISOString()
+      };
+      list.push(entry);
+      await new Promise((resolve) => {
+        chrome.storage.local.set({ pendingChannels: list }, resolve);
+      });
+
+      // Update local session collected count if active session exists
+      const session = await this.getLocalSession();
+      if (session && session.status === "ACTIVE") {
+        session.collected_count = (session.collected_count || 0) + 1;
+        await this.setLocalSession(session);
+      }
+    }
+
+    return { success: true, alreadyInQueue, totalPending: list.length };
+  }
+
+  async addPendingBulk(channelsList) {
+    if (!Array.isArray(channelsList) || channelsList.length === 0) {
+      return { insertedCount: 0, totalPending: 0 };
+    }
+
+    const list = await this.getPendingChannels();
+    const existingIds = new Set(list.map((ch) => ch.channel_id));
+    let newlyAdded = 0;
+
+    for (const item of channelsList) {
+      const cid = item.channel_id ? item.channel_id.trim() : "";
+      if (cid && !existingIds.has(cid)) {
+        existingIds.add(cid);
+        list.push({
+          ...item,
+          channel_id: cid,
+          collected_at: new Date().toISOString()
+        });
+        newlyAdded++;
+      }
+    }
+
+    await new Promise((resolve) => {
+      chrome.storage.local.set({ pendingChannels: list }, resolve);
+    });
+
+    if (newlyAdded > 0) {
+      const session = await this.getLocalSession();
+      if (session && session.status === "ACTIVE") {
+        session.collected_count = (session.collected_count || 0) + newlyAdded;
+        await this.setLocalSession(session);
+      }
+    }
+
+    return { insertedCount: newlyAdded, totalPending: list.length };
+  }
+
+  async clearPendingChannels() {
+    return new Promise((resolve) => {
+      chrome.storage.local.set({ pendingChannels: [] }, () => {
+        resolve();
+      });
+    });
   }
 
   async checkChannels(channelIds) {
@@ -146,7 +260,7 @@ class ProspectorAPI {
   }
 
   async requireActiveWorkSession() {
-    const session = await this.getCurrentWorkSession();
+    const session = await this.getLocalSession();
     if (!session || session.status !== "ACTIVE") {
       throw new Error("Inicie seu turno de trabalho para coletar canais.");
     }
@@ -192,7 +306,7 @@ class ProspectorAPI {
       cycle = cycleType || "8H";
     }
 
-    return await this.request("/work-sessions/start", {
+    const session = await this.request("/work-sessions/start", {
       method: "POST",
       body: JSON.stringify({
         daily_target: dailyTarget,
@@ -200,6 +314,10 @@ class ProspectorAPI {
         cycle_type: cycle
       })
     });
+
+    await this.setLocalSession(session);
+    await this.clearPendingChannels();
+    return session;
   }
 
   async startSession(dailyTargetOrObj, targetHours, cycleType) {
@@ -207,7 +325,9 @@ class ProspectorAPI {
   }
 
   async pauseWorkSession() {
-    return await this.request("/work-sessions/pause", { method: "POST" });
+    const session = await this.request("/work-sessions/pause", { method: "POST" });
+    await this.setLocalSession(session);
+    return session;
   }
 
   async pauseSession() {
@@ -215,23 +335,43 @@ class ProspectorAPI {
   }
 
   async resumeWorkSession() {
-    return await this.request("/work-sessions/resume", { method: "POST" });
+    const session = await this.request("/work-sessions/resume", { method: "POST" });
+    await this.setLocalSession(session);
+    return session;
   }
 
   async resumeSession() {
     return await this.resumeWorkSession();
   }
 
-  async finishWorkSession() {
-    return await this.request("/work-sessions/finish", { method: "POST" });
+  async finishWorkSession(finishData = null) {
+    const body = finishData ? JSON.stringify(finishData) : "{}";
+    const session = await this.request("/work-sessions/finish", {
+      method: "POST",
+      body
+    });
+    await this.clearPendingChannels();
+    await this.clearLocalSession();
+    return session;
   }
 
-  async finishSession() {
-    return await this.finishWorkSession();
+  async finishSession(finishData = null) {
+    return await this.finishWorkSession(finishData);
   }
 
   async getCurrentWorkSession() {
-    return await this.request("/work-sessions/current", { method: "GET" });
+    try {
+      const session = await this.request("/work-sessions/current", { method: "GET" });
+      if (session) {
+        await this.setLocalSession(session);
+      } else {
+        await this.clearLocalSession();
+      }
+      return session;
+    } catch (err) {
+      // Fallback to local session on network failure
+      return await this.getLocalSession();
+    }
   }
 
   async getCurrentSession() {

@@ -6,9 +6,9 @@ from sqlalchemy.exc import SQLAlchemyError
 import json
 import logging
 
-from backend.database.models import User, UserProfile, UserMusicConnection, WorkSession, WorkSessionEvent, CycleSetting, Channel, utc_now
+from backend.database.models import User, UserProfile, UserMusicConnection, WorkSession, WorkSessionEvent, CycleSetting, Channel, CollectionEvent, utc_now
 from backend.schemas.work_session import (
-    WorkSessionStart, WorkSessionResponse, UserRankingItem,
+    WorkSessionStart, WorkSessionFinishRequest, WorkSessionResponse, UserRankingItem,
     TeamStatusItem, TeamSummaryResponse, CyclePresetItem,
     CycleSettingsResponse, CycleSettingsUpdate, SessionHistoryItem
 )
@@ -312,40 +312,175 @@ class WorkSessionService:
         return WorkSessionService.compute_session_response(session, user.name)
 
     @staticmethod
-    def finish_session(db: Session, user: User) -> WorkSessionResponse:
+    def finish_session(db: Session, user: User, finish_data: Optional[WorkSessionFinishRequest] = None) -> WorkSessionResponse:
         """
-        Finaliza a sessão de trabalho e consolida as horas trabalhadas.
+        Finaliza a sessão de trabalho, insere lote pendente de canais e consolida métricas.
+        Suporta chamadas idempotentes (retries de rede não geram duplicatas).
         """
         now = utc_now()
-        session = (
-            db.query(WorkSession)
-            .filter(WorkSession.user_id == user.id)
-            .filter(WorkSession.status.in_(["ACTIVE", "PAUSED"]))
-            .first()
-        )
+        session = None
+
+        if finish_data and finish_data.session_id:
+            target = db.query(WorkSession).filter(WorkSession.id == finish_data.session_id).first()
+            if not target:
+                raise ValueError("Sessão não encontrada.")
+            if target.user_id != user.id:
+                raise ValueError("Sessão não pertence ao usuário.")
+            session = target
+        else:
+            session = (
+                db.query(WorkSession)
+                .filter(WorkSession.user_id == user.id)
+                .filter(WorkSession.status.in_(["ACTIVE", "PAUSED"]))
+                .order_by(WorkSession.started_at.desc())
+                .first()
+            )
 
         if not session:
+            # Check for idempotent retry on most recent finished session
+            last_finished = (
+                db.query(WorkSession)
+                .filter(WorkSession.user_id == user.id, WorkSession.status == "FINISHED")
+                .order_by(WorkSession.ended_at.desc())
+                .first()
+            )
+            if last_finished:
+                res = WorkSessionService.compute_session_response(last_finished, user.name)
+                res.inserted_count = 0
+                res.already_exists_count = len(finish_data.channels) if finish_data and finish_data.channels else 0
+                res.errors = []
+                return res
+
             raise ValueError("Nenhuma sessão em andamento encontrada para finalizar.")
 
+        # Idempotency check if session was already marked finished
+        if session.status == "FINISHED":
+            res = WorkSessionService.compute_session_response(session, user.name)
+            res.inserted_count = 0
+            res.already_exists_count = len(finish_data.channels) if finish_data and finish_data.channels else 0
+            res.errors = []
+            return res
+
+        inserted_cids: List[str] = []
+        already_exists_cids: List[str] = []
+        errors_list: List[str] = []
+
+        # Process pending batch channels
+        if finish_data and finish_data.channels:
+            from sqlalchemy.exc import IntegrityError
+            for item in finish_data.channels:
+                cid = item.channel_id.strip() if item.channel_id else ""
+                if not cid:
+                    continue
+
+                # Validate collection timestamp if session is PAUSED
+                if session.status == "PAUSED" and item.collected_at and session.paused_at:
+                    c_time = ensure_utc(item.collected_at)
+                    p_time = ensure_utc(session.paused_at)
+                    if c_time and p_time and c_time > p_time:
+                        errors_list.append(f"{cid}: Canal coletado durante pausa.")
+                        continue
+
+                try:
+                    with db.begin_nested():
+                        existing = db.query(Channel.id).filter(Channel.channel_id == cid).first()
+                        if existing:
+                            already_exists_cids.append(cid)
+                            continue
+
+                        c_url = item.channel_url or f"https://www.youtube.com/channel/{cid}"
+                        c_name = item.channel_name or item.channel_handle or "Canal YouTube"
+
+                        new_channel = Channel(
+                            channel_id=cid,
+                            channel_name=c_name,
+                            channel_handle=item.channel_handle,
+                            channel_url=c_url,
+                            source=item.source or "youtube_search",
+                            search_term=item.search_term,
+                            first_collected_by_id=user.id,
+                            first_collected_at=now,
+                            created_at=now,
+                            updated_at=now
+                        )
+                        db.add(new_channel)
+                        db.flush()
+
+                        session.collected_count += 1
+
+                        event = CollectionEvent(
+                            channel_id=cid,
+                            user_id=user.id,
+                            work_session_id=session.id,
+                            event_type="BATCH_COLLECT",
+                            created_at=now
+                        )
+                        db.add(event)
+
+                        try:
+                            from qualifier.models.qualification_job import QualificationJob
+                            job = QualificationJob(
+                                channel_id=cid,
+                                status="PENDING",
+                                created_at=now,
+                                updated_at=now
+                            )
+                            db.add(job)
+                        except Exception:
+                            pass
+
+                        inserted_cids.append(cid)
+                except IntegrityError:
+                    already_exists_cids.append(cid)
+                except Exception as e:
+                    logger.error("Error inserting channel in finish batch %s: %s", cid, str(e))
+                    errors_list.append(f"{cid}: {str(e)}")
+
+        # Consolidate active_seconds - Backend is the sole authority
+        started_at = ensure_utc(session.started_at) or now
+        max_wall_clock = max(0, int((now - started_at).total_seconds()))
+
+        server_active = session.active_seconds
         if session.status == "ACTIVE":
             last_resumed = ensure_utc(session.last_resumed_at) or now
             elapsed = int((now - last_resumed).total_seconds())
             if elapsed > 0:
-                session.active_seconds += elapsed
+                server_active += elapsed
+
+        # Upper bound is real wall clock
+        server_active = min(server_active, max_wall_clock)
+
+        if finish_data and finish_data.active_seconds is not None:
+            # Client provided active_seconds cannot exceed server calculated active time
+            session.active_seconds = min(finish_data.active_seconds, server_active)
+        else:
+            session.active_seconds = server_active
 
         session.status = "FINISHED"
         session.ended_at = now
         session.updated_at = now
 
-        event = WorkSessionEvent(
+        finish_event = WorkSessionEvent(
             session_id=session.id,
             user_id=user.id,
             event_type="FINISH",
             created_at=now
         )
-        db.add(event)
+        db.add(finish_event)
 
-        # Disparar notificação de ciclo finalizado
+        # Fire goal notification if threshold crossed
+        if session.collected_count >= session.daily_target:
+            try:
+                from backend.services.notification_service import NotificationService
+                NotificationService.notify_goal_reached(
+                    db=db, actor_user_id=user.id, session_id=session.id,
+                    daily_target=session.daily_target, collected_count=session.collected_count,
+                    actor_name=user.name,
+                )
+            except Exception as e:
+                logger.warning("Error firing goal notification: %s", e)
+
+        # Fire cycle completed notification
         try:
             from backend.services.notification_service import NotificationService
             active_hours = session.active_seconds / 3600.0
@@ -357,12 +492,16 @@ class WorkSessionService:
                 average_rate=avg_rate, time_str=time_str,
             )
         except Exception as e:
-            logger.warning(f"Erro ao disparar notificação de fim de ciclo: {e}")
+            logger.warning("Error firing cycle completed notification: %s", e)
 
         db.commit()
         db.refresh(session)
 
-        return WorkSessionService.compute_session_response(session, user.name)
+        response = WorkSessionService.compute_session_response(session, user.name)
+        response.inserted_count = len(inserted_cids)
+        response.already_exists_count = len(already_exists_cids)
+        response.errors = errors_list
+        return response
 
     @staticmethod
     def get_current_session(db: Session, user: User) -> Optional[WorkSessionResponse]:

@@ -128,21 +128,22 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
-    loadCurrentSession();
+    await loadCurrentSession();
     updatePageChannelsStats();
     updateLiveMusic();
 
-    // Start intervals
+    // Start economical intervals (relaxed polling to save Vercel bandwidth)
     clearInterval(pollInterval);
     clearInterval(heartbeatInterval);
+
     window.prospectorAPI.heartbeat().catch(() => {});
     heartbeatInterval = setInterval(() => {
       window.prospectorAPI.heartbeat().catch(() => {});
-    }, 45000);
+    }, 60000); // 60s economical heartbeat
+
     pollInterval = setInterval(() => {
-      updatePageChannelsStats();
       updateLiveMusic();
-    }, 4000);
+    }, 60000); // 60s relaxed music poll
   }
 
   async function updateLiveMusic() {
@@ -239,12 +240,25 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // --------------------------------------------------------------------------
-  // WORK SESSION MANAGEMENT
+  // WORK SESSION MANAGEMENT (LOCAL-FIRST)
   // --------------------------------------------------------------------------
 
   async function loadCurrentSession() {
     try {
-      const session = await window.prospectorAPI.getCurrentSession();
+      // 1. Prioridade para sessão local
+      let session = await window.prospectorAPI.getLocalSession();
+      if (!session) {
+        session = await window.prospectorAPI.getCurrentSession();
+      }
+
+      // Sincroniza quantidade de pendentes locais se houver
+      if (session) {
+        const pending = await window.prospectorAPI.getPendingChannels();
+        if (pending.length > 0 && (session.collected_count == null || session.collected_count < pending.length)) {
+          session.collected_count = pending.length;
+        }
+      }
+
       renderSession(session);
     } catch (err) {
       console.error("[SidePanel] Error loading session:", err);
@@ -294,7 +308,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     sessionCollected.textContent = collected;
     sessionTarget.textContent = target;
 
-    // Single source of truth formula for current pace (channels / active_hours)
     let activeSecs = session.current_active_seconds != null ? session.current_active_seconds : (session.active_seconds || 0);
     const activeHours = activeSecs / 3600.0;
     const currentRate = activeHours > 0.001 ? (collected / activeHours) : 0.0;
@@ -312,9 +325,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         const liveSecs = activeSecs + elapsedSinceRender;
         sessionTimer.textContent = formatSeconds(liveSecs);
         
-        // Recalculate live pace continuously as active seconds advance
         const liveHours = liveSecs / 3600.0;
-        const liveRate = liveHours > 0.001 ? (collected / liveHours) : 0.0;
+        const liveRate = liveHours > 0.001 ? (session.collected_count / liveHours) : 0.0;
         sessionPace.textContent = `${liveRate.toFixed(1).replace(".", ",")}/h`;
       }, 1000);
     }
@@ -331,15 +343,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   btnStartSession.addEventListener("click", async () => {
     let target = selectedDailyTarget;
     let hours = selectedTargetHours;
-
     if (selectedCycleType === "CUSTOM") {
       target = parseInt(inputDailyTarget.value, 10) || 160;
       hours = parseFloat(inputTargetHours.value) || 8.0;
     }
-
     btnStartSession.disabled = true;
     btnStartSession.textContent = "INICIANDO...";
-
     try {
       const session = await window.prospectorAPI.startSession({
         daily_target: target,
@@ -359,7 +368,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   btnTogglePause.addEventListener("click", async () => {
     if (!currentSession) return;
     btnTogglePause.disabled = true;
-
     try {
       let updated;
       if (currentSession.status === "ACTIVE") {
@@ -380,15 +388,45 @@ document.addEventListener("DOMContentLoaded", async () => {
   btnFinishSession.addEventListener("click", async () => {
     if (!confirm("Deseja realmente finalizar a sessão de trabalho atual?")) return;
     btnFinishSession.disabled = true;
-
+    btnFinishSession.textContent = "CONSOLIDANDO...";
     try {
-      await window.prospectorAPI.finishSession();
+      let activeSecs = currentSession.active_seconds || 0;
+      if (currentSession.status === "ACTIVE") {
+        const lastResumed = currentSession.last_resumed_at ? new Date(currentSession.last_resumed_at).getTime() : Date.now();
+        const elapsed = Math.max(0, Math.floor((Date.now() - lastResumed) / 1000));
+        activeSecs += elapsed;
+      }
+      const pendingChannels = await window.prospectorAPI.getPendingChannels();
+      const finishPayload = {
+        session_id: currentSession.id,
+        active_seconds: activeSecs,
+        ended_at: new Date().toISOString(),
+        channels: pendingChannels
+      };
+      const result = await window.prospectorAPI.finishSession(finishPayload);
       renderSession(null);
-      showToast("Sessão finalizada com sucesso!");
+      const insertedCount = result.inserted_count != null ? result.inserted_count : pendingChannels.length;
+      showToast(`Sessão finalizada com sucesso! ${insertedCount} novos canais consolidados.`);
     } catch (err) {
-      showToast(err.message, "error");
+      showToast(err.message || "Falha ao finalizar. Seus dados estão preservados localmente!", "error");
     } finally {
       btnFinishSession.disabled = false;
+      btnFinishSession.innerHTML = "<span>⏹️ Finalizar</span>";
+    }
+  });
+
+  // Escuta atualizações locais disparadas pelo content script
+  chrome.runtime.onMessage.addListener((request) => {
+    if (request.action === "LOCAL_CHANNELS_UPDATED" && currentSession && currentSession.status === "ACTIVE") {
+      window.prospectorAPI.getLocalSession().then((localSession) => {
+        if (localSession) {
+          currentSession.collected_count = localSession.collected_count;
+          sessionCollected.textContent = localSession.collected_count;
+          const target = localSession.daily_target || 160;
+          const pct = target > 0 ? Math.min(100, Math.round((localSession.collected_count / target) * 100)) : 0;
+          sessionProgressFill.style.width = `${pct}%`;
+        }
+      });
     }
   });
 

@@ -1162,6 +1162,12 @@
 
     <!-- Header Right (Notifications, User) -->
     <div class="header-right">
+      <!-- Download Extension Header Button -->
+      <button class="nav-tab-btn" id="btnOpenExtDownload" title="Baixar Extensão do Chrome" style="background: rgba(255,255,255,0.06); color: #fff;">
+        <i class="fa-solid fa-download"></i>
+        <span>Baixar Extensão</span>
+      </button>
+
       <!-- Notification Bell -->
       <button class="notif-bell-btn" id="btnNotifBell" title="Central de Notificações">
         <i class="fa-regular fa-bell"></i>
@@ -1217,6 +1223,34 @@
           <div class="metric-label">Média da Equipe</div>
           <div class="metric-value" id="kpiTeamRate">0.0/h</div>
           <div class="metric-sub">Ritmo consolidado de prospecção</div>
+        </div>
+      </div>
+
+      <!-- EXTENSION DOWNLOAD CARD -->
+      <div class="content-card" style="background: linear-gradient(135deg, rgba(24,25,36,0.9), rgba(15,16,22,0.9)); border: 1px solid rgba(255,255,255,0.12); padding: 18px 24px; margin-bottom: 4px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #fff;">
+              <i class="fa-solid fa-puzzle-piece"></i>
+            </div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 15px; font-weight: 800; color: var(--silver-light);">Extensão Prospect OS</span>
+                <span class="role-badge" id="extVersionBadge" style="background: #27272a; color: #a1a1aa; font-size: 10px;">v2.0.0</span>
+              </div>
+              <p style="font-size: 12px; color: var(--silver-muted); margin-top: 2px;">Coleta rápida no YouTube, Side Panel integrado com cronômetro de turno e persistência local-first.</p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <a href="/static/prospect-os-extension.zip" download="prospect-os-extension.zip" class="btn-primary" id="btnDownloadZipDirect" style="display: flex; align-items: center; gap: 8px; padding: 8px 18px; font-size: 12px; text-decoration: none;">
+              <i class="fa-solid fa-download"></i>
+              <span>Baixar Extensão</span>
+            </a>
+            <button class="btn-secondary" id="btnShowInstallHelpCard" style="padding: 8px 14px; font-size: 12px;">
+              <i class="fa-solid fa-circle-question"></i>
+              <span>Instruções</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1561,6 +1595,44 @@
           <button type="submit" class="btn">Salvar</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: INSTALAÇÃO DA EXTENSÃO PROSPECT OS                             -->
+  <!-- ===================================================================== -->
+  <div id="modalExtensionDownload" class="modal-overlay">
+    <div class="modal-card" style="max-width: 540px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-puzzle-piece"></i>
+          <span>Instalar Extensão Prospect OS</span>
+        </div>
+        <button class="modal-close" onclick="closeExtensionDownloadModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="background: var(--card-inner); padding: 14px 16px; border-radius: 10px; border: 1px solid var(--card-border);">
+          <div style="font-size: 13px; font-weight: 700; color: var(--silver-light); margin-bottom: 10px;">
+            <i class="fa-brands fa-chrome" style="color: #60a5fa; margin-right: 6px;"></i>
+            Instalação no Google Chrome:
+          </div>
+          <ol style="margin-left: 20px; font-size: 12px; color: var(--silver-muted); line-height: 1.8;">
+            <li>Baixe o arquivo ZIP da extensão pelo botão abaixo.</li>
+            <li>Extraia o arquivo ZIP para uma pasta no seu computador.</li>
+            <li>Abra o navegador e acesse: <code style="background: #1e293b; color: #f8fafc; padding: 2px 6px; border-radius: 4px; font-family: monospace;">chrome://extensions</code></li>
+            <li>Ative o <strong>Modo do desenvolvedor</strong> no canto superior direito.</li>
+            <li>Clique no botão <strong>Carregar sem compactação</strong> (Load unpacked).</li>
+            <li>Selecione a pasta onde você extraiu a extensão.</li>
+          </ol>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeExtensionDownloadModal()">Fechar</button>
+        <a href="/static/prospect-os-extension.zip" download="prospect-os-extension.zip" id="btnModalDownloadZip" class="btn" style="text-decoration: none; display: flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-download"></i>
+          <span>Baixar ZIP da Extensão</span>
+        </a>
+      </div>
     </div>
   </div>
 
@@ -2673,6 +2745,41 @@
       }
     });
 
+    // Extension Download Modal Handlers
+    function openExtensionDownloadModal() {
+      const modal = document.getElementById('modalExtensionDownload');
+      if (modal) modal.classList.add('active');
+    }
+
+    function closeExtensionDownloadModal() {
+      const modal = document.getElementById('modalExtensionDownload');
+      if (modal) modal.classList.remove('active');
+    }
+
+    document.getElementById('btnOpenExtDownload')?.addEventListener('click', openExtensionDownloadModal);
+    document.getElementById('btnShowInstallHelpCard')?.addEventListener('click', openExtensionDownloadModal);
+
+    async function loadExtensionInfo() {
+      try {
+        const res = await fetch('/api/system/extension-info');
+        if (res.ok) {
+          const info = await res.json();
+          const badge = document.getElementById('extVersionBadge');
+          if (badge && info.version) {
+            badge.textContent = `v${info.version}`;
+          }
+          const downloadBtn = document.getElementById('btnDownloadZipDirect');
+          if (downloadBtn && info.download_url) {
+            downloadBtn.href = info.download_url;
+          }
+          const modalBtn = document.getElementById('btnModalDownloadZip');
+          if (modalBtn && info.download_url) {
+            modalBtn.href = info.download_url;
+          }
+        }
+      } catch (e) {}
+    }
+
     async function sendHeartbeat() {
       const token = getToken();
       if (!token) return;
@@ -2684,11 +2791,37 @@
       } catch (e) {}
     }
 
+    // Economical polling helper: only poll when tab is visible and authenticated
+    function shouldPoll() {
+      return document.visibilityState === 'visible' && Boolean(getToken());
+    }
+
     // Initialize Application
-    checkAuthentication().then(sendHeartbeat);
-    setInterval(sendHeartbeat, 45000);
-    setInterval(loadOverviewData, 10000);
-    setInterval(loadUnreadNotifications, 15000);
+    checkAuthentication().then(() => {
+      sendHeartbeat();
+      loadExtensionInfo();
+    });
+
+    // Economical polling intervals (reducing Vercel function invocations)
+    setInterval(() => {
+      if (shouldPoll()) sendHeartbeat();
+    }, 60000); // 60s
+
+    setInterval(() => {
+      if (shouldPoll() && activeTab === 'overview') loadOverviewData();
+    }, 30000); // 30s
+
+    setInterval(() => {
+      if (shouldPoll()) loadUnreadNotifications();
+    }, 30000); // 30s
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && Boolean(getToken())) {
+        sendHeartbeat();
+        refreshCurrentTab();
+        loadUnreadNotifications();
+      }
+    });
 
     // Global music progress ticker — no extra requests, no extra writes
     // Reads data-* attrs stamped at render time and advances locally

@@ -8,7 +8,7 @@ from backend.database.connection import get_db
 from backend.database.models import User
 from backend.security.auth import get_current_user, get_current_admin_user
 from backend.schemas.work_session import (
-    WorkSessionStart, WorkSessionResponse, UserRankingItem,
+    WorkSessionStart, WorkSessionFinishRequest, WorkSessionResponse, UserRankingItem,
     TeamStatusItem, TeamSummaryResponse, CycleSettingsResponse,
     CycleSettingsUpdate, SessionHistoryItem
 )
@@ -94,14 +94,15 @@ def resume_work_session(
 
 @router.post("/finish", response_model=WorkSessionResponse)
 def finish_work_session(
+    data: Optional[WorkSessionFinishRequest] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
-    Finaliza a sessão de trabalho atual do usuário e consolida as horas trabalhadas.
+    Finaliza a sessão de trabalho atual do usuário e consolida lote de canais e horas trabalhadas.
     """
     try:
-        return WorkSessionService.finish_session(db, current_user)
+        return WorkSessionService.finish_session(db, current_user, data)
     except ValueError as ve:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
     except Exception:

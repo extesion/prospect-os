@@ -144,7 +144,7 @@
   }
 
   /**
-   * Executa a coleta individual de um canal
+   * Executa a coleta individual de um canal no modelo LOCAL-FIRST
    */
   async function handleCollectChannel(channelId) {
     const list = pageState.detectedChannels.get(channelId);
@@ -152,53 +152,55 @@
 
     const sample = list[0].data;
 
-    // Atualiza para SAVING
+    // 1. Valida se a sessão local está ACTIVE
+    const session = await window.prospectorAPI.getLocalSession();
+    if (!session || session.status !== "ACTIVE") {
+      alert("Inicie seu turno de trabalho no Side Panel para coletar canais.");
+      updateAllBadgesForChannel(channelId, { state: "AVAILABLE" });
+      return;
+    }
+
+    // 2. Atualiza para SAVING temporariamente
     updateAllBadgesForChannel(channelId, { state: "SAVING" });
 
     try {
-      const response = await window.prospectorAPI.collectChannel(sample);
+      // 3. Enfileira canal localmente com dedupe
+      await window.prospectorAPI.addPendingChannel(sample);
 
-      if (response.success) {
-        // Coleta bem sucedida
-        const nowIso = new Date().toISOString();
-        window.prospectorCache.set(channelId, {
-          exists: true,
-          collected_by: { id: response.channel?.first_collected_by?.id, name: "Você" },
-          collected_at: nowIso
-        });
+      const nowIso = new Date().toISOString();
+      window.prospectorCache.set(channelId, {
+        exists: true,
+        collected_by: { name: "Você (Pendente)" },
+        collected_at: nowIso
+      });
 
-        updateAllBadgesForChannel(channelId, {
-          state: "COLLECTED_NOW",
-          collected_by: { name: "Você" },
-          collected_at: nowIso
-        });
-      } else if (response.already_exists) {
-        // Concorrência: outro usuário acabou de cadastrar
-        const collectorName = response.channel?.first_collected_by?.name || "Outro usuário";
-        const collectedAt = response.channel?.first_collected_at || new Date().toISOString();
+      updateAllBadgesForChannel(channelId, {
+        state: "COLLECTED_NOW",
+        collected_by: { name: "Você" },
+        collected_at: nowIso
+      });
 
-        window.prospectorCache.set(channelId, {
-          exists: true,
-          collected_by: { name: collectorName },
-          collected_at: collectedAt
-        });
-
-        updateAllBadgesForChannel(channelId, {
-          state: "EXISTS",
-          collected_by: { name: collectorName },
-          collected_at: collectedAt
-        });
-      }
+      // 4. Notifica SidePanel / Popup para atualizar contadores locais
+      try {
+        chrome.runtime.sendMessage({ action: "LOCAL_CHANNELS_UPDATED" });
+      } catch (e) {}
     } catch (err) {
-      console.error("[YouTube Prospector] Erro ao coletar canal:", err);
+      console.error("[YouTube Prospector] Erro ao enfileirar canal localmente:", err);
       updateAllBadgesForChannel(channelId, { state: "ERROR" });
     }
   }
 
   /**
-   * Coleta em massa todos os canais novos disponíveis na página
+   * Coleta em massa todos os canais novos no modelo LOCAL-FIRST
    */
   async function handleCollectAllNew() {
+    // 1. Valida se a sessão local está ACTIVE
+    const session = await window.prospectorAPI.getLocalSession();
+    if (!session || session.status !== "ACTIVE") {
+      alert("Inicie seu turno de trabalho no Side Panel para coletar canais.");
+      return;
+    }
+
     const newChannels = [];
     for (const [channelId, list] of pageState.detectedChannels.entries()) {
       const cached = window.prospectorCache.get(channelId);
@@ -220,42 +222,29 @@
     });
 
     try {
-      const response = await window.prospectorAPI.collectBulk(newChannels);
+      await window.prospectorAPI.addPendingBulk(newChannels);
       const nowIso = new Date().toISOString();
 
-      // Atualiza inseridos
-      if (response.inserted) {
-        response.inserted.forEach((cid) => {
-          window.prospectorCache.set(cid, {
-            exists: true,
-            collected_by: { name: "Você" },
-            collected_at: nowIso
-          });
-          updateAllBadgesForChannel(cid, {
-            state: "COLLECTED_NOW",
-            collected_by: { name: "Você" },
-            collected_at: nowIso
-          });
+      newChannels.forEach((ch) => {
+        const cid = ch.channel_id;
+        window.prospectorCache.set(cid, {
+          exists: true,
+          collected_by: { name: "Você (Pendente)" },
+          collected_at: nowIso
         });
-      }
+        updateAllBadgesForChannel(cid, {
+          state: "COLLECTED_NOW",
+          collected_by: { name: "Você" },
+          collected_at: nowIso
+        });
+      });
 
-      // Atualiza já existentes
-      if (response.already_exists) {
-        response.already_exists.forEach((cid) => {
-          window.prospectorCache.set(cid, {
-            exists: true,
-            collected_by: { name: "Outro membro" },
-            collected_at: nowIso
-          });
-          updateAllBadgesForChannel(cid, {
-            state: "EXISTS",
-            collected_by: { name: "Outro membro" },
-            collected_at: nowIso
-          });
-        });
-      }
+      // Notifica SidePanel / Popup para atualizar contadores locais
+      try {
+        chrome.runtime.sendMessage({ action: "LOCAL_CHANNELS_UPDATED" });
+      } catch (e) {}
     } catch (err) {
-      console.error("[YouTube Prospector] Erro no bulk insert:", err);
+      console.error("[YouTube Prospector] Erro no bulk local:", err);
       newChannels.forEach((ch) => {
         updateAllBadgesForChannel(ch.channel_id, { state: "ERROR" });
       });
